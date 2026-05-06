@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LUMURA S.A.S. – Prototipo de Navegación</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #1a1a2e;
+    --accent: #e94560;
+    --accent2: #0f3460;
+    --bg: #f4f4f8;
+    --white: #ffffff;
+    --gray: #6c757d;
+    --light: #e9ecef;
+    --success: #28a745;
+    --warning: #ffc107;
+    --text: #212529;
+    --shadow: 0 4px 20px rgba(0,0,0,0.12);
+    --radius: 12px;
+  }
+  body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* NAV BAR PROTOTYPE */
+  .proto-nav {
+    background: var(--primary);
+    color: white;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: var(--shadow);
+  }
+  .proto-nav span { font-weight: 700; font-size: 13px; margin-right: 8px; color: var(--accent); }
+  .proto-nav button {
+    padding: 5px 12px;
+    border: 1px solid rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.08);
+    color: white;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+  }
+  .proto-nav button:hover, .proto-nav button.active {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  /* SCREEN WRAPPER */
+  .screen { display: none; padding: 0; }
+  .screen.active { display: block; }
+
+  /* DEVICE FRAME */
+  .device-frame {
+    max-width: 420px;
+    margin: 20px auto;
+    background: white;
+    border-radius: 30px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    overflow: hidden;
+    min-height: 750px;
+    border: 3px solid #222;
+  }
+  .device-notch {
+    background: #111;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .device-notch::after { content: ''; width: 80px; height: 10px; background: #333; border-radius: 10px; }
+
+  /* DESKTOP FRAME */
+  .desktop-frame {
+    max-width: 900px;
+    margin: 20px auto;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    overflow: hidden;
+    border: 3px solid #222;
+  }
+  .desktop-bar {
+    background: #2d2d2d;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 6px;
+  }
+  .desktop-bar span { width: 12px; height: 12px; border-radius: 50%; display: block; }
+  .desktop-bar span:nth-child(1) { background: #ff5f57; }
+  .desktop-bar span:nth-child(2) { background: #ffbd2e; }
+  .desktop-bar span:nth-child(3) { background: #28ca41; }
+  .desktop-url {
+    flex: 1; background: #444; border-radius: 10px; height: 16px; margin-left: 10px;
+    display: flex; align-items: center; padding: 0 8px;
+  }
+  .desktop-url::before { content: 'lumura.com'; color: #aaa; font-size: 10px; font-family: monospace; }
+
+  /* APP HEADER */
+  .app-header {
+    background: var(--primary);
+    color: white;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .app-header .logo { font-weight: 900; font-size: 20px; letter-spacing: 3px; color: var(--accent); }
+  .app-header .icons { display: flex; gap: 14px; font-size: 18px; cursor: pointer; }
+
+  /* BOTTOM NAV */
+  .bottom-nav {
+    position: sticky;
+    bottom: 0;
+    background: white;
+    border-top: 1px solid var(--light);
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 0 4px;
+  }
+  .bottom-nav .nav-item {
+    display: flex; flex-direction: column; align-items: center;
+    font-size: 10px; color: var(--gray); cursor: pointer; padding: 4px 8px;
+  }
+  .bottom-nav .nav-item.active { color: var(--accent); }
+  .bottom-nav .nav-item .icon { font-size: 22px; margin-bottom: 2px; }
+
+  /* CONTENT */
+  .app-content { padding: 0; background: #f8f8fc; }
+
+  /* BUTTONS */
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    padding: 14px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .btn-primary:hover { background: #c73652; transform: translateY(-1px); }
+  .btn-secondary {
+    background: transparent;
+    color: var(--accent);
+    border: 2px solid var(--accent);
+    border-radius: 25px;
+    padding: 12px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+  }
+  .btn-sm {
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: none;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  /* FORMS */
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 13px; color: var(--gray); margin-bottom: 6px; font-weight: 500; }
+  .form-group input, .form-group select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1.5px solid var(--light);
+    border-radius: 10px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    background: white;
+  }
+  .form-group input:focus { border-color: var(--accent); }
+
+  /* CARDS */
+  .card { background: white; border-radius: var(--radius); box-shadow: 0 2px 10px rgba(0,0,0,0.07); overflow: hidden; }
+
+  /* PRODUCT CARD */
+  .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px; }
+  .product-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); cursor: pointer; }
+  .product-card .img-placeholder {
+    height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+  }
+  .product-card .info { padding: 10px; }
+  .product-card .name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .product-card .price { font-size: 14px; font-weight: 700; color: var(--accent); margin-top: 4px; }
+  .product-card .add-btn {
+    width: 100%;
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 8px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  /* BANNER */
+  .hero-banner {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent2) 100%);
+    color: white;
+    padding: 24px 16px;
+    margin: 0;
+  }
+  .hero-banner h2 { font-size: 22px; font-weight: 900; line-height: 1.2; }
+  .hero-banner p { font-size: 13px; margin: 8px 0 16px; opacity: 0.85; }
+  .hero-banner .discount { background: var(--accent); display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 700; margin-bottom: 12px; }
+
+  /* BADGES */
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-red { background: #ffe0e6; color: var(--accent); }
+  .badge-blue { background: #e0ecff; color: var(--accent2); }
+  .badge-green { background: #e0f5e9; color: var(--success); }
+
+  /* SEARCH BAR */
+  .search-bar {
+    display: flex;
+    align-items: center;
+    background: var(--light);
+    border-radius: 25px;
+    padding: 10px 16px;
+    margin: 12px 16px;
+    gap: 8px;
+  }
+  .search-bar input {
+    border: none;
+    background: transparent;
+    flex: 1;
+    font-size: 14px;
+    outline: none;
+  }
+
+  /* CART ITEM */
+  .cart-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: white;
+    border-bottom: 1px solid var(--light);
+  }
+  .cart-item .icon-box {
+    width: 60px;
+    height: 60px;
+    background: var(--light);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+  .cart-item .detail { flex: 1; }
+  .cart-item .name { font-size: 14px; font-weight: 600; }
+  .cart-item .sub { font-size: 12px; color: var(--gray); }
+  .cart-item .price { font-weight: 700; color: var(--accent); }
+  .qty-ctrl { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .qty-ctrl button { width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--light); background: white; font-weight: 700; cursor: pointer; font-size: 14px; }
+
+  /* DESKTOP ADMIN */
+  .admin-sidebar {
+    width: 220px;
+    background: var(--primary);
+    min-height: calc(100vh - 32px);
+    padding: 20px 0;
+    flex-shrink: 0;
+  }
+  .admin-sidebar .logo { padding: 0 20px 20px; font-size: 20px; font-weight: 900; color: var(--accent); letter-spacing: 3px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .admin-sidebar .menu-item {
+    padding: 12px 20px;
+    color: rgba(255,255,255,0.7);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+  .admin-sidebar .menu-item:hover, .admin-sidebar .menu-item.active { background: rgba(233,69,96,0.15); color: white; border-left: 3px solid var(--accent); }
+  .admin-sidebar .menu-item .icon { font-size: 18px; }
+  .admin-main { flex: 1; background: #f4f4f8; padding: 24px; overflow-y: auto; }
+  .admin-layout { display: flex; min-height: 500px; }
+  .admin-header { background: white; padding: 16px 24px; border-bottom: 1px solid var(--light); display: flex; align-items: center; justify-content: space-between; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .kpi-card { background: white; border-radius: var(--radius); padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .kpi-card .label { font-size: 12px; color: var(--gray); margin-bottom: 6px; }
+  .kpi-card .value { font-size: 24px; font-weight: 800; color: var(--primary); }
+  .kpi-card .change { font-size: 12px; color: var(--success); margin-top: 4px; }
+  .kpi-card .icon-big { font-size: 28px; float: right; margin-top: -4px; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .data-table th { background: #f0f0f8; padding: 10px 14px; text-align: left; font-weight: 600; color: var(--gray); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .data-table td { padding: 12px 14px; border-bottom: 1px solid var(--light); }
+  .data-table tr:hover td { background: #fafafe; }
+  .chart-bar-wrap { display: flex; align-items: flex-end; gap: 12px; height: 120px; padding: 0 0 8px; }
+  .chart-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .chart-bar { background: linear-gradient(180deg, var(--accent) 0%, var(--accent2) 100%); border-radius: 4px 4px 0 0; width: 100%; transition: all 0.3s; }
+  .chart-bar-label { font-size: 10px; color: var(--gray); }
+
+  /* STATUS INDICATORS */
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .status-dot.green { background: var(--success); }
+  .status-dot.yellow { background: var(--warning); }
+  .status-dot.red { background: var(--accent); }
+
+  /* SECTION LABELS */
+  .section-label { padding: 12px 16px 4px; font-size: 11px; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 1px; }
+
+  /* SCROLLABLE CONTENT */
+  .scrollable { max-height: 680px; overflow-y: auto; }
+
+  /* TAG FILTER */
+  .tag-filter { display: flex; gap: 8px; padding: 8px 16px; overflow-x: auto; }
+  .tag { padding: 6px 16px; border-radius: 20px; font-size: 12px; cursor: pointer; white-space: nowrap; font-weight: 500; }
+  .tag.active { background: var(--accent); color: white; }
+  .tag:not(.active) { background: white; color: var(--gray); border: 1px solid var(--light); }
+
+  /* STEP INDICATOR */
+  .steps { display: flex; align-items: center; justify-content: center; padding: 16px; gap: 0; }
+  .step { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .step-circle { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+  .step.done .step-circle { background: var(--accent); color: white; }
+  .step.active .step-circle { background: var(--primary); color: white; }
+  .step.pending .step-circle { background: var(--light); color: var(--gray); }
+  .step-line { width: 40px; height: 2px; background: var(--light); margin: 0 4px; margin-bottom: 18px; }
+  .step-line.done { background: var(--accent); }
+  .step-label { font-size: 10px; color: var(--gray); }
+
+  /* NOTIFICATION */
+  .notif { background: #fff3f5; border-left: 4px solid var(--accent); padding: 12px 16px; margin: 12px 16px; border-radius: 0 8px 8px 0; font-size: 13px; }
+
+  /* SUCCESS SCREEN */
+  .success-icon { font-size: 80px; text-align: center; padding: 30px 0 10px; }
+  .success-title { text-align: center; font-size: 22px; font-weight: 800; color: var(--primary); }
+  .success-sub { text-align: center; color: var(--gray); font-size: 14px; margin: 8px 20px 24px; line-height: 1.5; }
+  .order-detail { margin: 0 16px; background: #f8f8fc; border-radius: 12px; padding: 16px; }
+  .order-detail .row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--light); font-size: 14px; }
+  .order-detail .row:last-child { border: none; font-weight: 700; }
+
+  /* SCREEN LABEL */
+  .screen-label {
+    text-align: center;
+    font-size: 11px;
+    color: var(--gray);
+    padding: 6px;
+    background: #f0f0f8;
+    letter-spacing: 1px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  /* RESPONSIVE HINT */
+  .view-toggle { display: flex; gap: 8px; margin: 0 auto 10px; max-width: 300px; padding: 0 20px; }
+  .view-toggle button {
+    flex: 1; padding: 6px; border-radius: 8px; border: 1.5px solid var(--light);
+    background: white; cursor: pointer; font-size: 12px; color: var(--gray);
+  }
+  .view-toggle button.active { background: var(--primary); color: white; border-color: var(--primary); }
+</style>
+</head>
+<body>
+
+<!-- PROTOTYPE NAVIGATION BAR -->
+<div class="proto-nav">
+  <span>🏷️ LUMURA — Prototipo</span>
+  <button onclick="showScreen('login')" id="btn-login" class="active">🔐 Login</button>
+  <button onclick="showScreen('register')" id="btn-register">📝 Registro</button>
+  <button onclick="showScreen('home')" id="btn-home">🏠 Catálogo</button>
+  <button onclick="showScreen('product')" id="btn-product">👕 Producto</button>
+  <button onclick="showScreen('cart')" id="btn-cart">🛒 Carrito</button>
+  <button onclick="showScreen('checkout')" id="btn-checkout">💳 Pago</button>
+  <button onclick="showScreen('confirm')" id="btn-confirm">✅ Confirmación</button>
+  <button onclick="showScreen('admin-dash')" id="btn-admin-dash">📊 Dashboard</button>
+  <button onclick="showScreen('admin-cat')" id="btn-admin-cat">👗 Catálogo Admin</button>
+  <button onclick="showScreen('admin-inv')" id="btn-admin-inv">📦 Inventario</button>
+  <button onclick="showScreen('admin-rep')" id="btn-admin-rep">📈 Reportes</button>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 1: LOGIN -->
+<!-- ============================================================ -->
+<div class="screen active" id="screen-login">
+  <div class="screen-label">Pantalla 1 – Inicio de Sesión</div>
+  <div class="device-frame" style="margin: 20px auto;">
+    <div class="device-notch"></div>
+    <div class="scrollable">
+      <div style="background: linear-gradient(160deg, var(--primary) 0%, #0f3460 60%, var(--accent) 100%); padding: 40px 24px 30px; text-align: center;">
+        <div style="font-size: 42px; font-weight: 900; color: var(--accent); letter-spacing: 6px;">LUMURA</div>
+        <div style="color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 4px;">Tu moda, a un clic</div>
+        <div style="font-size: 60px; margin-top: 20px;">👗</div>
+      </div>
+      <div style="padding: 28px 24px;">
+        <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 6px;">Bienvenido</h2>
+        <p style="color: var(--gray); font-size: 14px; margin-bottom: 24px;">Inicia sesión en tu cuenta</p>
+        <div class="form-group">
+          <label>Correo electrónico</label>
+          <input type="email" placeholder="ejemplo@correo.com">
+        </div>
+        <div class="form-group">
+          <label>Contraseña</label>
+          <input type="password" placeholder="••••••••">
+        </div>
+        <div style="text-align: right; margin-bottom: 20px;">
+          <a style="color: var(--accent); font-size: 13px; text-decoration: none;">¿Olvidaste tu contraseña?</a>
+        </div>
+        <button class="btn-primary" onclick="showScreen('home')">Iniciar sesión</button>
+        <div style="text-align: center; margin-top: 20px; font-size: 14px; color: var(--gray);">
+          ¿No tienes cuenta? <a style="color: var(--accent); font-weight: 600; cursor: pointer;" onclick="showScreen('register')">Regístrate</a>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; margin: 20px 0;">
+          <div style="flex:1; height:1px; background:var(--light);"></div>
+          <span style="font-size: 12px; color: var(--gray);">o continúa con</span>
+          <div style="flex:1; height:1px; background:var(--light);"></div>
+        </div>
+        <button class="btn-secondary">🔵 Continuar con Google</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 2: REGISTRO -->
+<!-- ============================================================ -->
+<div class="screen" id="screen-register">
+  <div class="screen-label">Pantalla 2 – Registro de Usuario</div>
+  <div class="device-frame">
+    <div class="device-notch"></div>
+    <div class="scrollable">
+      <div class="app-header">
+        <span style="font-size: 20px; cursor:pointer;" onclick="showScreen('login')">←</span>
+        <div class="logo">LUMURA</div>
+        <span></span>
+      </div>
+      <div style="padding: 20px 24px;">
+        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 4px;">Crear cuenta</h2>
+        <p style="color: var(--gray); font-size: 13px; margin-bottom: 20px;">Completa tus datos personales</p>
+        <div class="form-group">
+          <label>Nombre completo</label>
+          <input type="text" placeholder="Juan Pérez García">
+        </div>
+        <div class="form-group">
+          <label>Número de documento</label>
+          <input type="text" placeholder="CC 1234567890">
+        </div>
+        <div class="form-group">
+          <label>Correo electrónico</label>
+          <input type="email" placeholder="ejemplo@correo.com">
+        </div>
+        <div class="form-group">
+          <label>Teléfono</label>
+          <input type="tel" placeholder="+57 300 000 0000">
+        </div>
+        <div class="form-group">
+          <label>Dirección de entrega</label>
+          <input type="text" placeholder="Calle 10 # 5-20, Ciudad">
+        </div>
+        <div class="form-group">
+          <label>Contraseña</label>
+          <input type="password" placeholder="Mínimo 8 caracteres">
+        </div>
+        <div class="form-group">
+          <label>Confirmar contraseña</label>
+          <input type="password" placeholder="Repite tu contraseña">
+        </div>
+        <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 20px;">
+          <input type="checkbox" style="margin-top: 2px; width: auto;">
+          <span style="font-size: 13px; color: var(--gray);">Acepto los <a style="color:var(--accent);">términos y condiciones</a> y la <a style="color:var(--accent);">política de privacidad</a></span>
+        </div>
+        <button class="btn-primary" onclick="showScreen('home')">Crear cuenta</button>
+        <div style="text-align: center; margin-top: 16px; font-size: 14px; color: var(--gray);">
+          ¿Ya tienes cuenta? <a style="color: var(--accent); font-weight: 600; cursor: pointer;" onclick="showScreen('login')">Inicia sesión</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 3: HOME / CATÁLOGO -->
+<!-- ============================================================ -->
+<div class="screen" id="screen-home">
+  <div class="screen-label">Pantalla 3 – Catálogo de Productos (Cliente)</div>
+  <div class="device-frame">
+    <div class="device-notch"></div>
+    <div class="scrollable">
+      <div class="app-header">
+        <div class="logo">LUMURA</div>
+        <div class="icons">🔔 🛒</div>
+      </div>
+      <!-- Search -->
+      <div class="search-bar">
+        <span>🔍</span>
+        <input placeholder="Buscar prendas, marcas...">
+        <span style="font-size:16px; color:var(--gray);">⚙️</span>
+      </div>
+      <!-- Banner -->
+      <div class="hero-banner">
+        <div class="discount">⚡ OFERTA ESPECIAL</div>
+        <h2>Hasta 40% OFF<br>en Temporada</h2>
+        <p>Descubre las últimas tendencias de moda</p>
+        <button class="btn-sm" style="background:var(--accent); color:white;" onclick="showScreen('product')">Ver colección →</button>
+      </div>
+      <!-- Categorías -->
+      <div class="section-label">Categorías</div>
+      <div class="tag-filter">
+        <span class="tag active">Todo</span>
+        <span class="tag">Camisetas</span>
+        <span class="tag">Pantalones</span>
+        <span class="tag">Chaquetas</span>
+        <span class="tag">Vestidos</span>
+        <span class="tag">Accesorios</span>
+      </div>
+      <!-- Products -->
+      <div class="section-label">Productos destacados</div>
+      <div class="product-grid">
+        <div class="product-card" onclick="showScreen('product')">
+          <div class="img-placeholder" style="background: linear-gradient(135deg, #fce4ec, #f8bbd9);">👕</div>
+          <div class="info">
+            <div class="name">Camiseta Básica Premium</div>
+            <div class="price">$45.900</div>
+            <div style="font-size:11px; color:var(--gray); margin-top:2px;">⭐ 4.8 · Tallas: XS-XXL</div>
+          </div>
+          <button class="add-btn">+ Agregar al carrito</button>
+        </div>
+        <div class="product-card" onclick="showScreen('product')">
+          <div class="img-placeholder" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb);">👖</div>
+          <div class="info">
+            <div class="name">Jeans Slim Fit</div>
+            <div class="price">$89.900</div>
+            <div style="font-size:11px; color:var(--gray); margin-top:2px;">⭐ 4.6 · Tallas: 28-36</div>
+          </div>
+          <button class="add-btn">+ Agregar al carrito</button>
+        </div>
+        <div class="product-card" onclick="showScreen('product')">
+          <div class="img-placeholder" style="background: linear-gradient(135deg, #e8f5e9, #c8e6c9);">🧥</div>
+          <div class="info">
+            <div class="name">Chaqueta Deportiva</div>
+            <div class="price">$129.900</div>
+            <div style="font-size:11px; color:var(--gray); margin-top:2px;">⭐ 4.9 · Tallas: S-XL</div>
+          </div>
+          <button class="add-btn">+ Agregar al carrito</button>
+        </div>
+        <div class="product-card" onclick="showScreen('product')">
+          <div class="img-placeholder" style="background: linear-gradient(135deg, #fff9c4, #fff176);">👗</div>
+          <div class="info">
+            <div class="name">Vestido Casual</div>
+            <div class="price">$74.900</div>
+            <div style="font-size:11px; color:var(--gray); margin-top:2px;">⭐ 4.7 · Tallas: XS-L</div>
+          </div>
+          <button class="add-btn">+ Agregar al carrito</button>
+        </div>
+      </div>
+      <div style="height: 70px;"></div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active" onclick="showScreen('home')"><span class="icon">🏠</span>Inicio</div>
+      <div class="nav-item" onclick="showScreen('home')"><span class="icon">🔍</span>Buscar</div>
+      <div class="nav-item" onclick="showScreen('cart')"><span class="icon">🛒</span>Carrito</div>
+      <div class="nav-item" onclick="showScreen('home')"><span class="icon">❤️</span>Favoritos</div>
+      <div class="nav-item" onclick="showScreen('home')"><span class="icon">👤</span>Perfil</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 4: DETALLE PRODUCTO -->
+<!-- ============================================================ -->
+<div class="screen" id="screen-product">
+  <div class="screen-label">Pantalla 4 – Detalle de Producto</div>
+  <div class="device-frame">
+    <div class="device-notch"></div>
+    <div class="scrollable">
+      <div class="app-header">
+        <span style="font-size: 20px; cursor:pointer;" onclick="showScreen('home')">←</span>
+        <span style="font-weight: 600;">Detalle del producto</span>
+        <span style="font-size: 18px; cursor:pointer;">❤️</span>
+      </div>
+      <!-- Image -->
+      <div style="background: linear-gradient(135deg, #fce4ec, #f8bbd9); height: 260px; display: flex; align-items: center; justify-content: center; font-size: 90px; position:relative;">
+        👕
+        <span class="badge badge-red" style="position:absolute; top:12px; left:12px;">🔥 Nuevo</span>
+      </div>
+      <div style="padding: 16px 16px 0;">
+        <div style="display:flex; justify-content: space-between; align-items: flex-start;">
+          <div>
+            <div style="font-size: 19px; font-weight: 800;">Camiseta Básica Premium</div>
+            <div style="color: var(--gray); font-size: 13px; margin-top: 3px;">LUMURA Collection 2025</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 22px; font-weight: 800; color: var(--accent);">$45.900</div>
+            <div style="text-decoration: line-through; color: var(--gray); font-size: 13px;">$65.000</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; margin: 10px 0;">
+          <span style="color: #ffc107; font-size: 16px;">★★★★★</span>
+          <span style="font-size: 13px; color: var(--gray);">4.8 · 124 reseñas</span>
+        </div>
+        <hr style="border: none; border-top: 1px solid var(--light); margin: 12px 0;">
+        <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--gray);">TALLA</div>
+        <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+          <div style="width:38px; height:38px; border:2px solid var(--accent); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:var(--accent);">XS</div>
+          <div style="width:38px; height:38px; border:2px solid var(--light); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px;">S</div>
+          <div style="width:38px; height:38px; border:2px solid var(--light); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px;">M</div>
+          <div style="width:38px; height:38px; border:2px solid var(--light); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px;">L</div>
+          <div style="width:38px; height:38px; border:2px solid var(--light); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px;">XL</div>
+        </div>
+        <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--gray);">COLOR</div>
+        <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+          <div style="width:28px; height:28px; border-radius:50%; background:#e94560; border:3px solid #333;"></div>
+          <div style="width:28px; height:28px; border-radius:50%; background:#1a1a2e;"></div>
+          <div style="width:28px; height:28px; border-radius:50%; background:#fff; border:1.5px solid #ddd;"></div>
+          <div style="width:28px; height:28px; border-radius:50%; background:#4CAF50;"></div>
+        </div>
+        <div style="font-size: 13px; color: var(--gray); line-height: 1.6; margin-bottom: 16px;">
+          Camiseta de algodón premium 100%, suave al tacto y con excelente transpirabilidad. Ideal para uso casual o deportivo. Confección de alta calidad con costuras reforzadas.
+        </div>
+      </div>
+      <div style="padding: 0 16px 16px; display: flex; gap: 10px;">
+        <button class="btn-secondary" style="width: auto; padding: 14px 18px;">❤️</button>
+        <button class="btn-primary" onclick="showScreen('cart')">Agregar al carrito 🛒</button>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item" onclick="showScreen('home')"><span class="icon">🏠</span>Inicio</div>
+      <div class="nav-item"><span class="icon">🔍</span>Buscar</div>
+      <div class="nav-item" onclick="showScreen('cart')"><span class="icon">🛒</span>Carrito</div>
+      <div class="nav-item"><span class="icon">❤️</span>Favoritos</div>
+      <div class="nav-item"><span class="icon">👤</span>Perfil</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 5: CARRITO -->
+<!-- ============================================================ -->
+<div class="screen" id="screen-cart">
+  <div class="screen-label">Pantalla 5 – Carrito de Compras</div>
+  <div class="device-frame">
+    <div class="device-notch"></div>
+    <div class="scrollable">
+      <div class="app-header">
+        <span style="font-size: 20px; cursor:pointer;" onclick="showScreen('home')">←</span>
+        <span style="font-weight: 600;">Mi carrito (3)</span>
+        <span style="font-size: 16px; color: var(--accent); cursor:pointer;">Limpiar</span>
+      </div>
+      <div class="cart-item">
+        <div class="icon-box" style="background: linear-gradient(135deg, #fce4ec, #f8bbd9);">👕</div>
+        <div class="detail">
+          <div class="name">Camiseta Básica Premium</div>
+          <div class="sub">Talla: M · Color: Rojo</div>
+          <div class="qty-ctrl">
+            <button>−</button>
+            <span style="font-size:14px; font-weight:600;">2</span>
+            <button>+</button>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <div class="price">$91.800</div>
+          <span style="font-size: 18px; cursor:pointer; color: var(--gray);">🗑️</span>
+        </div>
+      </div>
+      <div class="cart-item">
+        <div class="icon-box" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb);">👖</div>
+        <div class="detail">
+          <div class="name">Jeans Slim Fit</div>
+          <div class="sub">Talla: 32 · Color: Azul</div>
+          <div class="qty-ctrl">
+            <button>−</button>
+            <span style="font-size:14px; font-weight:600;">1</span>
+            <button>+</button>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <div class="price">$89.900</div>
+          <span style="font-size: 18px; cursor:pointer; color: var(--gray);">🗑️</span>
+        </div>
+      </div>
+      <div class="cart-item">
+        <div class="icon-box" style="background: linear-gradient(135deg, #e8f5e9, #c8e6c9);">🧥</div>
+        <div class="detail">
+          <div class="name">Chaqueta Deportiva</div>
+          <div class="sub">Talla: L · Color: Negro</div>
+          <div class="qty-ctrl">
+            <button>−</button>
+            <span style="font-size:14px; font-weight:600;">1</span>
+            <button>+</button>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <div class="price">$129.900</div>
+          <span style="font-size: 18px; cursor:pointer; color: var(--gray);">🗑️</span>
+        </div>
+      </div>
+      <!-- Cupon -->
+      <div style="padding: 16px; display: flex; gap: 8px;">
+        <input placeholder="Código de cupón" style="flex:1; padding: 10px 14px; border: 1.5px solid var(--light); border-radius: 10px; font-size: 13px; outline:none;">
+        <button class="btn-sm" style="background: var(--primary); color: white;">Aplicar</button>
+      </div>
+      <!-- Summary -->
+      <div style="margin: 0 16px 16px; background: #f8f8fc; border-radius: 12px; padding: 16px;">
+        <div style="font-weight: 700; margin-bottom: 12px;">Resumen del pedido</div>
+        <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:8px;"><span style="color:var(--gray);">Subtotal</span><span>$311.600</span></div>
+        <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:8px;"><span style="color:var(--gray);">Envío</span><span style="color:var(--success);">Gratis</span></div>
+        <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:8px;"><span style="color:var(--gray);">Descuento</span><span style="color:var(--accent);">-$0</span></div>
+        <hr style="border:none; border-top:1px solid var(--light); margin: 10px 0;">
+        <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:800;"><span>Total</span><span style="color:var(--accent);">$311.600</span></div>
+      </div>
+      <div style="padding: 0 16px 20px;">
+        <button class="btn-primary" onclick="showScreen('checkout')">Proceder al pago →</button>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item" onclick="showScreen('home')"><span class="icon">🏠</span>Inicio</div>
+      <div class="nav-item"><span class="icon">🔍</span>Buscar</div>
+      <div class="nav-item active"><span class="icon">🛒</span>Carrito</div>
+      <div class="nav-item"><span class="icon">❤️</span>Favoritos</div>
+      <div class="nav-item"><span class="icon">👤</span>Perfil</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 6: CHECKOUT -->
+<!-- ============================================================ -->
+<div class="screen" id="screen-checkout">
+  <div class="screen-label">Pantalla 6 – Proceso de Pago (Checkout)</div>
+  <div class="device-frame">
+    <div class="device-notch"></div>
+    <div class="scrollable">
+      <div class="app-header">
+        <span style="font-size: 20px; cursor:pointer;" onclick="showScreen('cart')">←</span>
+        <span style="font-weight: 600;">Finalizar compra</span>
+        <span></span>
+      </div>
+      <!-- Steps -->
+      <div class="steps">
+        <div class="step done"><div class="step-circle">✓</div><div class="step-label">Carrito</div></div>
+        <div class="step-line done"></div>
+        <div class="step active"><div class="step-circle">2</div><div class="step-label">Pago</div></div>
+        <div class="step-line"></div>
+        <div class="step pending"><div class="step-circle">3</div><div class="step-label">Confirm.</div></div>
+      </div>
+      <div style="padding: 0 16px 20px;">
+        <div style="font-weight: 700; font-size: 15px; margin-bottom: 12px;">📍 Dirección de entrega</div>
+        <div style="background: white; border-radius: 10px; padding: 14px; border: 1.5px solid var(--light); margin-bottom: 8px;">
+          <div style="font-size: 14px; font-weight: 600;">Juan Pérez García</div>
+          <div style="font-size: 13px; color: var(--gray); margin-top: 4px;">Calle 10 # 5-20, San Alberto, Cesar</div>
+          <div style="font-size: 13px; color: var(--gray);">Tel: +57 300 123 4567</div>
+        </div>
+        <button class="btn-sm" style="background:var(--light); color:var(--gray); margin-bottom:16px;">+ Agregar nueva dirección</button>
+
+        <div style="font-weight: 700; font-size: 15px; margin-bottom: 12px;">💳 Método de pago</div>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom: 16px;">
+          <div style="background:white; border:2px solid var(--accent); border-radius:10px; padding:14px; display:flex; align-items:center; gap:10px;">
+            <span style="font-size:24px;">💳</span>
+            <div style="flex:1;"><div style="font-size:14px; font-weight:600;">Tarjeta crédito/débito</div><div style="font-size:12px;color:var(--gray);">Visa, Mastercard, Amex</div></div>
+            <span style="color:var(--accent); font-size:16px;">●</span>
+          </div>
+          <div style="background:white; border:1.5px solid var(--light); border-radius:10px; padding:14px; display:flex; align-items:center; gap:10px;">
+            <span style="font-size:24px;">📱</span>
+            <div><div style="font-size:14px; font-weight:600;">PSE / Transferencia</div><div style="font-size:12px;color:var(--gray);">Débito bancario en línea</div></div>
+          </div>
+          <div style="background:white; border:1.5px solid var(--light); border-radius:10px; padding:14px; display:flex; align-items:center; gap:10px;">
+            <span style="font-size:24px;">💰</span>
+            <div><div style="font-size:14px; font-weight:600;">Contraentrega</div><div style="font-size:12px;color:var(--gray);">Paga al recibir tu pedido</div></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Número de tarjeta</label>
+          <input placeholder="4242 4242 4242 4242">
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>Vencimiento</label>
+            <input placeholder="MM/AA">
+          </div>
+          <div class="form-group">
+            <label>CVV</label>
+            <input placeholder="•••">
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <div style="background: #f8f8fc; border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+          <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:6px;"><span style="color:var(--gray);">3 productos</span><span>$311.600</span></div>
+          <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:6px;"><span style="color:var(--gray);">Envío</span><span style="color:var(--success);">Gratis</span></div>
+          <hr style="border:none; border-top:1px solid var(--light); margin:8px 0;">
+          <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:800;"><span>Total</span><span style="color:var(--accent);">$311.600</span></div>
+        </div>
+        <button class="btn-primary" onclick="showScreen('confirm')">🔒 Pagar $311.600</button>
+        <p style="text-align:center; font-size:11px; color:var(--gray); margin-top:10px;">🔐 Pago seguro con cifrado SSL</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 7: CONFIRMACIÓN -->
+<!-- ============================================================ -->
+<div class="screen" id="screen-confirm">
+  <div class="screen-label">Pantalla 7 – Confirmación de Pedido</div>
+  <div class="device-frame">
+    <div class="device-notch"></div>
+    <div class="scrollable">
+      <div class="steps" style="padding-top: 16px;">
+        <div class="step done"><div class="step-circle">✓</div><div class="step-label">Carrito</div></div>
+        <div class="step-line done"></div>
+        <div class="step done"><div class="step-circle">✓</div><div class="step-label">Pago</div></div>
+        <div class="step-line done"></div>
+        <div class="step active"><div class="step-circle">✓</div><div class="step-label">Confirm.</div></div>
+      </div>
+      <div class="success-icon">🎉</div>
+      <div class="success-title">¡Pedido confirmado!</div>
+      <div class="success-sub">Tu pedido fue procesado exitosamente. Recibirás una notificación con el seguimiento de tu envío.</div>
+      <div class="order-detail">
+        <div style="font-weight:700; margin-bottom:10px;">Detalle del pedido</div>
+        <div class="row"><span style="color:var(--gray);">N° Pedido</span><span style="font-weight:600;">#LUM-20250415</span></div>
+        <div class="row"><span style="color:var(--gray);">Fecha</span><span>15 Abr 2025</span></div>
+        <div class="row"><span style="color:var(--gray);">Método de pago</span><span>Tarjeta Visa ···4242</span></div>
+        <div class="row"><span style="color:var(--gray);">Envío a</span><span>Calle 10 #5-20</span></div>
+        <div class="row"><span style="color:var(--gray);">Entrega estimada</span><span>18-20 Abr 2025</span></div>
+        <div class="row"><span>Total pagado</span><span style="color:var(--accent);">$311.600</span></div>
+      </div>
+      <div style="padding: 20px 16px; display:flex; flex-direction:column; gap:10px;">
+        <button class="btn-primary" onclick="showScreen('home')">🏠 Volver al inicio</button>
+        <button class="btn-secondary">📦 Ver estado del pedido</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 8: ADMIN DASHBOARD -->
+<!-- ============================================================ -->
+<div class="screen" id="screen-admin-dash">
+  <div class="screen-label">Pantalla 8 – Panel de Administración (Dashboard)</div>
+  <div class="desktop-frame">
+    <div class="desktop-bar">
+      <span></span><span></span><span></span>
+      <div class="desktop-url"></div>
+    </div>
+    <div class="admin-layout">
+      <div class="admin-sidebar">
+        <div class="logo">LUMURA</div>
+        <div class="menu-item active" onclick="showScreen('admin-dash')"><span class="icon">📊</span>Dashboard</div>
+        <div class="menu-item" onclick="showScreen('admin-cat')"><span class="icon">👗</span>Catálogo</div>
+        <div class="menu-item" onclick="showScreen('admin-inv')"><span class="icon">📦</span>Inventario</div>
+        <div class="menu-item" onclick="showScreen('admin-rep')"><span class="icon">📈</span>Reportes</div>
+        <div class="menu-item"><span class="icon">👥</span>Usuarios</div>
+        <div class="menu-item"><span class="icon">🛒</span>Pedidos</div>
+        <div class="menu-item"><span class="icon">⚙️</span>Configuración</div>
+        <div style="position:absolute; bottom:20px; left:0; right:0; padding: 0 20px;">
+          <div class="menu-item" onclick="showScreen('login')"><span class="icon">🔓</span>Cerrar sesión</div>
+        </div>
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column;">
+        <div class="admin-header">
+          <div>
+            <div style="font-size:18px; font-weight:800;">Dashboard</div>
+            <div style="font-size:12px; color:var(--gray);">Bienvenido, Administrador · 15 Abr 2025</div>
+          </div>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <span style="font-size:18px; cursor:pointer;">🔔</span>
+            <div style="width:36px; height:36px; background:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700;">A</div>
+          </div>
+        </div>
+        <div class="admin-main">
+          <div class="kpi-grid">
+            <div class="kpi-card"><div class="label">Ventas hoy</div><div class="value">$1.2M<span class="icon-big">💰</span></div><div class="change">↑ +12% vs ayer</div></div>
+            <div class="kpi-card"><div class="label">Pedidos</div><div class="value">48<span class="icon-big">🛒</span></div><div class="change">↑ +8 nuevos</div></div>
+            <div class="kpi-card"><div class="label">Clientes</div><div class="value">1.4K<span class="icon-big">👥</span></div><div class="change">↑ +23 hoy</div></div>
+            <div class="kpi-card"><div class="label">Productos</div><div class="value">312<span class="icon-big">👗</span></div><div class="change" style="color:var(--warning);">⚠ 5 sin stock</div></div>
+          </div>
+          <div style="display:grid; grid-template-columns:1.5fr 1fr; gap:16px;">
+            <div class="card" style="padding:16px;">
+              <div style="font-weight:700; margin-bottom:14px;">Ventas mensuales (COP)</div>
+              <div class="chart-bar-wrap">
+                <div class="chart-bar-col"><div class="chart-bar" style="height:55px;"></div><div class="chart-bar-label">Ene</div></div>
+                <div class="chart-bar-col"><div class="chart-bar" style="height:70px;"></div><div class="chart-bar-label">Feb</div></div>
+                <div class="chart-bar-col"><div class="chart-bar" style="height:60px;"></div><div class="chart-bar-label">Mar</div></div>
+                <div class="chart-bar-col"><div class="chart-bar" style="height:90px;"></div><div class="chart-bar-label">Abr</div></div>
+                <div class="chart-bar-col"><div class="chart-bar" style="height:75px;"></div><div class="chart-bar-label">May</div></div>
+                <div class="chart-bar-col"><div class="chart-bar" style="height:100px;"></div><div class="chart-bar-label">Jun</div></div>
+              </div>
+            </div>
+            <div class="card" style="padding:16px;">
+              <div style="font-weight:700; margin-bottom:14px;">Pedidos recientes</div>
+              <div style="display:flex; flex-direction:column; gap:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px;"><span>#LUM-0048</span><span class="badge badge-green">Enviado</span></div>
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px;"><span>#LUM-0047</span><span class="badge badge-blue">En proceso</span></div>
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px;"><span>#LUM-0046</span><span class="badge badge-red">Pendiente</span></div>
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px;"><span>#LUM-0045</span><span class="badge badge-green">Entregado</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 9: ADMIN - GESTIÓN CATÁLOGO -->
+<!-- ============================================================ -->
+<div class="screen" id="screen-admin-cat">
+  <div class="screen-label">Pantalla 9 – Gestión de Catálogo (Administrador)</div>
+  <div class="desktop-frame">
+    <div class="desktop-bar"><span></span><span></span><span></span><div class="desktop-url"></div></div>
+    <div class="admin-layout">
+      <div class="admin-sidebar">
+        <div class="logo">LUMURA</div>
+        <div class="menu-item" onclick="showScreen('admin-dash')"><span class="icon">📊</span>Dashboard</div>
+        <div class="menu-item active" onclick="showScreen('admin-cat')"><span class="icon">👗</span>Catálogo</div>
+        <div class="menu-item" onclick="showScreen('admin-inv')"><span class="icon">📦</span>Inventario</div>
+        <div class="menu-item" onclick="showScreen('admin-rep')"><span class="icon">📈</span>Reportes</div>
+        <div class="menu-item"><span class="icon">👥</span>Usuarios</div>
+        <div class="menu-item"><span class="icon">🛒</span>Pedidos</div>
+        <div class="menu-item"><span class="icon">⚙️</span>Configuración</div>
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column;">
+        <div class="admin-header">
+          <div><div style="font-size:18px; font-weight:800;">Gestión de Catálogo</div><div style="font-size:12px; color:var(--gray);">Administra los productos de la tienda</div></div>
+          <button class="btn-sm" style="background:var(--accent); color:white; padding:10px 20px;">+ Nueva prenda</button>
+        </div>
+        <div class="admin-main">
+          <div style="display:flex; gap:12px; margin-bottom:16px; align-items:center;">
+            <div class="search-bar" style="margin:0; flex:1;">
+              <span>🔍</span>
+              <input placeholder="Buscar prenda..." style="border:none; background:transparent; flex:1; outline:none; font-size:14px;">
+            </div>
+            <select style="padding:10px 14px; border:1.5px solid var(--light); border-radius:10px; font-size:14px; outline:none; background:white;">
+              <option>Todas las categorías</option>
+              <option>Camisetas</option>
+              <option>Pantalones</option>
+            </select>
+          </div>
+          <div class="card" style="padding:0;">
+            <table class="data-table">
+              <thead><tr>
+                <th>ID</th><th>Producto</th><th>Categoría</th><th>Precio</th><th>Tallas</th><th>Estado</th><th>Acciones</th>
+              </tr></thead>
+              <tbody>
+                <tr>
+                  <td>#001</td>
+                  <td><div style="display:flex; align-items:center; gap:10px;"><span style="font-size:24px;">👕</span><div><div style="font-weight:600;">Camiseta Básica Premium</div><div style="font-size:12px;color:var(--gray);">LUMURA Collection</div></div></div></td>
+                  <td>Camisetas</td><td style="font-weight:700; color:var(--accent);">$45.900</td><td>XS, S, M, L, XL</td>
+                  <td><span class="badge badge-green">Activo</span></td>
+                  <td><button class="btn-sm" style="background:#e3f2fd; color:#1565c0; margin-right:4px;">✏️ Editar</button><button class="btn-sm" style="background:#fce4ec; color:var(--accent);">🗑️</button></td>
+                </tr>
+                <tr>
+                  <td>#002</td>
+                  <td><div style="display:flex; align-items:center; gap:10px;"><span style="font-size:24px;">👖</span><div><div style="font-weight:600;">Jeans Slim Fit</div><div style="font-size:12px;color:var(--gray);">LUMURA Denim</div></div></div></td>
+                  <td>Pantalones</td><td style="font-weight:700; color:var(--accent);">$89.900</td><td>28, 30, 32, 34, 36</td>
+                  <td><span class="badge badge-green">Activo</span></td>
+                  <td><button class="btn-sm" style="background:#e3f2fd; color:#1565c0; margin-right:4px;">✏️ Editar</button><button class="btn-sm" style="background:#fce4ec; color:var(--accent);">🗑️</button></td>
+                </tr>
+                <tr>
+                  <td>#003</td>
+                  <td><div style="display:flex; align-items:center; gap:10px;"><span style="font-size:24px;">🧥</span><div><div style="font-weight:600;">Chaqueta Deportiva</div><div style="font-size:12px;color:var(--gray);">LUMURA Sport</div></div></div></td>
+                  <td>Chaquetas</td><td style="font-weight:700; color:var(--accent);">$129.900</td><td>S, M, L, XL</td>
+                  <td><span class="badge badge-red">Sin stock</span></td>
+                  <td><button class="btn-sm" style="background:#e3f2fd; color:#1565c0; margin-right:4px;">✏️ Editar</button><button class="btn-sm" style="background:#fce4ec; color:var(--accent);">🗑️</button></td>
+                </tr>
+                <tr>
+                  <td>#004</td>
+                  <td><div style="display:flex; align-items:center; gap:10px;"><span style="font-size:24px;">👗</span><div><div style="font-weight:600;">Vestido Casual</div><div style="font-size:12px;color:var(--gray);">LUMURA Elegance</div></div></div></td>
+                  <td>Vestidos</td><td style="font-weight:700; color:var(--accent);">$74.900</td><td>XS, S, M, L</td>
+                  <td><span class="badge badge-green">Activo</span></td>
+                  <td><button class="btn-sm" style="background:#e3f2fd; color:#1565c0; margin-right:4px;">✏️ Editar</button><button class="btn-sm" style="background:#fce4ec; color:var(--accent);">🗑️</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 10: ADMIN - INVENTARIO -->
+<!-- ============================================================ -->
+<div class="screen" id="screen-admin-inv">
+  <div class="screen-label">Pantalla 10 – Gestión de Inventario</div>
+  <div class="desktop-frame">
+    <div class="desktop-bar"><span></span><span></span><span></span><div class="desktop-url"></div></div>
+    <div class="admin-layout">
+      <div class="admin-sidebar">
+        <div class="logo">LUMURA</div>
+        <div class="menu-item" onclick="showScreen('admin-dash')"><span class="icon">📊</span>Dashboard</div>
+        <div class="menu-item" onclick="showScreen('admin-cat')"><span class="icon">👗</span>Catálogo</div>
+        <div class="menu-item active" onclick="showScreen('admin-inv')"><span class="icon">📦</span>Inventario</div>
+        <div class="menu-item" onclick="showScreen('admin-rep')"><span class="icon">📈</span>Reportes</div>
+        <div class="menu-item"><span class="icon">👥</span>Usuarios</div>
+        <div class="menu-item"><span class="icon">🛒</span>Pedidos</div>
+        <div class="menu-item"><span class="icon">⚙️</span>Configuración</div>
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column;">
+        <div class="admin-header">
+          <div><div style="font-size:18px; font-weight:800;">Control de Inventario</div><div style="font-size:12px; color:var(--gray);">Stock actualizado al 15 Abr 2025</div></div>
+          <button class="btn-sm" style="background:var(--accent); color:white; padding:10px 20px;">📥 Registrar entrada</button>
+        </div>
+        <div class="admin-main">
+          <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:16px; margin-bottom:20px;">
+            <div class="kpi-card"><div class="label">Total unidades</div><div class="value">2.847</div><div class="change">↑ +124 esta semana</div></div>
+            <div class="kpi-card"><div class="label">Productos agotados</div><div class="value" style="color:var(--accent);">5</div><div class="change" style="color:var(--accent);">⚠ Requiere atención</div></div>
+            <div class="kpi-card"><div class="label">Stock bajo (&lt;10)</div><div class="value" style="color:var(--warning);">12</div><div class="change" style="color:var(--warning);">⚡ Revisar pronto</div></div>
+          </div>
+          <div class="notif">⚠️ <strong>Alerta:</strong> 5 productos sin stock. Se recomienda realizar un nuevo pedido de reabastecimiento.</div>
+          <div class="card" style="padding:0; margin-top:12px;">
+            <table class="data-table">
+              <thead><tr>
+                <th>Producto</th><th>Categoría</th><th>Talla</th><th>Color</th><th>Stock</th><th>Estado</th><th>Acción</th>
+              </tr></thead>
+              <tbody>
+                <tr>
+                  <td>👕 Camiseta Básica Premium</td><td>Camisetas</td><td>M</td><td>🔴 Rojo</td>
+                  <td><span style="font-weight:700;">45</span> uds.</td>
+                  <td><span class="status-dot green"></span>Normal</td>
+                  <td><button class="btn-sm" style="background:var(--light);">Ajustar</button></td>
+                </tr>
+                <tr>
+                  <td>👖 Jeans Slim Fit</td><td>Pantalones</td><td>32</td><td>🔵 Azul</td>
+                  <td><span style="font-weight:700; color:var(--warning);">8</span> uds.</td>
+                  <td><span class="status-dot yellow"></span>Bajo</td>
+                  <td><button class="btn-sm" style="background:#fff9e6; color:#856404;">Reabastecer</button></td>
+                </tr>
+                <tr>
+                  <td>🧥 Chaqueta Deportiva</td><td>Chaquetas</td><td>L</td><td>⚫ Negro</td>
+                  <td><span style="font-weight:700; color:var(--accent);">0</span> uds.</td>
+                  <td><span class="status-dot red"></span>Agotado</td>
+                  <td><button class="btn-sm" style="background:#fce4ec; color:var(--accent);">Urgente</button></td>
+                </tr>
+                <tr>
+                  <td>👗 Vestido Casual</td><td>Vestidos</td><td>S</td><td>🟡 Amarillo</td>
+                  <td><span style="font-weight:700;">30</span> uds.</td>
+                  <td><span class="status-dot green"></span>Normal</td>
+                  <td><button class="btn-sm" style="background:var(--light);">Ajustar</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 11: ADMIN - REPORTES -->
+<!-- ============================================================ -->
+<div class="screen" id="screen-admin-rep">
+  <div class="screen-label">Pantalla 11 – Reportes de Ventas</div>
+  <div class="desktop-frame">
+    <div class="desktop-bar"><span></span><span></span><span></span><div class="desktop-url"></div></div>
+    <div class="admin-layout">
+      <div class="admin-sidebar">
+        <div class="logo">LUMURA</div>
+        <div class="menu-item" onclick="showScreen('admin-dash')"><span class="icon">📊</span>Dashboard</div>
+        <div class="menu-item" onclick="showScreen('admin-cat')"><span class="icon">👗</span>Catálogo</div>
+        <div class="menu-item" onclick="showScreen('admin-inv')"><span class="icon">📦</span>Inventario</div>
+        <div class="menu-item active" onclick="showScreen('admin-rep')"><span class="icon">📈</span>Reportes</div>
+        <div class="menu-item"><span class="icon">👥</span>Usuarios</div>
+        <div class="menu-item"><span class="icon">🛒</span>Pedidos</div>
+        <div class="menu-item"><span class="icon">⚙️</span>Configuración</div>
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column;">
+        <div class="admin-header">
+          <div><div style="font-size:18px; font-weight:800;">Reportes de Ventas</div><div style="font-size:12px; color:var(--gray);">Análisis de desempeño comercial</div></div>
+          <div style="display:flex; gap:8px;">
+            <select style="padding:8px 12px; border:1.5px solid var(--light); border-radius:8px; font-size:13px; outline:none;">
+              <option>Abril 2025</option><option>Marzo 2025</option>
+            </select>
+            <button class="btn-sm" style="background:var(--accent); color:white;">📄 Exportar PDF</button>
+          </div>
+        </div>
+        <div class="admin-main">
+          <div style="display:grid; grid-template-columns: repeat(4,1fr); gap:12px; margin-bottom:20px;">
+            <div class="kpi-card"><div class="label">Ingresos totales</div><div class="value" style="font-size:18px;">$14.2M</div><div class="change">↑ +18% vs mes ant.</div></div>
+            <div class="kpi-card"><div class="label">Pedidos completados</div><div class="value" style="font-size:18px;">234</div><div class="change">↑ +32 pedidos</div></div>
+            <div class="kpi-card"><div class="label">Ticket promedio</div><div class="value" style="font-size:18px;">$60.7K</div><div class="change">↑ +5.2%</div></div>
+            <div class="kpi-card"><div class="label">Tasa conversión</div><div class="value" style="font-size:18px;">3.8%</div><div class="change">↑ +0.4%</div></div>
+          </div>
+          <div style="display:grid; grid-template-columns:1.5fr 1fr; gap:16px; margin-bottom:16px;">
+            <div class="card" style="padding:16px;">
+              <div style="font-weight:700; margin-bottom:16px;">Ventas por semana – Abril 2025</div>
+              <div class="chart-bar-wrap">
+                <div class="chart-bar-col"><div class="chart-bar" style="height:65px;"></div><div class="chart-bar-label">Sem 1</div></div>
+                <div class="chart-bar-col"><div class="chart-bar" style="height:85px;"></div><div class="chart-bar-label">Sem 2</div></div>
+                <div class="chart-bar-col"><div class="chart-bar" style="height:100px;"></div><div class="chart-bar-label">Sem 3</div></div>
+                <div class="chart-bar-col"><div class="chart-bar" style="height:80px;"></div><div class="chart-bar-label">Sem 4</div></div>
+              </div>
+              <div style="display:flex; gap:16px; margin-top:8px; font-size:12px; color:var(--gray);">
+                <span>📈 Pico: Sem 3 – $4.1M</span>
+                <span>📉 Mínimo: Sem 1 – $2.8M</span>
+              </div>
+            </div>
+            <div class="card" style="padding:16px;">
+              <div style="font-weight:700; margin-bottom:14px;">Top productos vendidos</div>
+              <div style="display:flex; flex-direction:column; gap:10px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span>🥇</span>
+                  <div style="flex:1;"><div style="font-size:13px; font-weight:600;">Jeans Slim Fit</div>
+                  <div style="height:6px; background:var(--light); border-radius:3px; margin-top:4px;"><div style="width:85%; height:100%; background:var(--accent); border-radius:3px;"></div></div></div>
+                  <span style="font-size:12px; font-weight:700; color:var(--accent);">85u</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span>🥈</span>
+                  <div style="flex:1;"><div style="font-size:13px; font-weight:600;">Camiseta Premium</div>
+                  <div style="height:6px; background:var(--light); border-radius:3px; margin-top:4px;"><div style="width:68%; height:100%; background:var(--accent2); border-radius:3px;"></div></div></div>
+                  <span style="font-size:12px; font-weight:700; color:var(--accent2);">68u</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span>🥉</span>
+                  <div style="flex:1;"><div style="font-size:13px; font-weight:600;">Vestido Casual</div>
+                  <div style="height:6px; background:var(--light); border-radius:3px; margin-top:4px;"><div style="width:50%; height:100%; background:#28a745; border-radius:3px;"></div></div></div>
+                  <span style="font-size:12px; font-weight:700; color:#28a745;">50u</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card" style="padding:16px;">
+            <div style="font-weight:700; margin-bottom:12px;">Últimas transacciones</div>
+            <table class="data-table">
+              <thead><tr><th>Pedido</th><th>Cliente</th><th>Productos</th><th>Total</th><th>Fecha</th><th>Estado</th></tr></thead>
+              <tbody>
+                <tr><td>#LUM-0234</td><td>María López</td><td>Jeans + Camiseta</td><td style="font-weight:700;">$135.800</td><td>15 Abr</td><td><span class="badge badge-green">Completado</span></td></tr>
+                <tr><td>#LUM-0233</td><td>Carlos Ruiz</td><td>Chaqueta</td><td style="font-weight:700;">$129.900</td><td>15 Abr</td><td><span class="badge badge-blue">En camino</span></td></tr>
+                <tr><td>#LUM-0232</td><td>Ana Torres</td><td>Vestido x2</td><td style="font-weight:700;">$149.800</td><td>14 Abr</td><td><span class="badge badge-green">Completado</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.proto-nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.getElementById('btn-' + name).classList.add('active');
+  window.scrollTo(0, 0);
+}
+</script>
+</body>
+</html>
