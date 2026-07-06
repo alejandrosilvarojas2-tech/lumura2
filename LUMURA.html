@@ -12,18 +12,18 @@
 
 <!-- PROTOTYPE NAVIGATION BAR -->
 <div class="proto-nav">
-  <span>🏷️ LUMURA — Prototipo</span>
-  <button onclick="showScreen('login')" id="btn-login" class="active">🔐 Login</button>
-  <button onclick="showScreen('register')" id="btn-register">📝 Registro</button>
-  <button onclick="showScreen('home')" id="btn-home">🏠 Catálogo</button>
-  <button onclick="showScreen('product')" id="btn-product">👕 Producto</button>
-  <button onclick="showScreen('cart')" id="btn-cart">🛒 Carrito</button>
-  <button onclick="showScreen('checkout')" id="btn-checkout">💳 Pago</button>
-  <button onclick="showScreen('confirm')" id="btn-confirm">✅ Confirmación</button>
-  <button onclick="showScreen('admin-dash')" id="btn-admin-dash" class="admin-only">📊 Dashboard</button>
-  <button onclick="showScreen('admin-cat')" id="btn-admin-cat" class="admin-only">👗 Catálogo Admin</button>
-  <button onclick="showScreen('admin-inv')" id="btn-admin-inv" class="admin-only">📦 Inventario</button>
-  <button onclick="showScreen('admin-rep')" id="btn-admin-rep" class="admin-only">📈 Reportes</button>
+  <span><img src="images/tag.svg" class="icon" alt="" style="vertical-align:middle"> LUMURA — Prototipo</span>
+  <button onclick="showScreen('login')" id="btn-login" class="active"><img src="images/login.svg" class="icon" alt="" style="vertical-align:middle"> Login</button>
+  <button onclick="showScreen('register')" id="btn-register"><img src="images/memo.svg" class="icon" alt="" style="vertical-align:middle"> Registro</button>
+  <button onclick="showScreen('home')" id="btn-home"><img src="images/home.svg" class="icon" alt="" style="vertical-align:middle"> Catálogo</button>
+  <button onclick="showScreen('product')" id="btn-product"><img src="images/tshirt.svg" class="icon" alt="" style="vertical-align:middle"> Producto</button>
+  <button onclick="showScreen('cart')" id="btn-cart"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"> Carrito</button>
+  <button onclick="showScreen('checkout')" id="btn-checkout"><img src="images/credit-card.svg" class="icon" alt="" style="vertical-align:middle"> Pago</button>
+  <button onclick="showScreen('confirm')" id="btn-confirm"><img src="images/check.svg" class="icon" alt="" style="vertical-align:middle"> Confirmación</button>
+  <button onclick="showScreen('admin-dash')" id="btn-admin-dash" class="admin-only"><img src="images/dashboard.svg" class="icon" alt="" style="vertical-align:middle"> Dashboard</button>
+  <button onclick="showScreen('admin-cat')" id="btn-admin-cat" class="admin-only"><img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle"> Catálogo Admin</button>
+  <button onclick="showScreen('admin-inv')" id="btn-admin-inv" class="admin-only"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"> Inventario</button>
+  <button onclick="showScreen('admin-rep')" id="btn-admin-rep" class="admin-only"><img src="images/chart-up.svg" class="icon" alt="" style="vertical-align:middle"> Reportes</button>
 </div>
 
 <!-- ============================================================ -->
@@ -37,7 +37,7 @@
       <div style="background: linear-gradient(160deg, var(--primary) 0%, #0f3460 60%, var(--accent) 100%); padding: 40px 24px 30px; text-align: center;">
         <div style="font-size: 42px; font-weight: 900; color: var(--accent); letter-spacing: 6px;">LUMURA</div>
         <div style="color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 4px;">Tu moda, a un clic</div>
-        <div style="font-size: 60px; margin-top: 20px;">👗</div>
+        <div style="font-size: 60px; margin-top: 20px;"><img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle"></div>
       </div>
       <div style="padding: 28px 24px;">
         <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 6px;">Bienvenido</h2>
@@ -64,7 +64,7 @@
           <span style="font-size: 12px; color: var(--gray);">o continúa con</span>
           <div style="flex:1; height:1px; background:var(--light);"></div>
         </div>
-        <button class="btn-secondary" onclick="proximamente('Inicio con Google')">🔵 Continuar con Google</button>
+        <button class="btn-secondary" onclick="proximamente('Inicio con Google')"><img src="images/circle.svg" class="icon" alt="" style="vertical-align:middle"> Continuar con Google</button>
       </div>
     </div>
   </div>
@@ -131,11 +131,11 @@
     <div class="scrollable">
       <div class="app-header">
         <div class="logo">LUMURA</div>
-        <div class="icons">🔔 <span style="cursor:pointer;" onclick="showScreen('cart')">🛒 <span id="cart-count" style="font-size:10px;background:var(--accent);color:white;border-radius:50%;padding:0 5px;">0</span></span></div>
+        <div class="icons"><img src="images/bell.svg" class="icon" alt="" style="vertical-align:middle"> <span style="cursor:pointer;" onclick="showScreen('cart')"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"> <span id="cart-count" style="font-size:10px;background:var(--accent);color:white;border-radius:50%;padding:0 5px;">0</span></span></div>
       </div>
       <!-- Banner -->
       <div class="hero-banner">
-        <div class="discount">⚡ OFERTA ESPECIAL</div>
+        <div class="discount"><img src="images/lightning.svg" class="icon" alt="" style="vertical-align:middle"> OFERTA ESPECIAL</div>
         <h2>Hasta 40% OFF<br>en Temporada</h2>
         <p>Descubre las últimas tendencias de moda</p>
         <button class="btn-sm" style="background:var(--accent); color:white;" onclick="showScreen('home')">Ver colección →</button>
@@ -152,7 +152,7 @@
       </div>
       <!-- Search bar -->
       <div style="padding:0 16px;margin-bottom:12px;">
-        <input id="search-input" type="text" placeholder="🔍 Buscar prendas..." oninput="filtrarBusqueda()" style="width:100%;padding:10px 14px;border:1.5px solid var(--light);border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
+        <input id="search-input" type="text" placeholder="<img src="images/search.svg" class="icon" alt="" style="vertical-align:middle"> Buscar prendas..." oninput="filtrarBusqueda()" style="width:100%;padding:10px 14px;border:1.5px solid var(--light);border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
       </div>
       <!-- Products -->
       <div class="section-label">Productos</div>
@@ -160,12 +160,12 @@
       <div style="height: 70px;"></div>
     </div>
     <div class="bottom-nav">
-      <div class="nav-item active" onclick="showScreen('home')"><span class="icon">🏠</span>Inicio</div>
-      <div class="nav-item" onclick="mostrarBusqueda()"><span class="icon">🔍</span>Buscar</div>
-      <div class="nav-item active" onclick="showScreen('home')"><span class="icon">🏠</span>Inicio</div>
-      <div class="nav-item" onclick="showScreen('cart')"><span class="icon">🛒</span>Carrito</div>
-      <div class="nav-item" onclick="mostrarFavoritos()"><span class="icon">❤️</span>Favoritos</div>
-      <div class="nav-item logout-btn" style="cursor:pointer;"><span class="icon">👤</span>Perfil</div>
+      <div class="nav-item active" onclick="showScreen('home')"><span class="icon"><img src="images/home.svg" class="icon" alt="" style="vertical-align:middle"></span>Inicio</div>
+      <div class="nav-item" onclick="mostrarBusqueda()"><span class="icon"><img src="images/search.svg" class="icon" alt="" style="vertical-align:middle"></span>Buscar</div>
+      <div class="nav-item active" onclick="showScreen('home')"><span class="icon"><img src="images/home.svg" class="icon" alt="" style="vertical-align:middle"></span>Inicio</div>
+      <div class="nav-item" onclick="showScreen('cart')"><span class="icon"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></span>Carrito</div>
+      <div class="nav-item" onclick="mostrarFavoritos()"><span class="icon"><img src="images/heart.svg" class="icon" alt="" style="vertical-align:middle"></span>Favoritos</div>
+      <div class="nav-item logout-btn" style="cursor:pointer;"><span class="icon"><img src="images/user.svg" class="icon" alt="" style="vertical-align:middle"></span>Perfil</div>
     </div>
   </div>
 </div>
@@ -181,12 +181,12 @@
       <div class="app-header">
         <span style="font-size: 20px; cursor:pointer;" onclick="showScreen('home')">←</span>
         <span style="font-weight: 600;">Detalle del producto</span>
-        <span style="font-size: 18px; cursor:pointer;" id="prod-detail-fav" onclick="toggleFavorito()">🤍</span>
+        <span style="font-size: 18px; cursor:pointer;" id="prod-detail-fav" onclick="toggleFavorito()"><img src="images/heart-outline.svg" class="icon" alt="" style="vertical-align:middle"></span>
       </div>
       <!-- Image -->
       <div style="background: linear-gradient(135deg, #fce4ec, #f8bbd9); height: 260px; display: flex; align-items: center; justify-content: center; font-size: 90px; position:relative;">
-        <span id="prod-detail-img">👕</span>
-        <span class="badge badge-red" style="position:absolute; top:12px; left:12px;">🔥 Nuevo</span>
+        <span id="prod-detail-img"><img src="images/tshirt.svg" class="icon" alt="" style="vertical-align:middle"></span>
+        <span class="badge badge-red" style="position:absolute; top:12px; left:12px;"><img src="images/fire.svg" class="icon" alt="" style="vertical-align:middle"> Nuevo</span>
       </div>
       <div style="padding: 16px 16px 0;">
         <div style="display:flex; justify-content: space-between; align-items: flex-start;">
@@ -203,16 +203,16 @@
         </div>
       </div>
       <div style="padding: 0 16px 16px; display: flex; gap: 10px;">
-        <button class="btn-secondary" style="width: auto; padding: 14px 18px;" onclick="toggleFavorito()">❤️</button>
-        <button id="prod-detail-btn" class="btn-primary">Agregar al carrito 🛒</button>
+        <button class="btn-secondary" style="width: auto; padding: 14px 18px;" onclick="toggleFavorito()"><img src="images/heart.svg" class="icon" alt="" style="vertical-align:middle"></button>
+        <button id="prod-detail-btn" class="btn-primary">Agregar al carrito <img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></button>
       </div>
     </div>
     <div class="bottom-nav">
-      <div class="nav-item" onclick="showScreen('home')"><span class="icon">🏠</span>Inicio</div>
-      <div class="nav-item" onclick="mostrarBusqueda()"><span class="icon">🔍</span>Buscar</div>
-      <div class="nav-item" onclick="showScreen('cart')"><span class="icon">🛒</span>Carrito</div>
-      <div class="nav-item" onclick="mostrarFavoritos()"><span class="icon">❤️</span>Favoritos</div>
-      <div class="nav-item logout-btn" style="cursor:pointer;"><span class="icon">👤</span>Perfil</div>
+      <div class="nav-item" onclick="showScreen('home')"><span class="icon"><img src="images/home.svg" class="icon" alt="" style="vertical-align:middle"></span>Inicio</div>
+      <div class="nav-item" onclick="mostrarBusqueda()"><span class="icon"><img src="images/search.svg" class="icon" alt="" style="vertical-align:middle"></span>Buscar</div>
+      <div class="nav-item" onclick="showScreen('cart')"><span class="icon"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></span>Carrito</div>
+      <div class="nav-item" onclick="mostrarFavoritos()"><span class="icon"><img src="images/heart.svg" class="icon" alt="" style="vertical-align:middle"></span>Favoritos</div>
+      <div class="nav-item logout-btn" style="cursor:pointer;"><span class="icon"><img src="images/user.svg" class="icon" alt="" style="vertical-align:middle"></span>Perfil</div>
     </div>
   </div>
 </div>
@@ -245,11 +245,11 @@
       </div>
     </div>
     <div class="bottom-nav">
-      <div class="nav-item" onclick="showScreen('home')"><span class="icon">🏠</span>Inicio</div>
-      <div class="nav-item" onclick="mostrarBusqueda()"><span class="icon">🔍</span>Buscar</div>
-      <div class="nav-item active"><span class="icon">🛒</span>Carrito</div>
-      <div class="nav-item" onclick="mostrarFavoritos()"><span class="icon">❤️</span>Favoritos</div>
-      <div class="nav-item"><span class="icon">👤</span>Perfil</div>
+      <div class="nav-item" onclick="showScreen('home')"><span class="icon"><img src="images/home.svg" class="icon" alt="" style="vertical-align:middle"></span>Inicio</div>
+      <div class="nav-item" onclick="mostrarBusqueda()"><span class="icon"><img src="images/search.svg" class="icon" alt="" style="vertical-align:middle"></span>Buscar</div>
+      <div class="nav-item active"><span class="icon"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></span>Carrito</div>
+      <div class="nav-item" onclick="mostrarFavoritos()"><span class="icon"><img src="images/heart.svg" class="icon" alt="" style="vertical-align:middle"></span>Favoritos</div>
+      <div class="nav-item"><span class="icon"><img src="images/user.svg" class="icon" alt="" style="vertical-align:middle"></span>Perfil</div>
     </div>
   </div>
 </div>
@@ -285,9 +285,9 @@
         <div style="margin-bottom:14px;">
           <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Método de pago</label>
           <select id="checkout-pago" style="width:100%;padding:10px 14px;border:1.5px solid var(--light);border-radius:10px;font-size:14px;outline:none;background:white;">
-            <option value="Tarjeta">💳 Tarjeta de crédito/débito</option>
-            <option value="Efectivo">💵 Pago en efectivo</option>
-            <option value="Transferencia">🏦 Transferencia bancaria</option>
+            <option value="Tarjeta"><img src="images/credit-card.svg" class="icon" alt="" style="vertical-align:middle"> Tarjeta de crédito/débito</option>
+            <option value="Efectivo"><img src="images/cash.svg" class="icon" alt="" style="vertical-align:middle"> Pago en efectivo</option>
+            <option value="Transferencia"><img src="images/bank.svg" class="icon" alt="" style="vertical-align:middle"> Transferencia bancaria</option>
             <option value="PSE">🏧 PSE</option>
           </select>
         </div>
@@ -295,9 +295,9 @@
           <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Dirección de entrega</label>
           <textarea id="checkout-dir" rows="2" style="width:100%;padding:10px 14px;border:1.5px solid var(--light);border-radius:10px;font-size:14px;outline:none;resize:vertical;font-family:inherit;"></textarea>
         </div>
-        <button class="btn-primary auth-only" onclick="handleCheckout()">🔒 Confirmar pedido</button>
-        <button class="btn-primary no-auth" onclick="showScreen('login')">🔒 Inicia sesión para pagar</button>
-        <p style="text-align:center; font-size:11px; color:var(--gray); margin-top:10px;">🔐 Pago seguro con cifrado SSL</p>
+        <button class="btn-primary auth-only" onclick="handleCheckout()"><img src="images/lock.svg" class="icon" alt="" style="vertical-align:middle"> Confirmar pedido</button>
+        <button class="btn-primary no-auth" onclick="showScreen('login')"><img src="images/lock.svg" class="icon" alt="" style="vertical-align:middle"> Inicia sesión para pagar</button>
+        <p style="text-align:center; font-size:11px; color:var(--gray); margin-top:10px;"><img src="images/login.svg" class="icon" alt="" style="vertical-align:middle"> Pago seguro con cifrado SSL</p>
       </div>
     </div>
   </div>
@@ -318,7 +318,7 @@
         <div class="step-line done"></div>
         <div class="step active"><div class="step-circle">✓</div><div class="step-label">Confirm.</div></div>
       </div>
-      <div class="success-icon">🎉</div>
+      <div class="success-icon"><img src="images/party.svg" class="icon" alt="" style="vertical-align:middle"></div>
       <div class="success-title">¡Pedido confirmado!</div>
       <div class="success-sub">Tu pedido fue procesado exitosamente. Recibirás una notificación con el seguimiento de tu envío.</div>
       <div class="order-detail">
@@ -328,8 +328,8 @@
         <div class="row"><span style="color:var(--gray);">Total pagado</span><span id="confirm-total" style="color:var(--accent);">$0</span></div>
       </div>
       <div style="padding: 20px 16px; display:flex; flex-direction:column; gap:10px;">
-        <button class="btn-primary" onclick="showScreen('home')">🏠 Volver al inicio</button>
-        <button class="btn-secondary" onclick="verEstadoPedido()">📦 Ver estado del pedido</button>
+        <button class="btn-primary" onclick="showScreen('home')"><img src="images/home.svg" class="icon" alt="" style="vertical-align:middle"> Volver al inicio</button>
+        <button class="btn-secondary" onclick="verEstadoPedido()"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"> Ver estado del pedido</button>
       </div>
     </div>
   </div>
@@ -353,11 +353,11 @@
       </div>
     </div>
     <div class="bottom-nav">
-      <div class="nav-item" onclick="showScreen('home')"><span class="icon">🏠</span>Inicio</div>
-      <div class="nav-item" onclick="mostrarBusqueda()"><span class="icon">🔍</span>Buscar</div>
-      <div class="nav-item" onclick="showScreen('cart')"><span class="icon">🛒</span>Carrito</div>
-      <div class="nav-item" onclick="mostrarFavoritos()"><span class="icon">❤️</span>Favoritos</div>
-      <div class="nav-item logout-btn"><span class="icon">👤</span>Perfil</div>
+      <div class="nav-item" onclick="showScreen('home')"><span class="icon"><img src="images/home.svg" class="icon" alt="" style="vertical-align:middle"></span>Inicio</div>
+      <div class="nav-item" onclick="mostrarBusqueda()"><span class="icon"><img src="images/search.svg" class="icon" alt="" style="vertical-align:middle"></span>Buscar</div>
+      <div class="nav-item" onclick="showScreen('cart')"><span class="icon"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></span>Carrito</div>
+      <div class="nav-item" onclick="mostrarFavoritos()"><span class="icon"><img src="images/heart.svg" class="icon" alt="" style="vertical-align:middle"></span>Favoritos</div>
+      <div class="nav-item logout-btn"><span class="icon"><img src="images/user.svg" class="icon" alt="" style="vertical-align:middle"></span>Perfil</div>
     </div>
   </div>
 </div>
@@ -375,15 +375,15 @@
     <div class="admin-layout">
       <div class="admin-sidebar">
         <div class="logo">LUMURA</div>
-        <div class="menu-item active" onclick="showScreen('admin-dash')"><span class="icon">📊</span>Dashboard</div>
-        <div class="menu-item" onclick="showScreen('admin-cat')"><span class="icon">👗</span>Catálogo</div>
-        <div class="menu-item" onclick="showScreen('admin-inv')"><span class="icon">📦</span>Inventario</div>
-        <div class="menu-item" onclick="showScreen('admin-rep')"><span class="icon">📈</span>Reportes</div>
-        <div class="menu-item" onclick="proximamente('Gestión de usuarios')"><span class="icon">👥</span>Usuarios</div>
-        <div class="menu-item" onclick="showScreen('admin-orders')"><span class="icon">🛒</span>Pedidos</div>
-        <div class="menu-item" onclick="proximamente('Configuración')"><span class="icon">⚙️</span>Configuración</div>
+        <div class="menu-item active" onclick="showScreen('admin-dash')"><span class="icon"><img src="images/dashboard.svg" class="icon" alt="" style="vertical-align:middle"></span>Dashboard</div>
+        <div class="menu-item" onclick="showScreen('admin-cat')"><span class="icon"><img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle"></span>Catálogo</div>
+        <div class="menu-item" onclick="showScreen('admin-inv')"><span class="icon"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"></span>Inventario</div>
+        <div class="menu-item" onclick="showScreen('admin-rep')"><span class="icon"><img src="images/chart-up.svg" class="icon" alt="" style="vertical-align:middle"></span>Reportes</div>
+        <div class="menu-item" onclick="proximamente('Gestión de usuarios')"><span class="icon"><img src="images/users.svg" class="icon" alt="" style="vertical-align:middle"></span>Usuarios</div>
+        <div class="menu-item" onclick="showScreen('admin-orders')"><span class="icon"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></span>Pedidos</div>
+        <div class="menu-item" onclick="proximamente('Configuración')"><span class="icon"><img src="images/settings.svg" class="icon" alt="" style="vertical-align:middle"></span>Configuración</div>
         <div style="position:absolute; bottom:20px; left:0; right:0; padding: 0 20px;">
-          <div class="menu-item logout-btn"><span class="icon">🔓</span>Cerrar sesión</div>
+          <div class="menu-item logout-btn"><span class="icon"><img src="images/unlock.svg" class="icon" alt="" style="vertical-align:middle"></span>Cerrar sesión</div>
         </div>
       </div>
       <div style="flex:1; display:flex; flex-direction:column;">
@@ -393,16 +393,16 @@
             <div style="font-size:12px; color:var(--gray);">Bienvenido, Administrador · 15 Abr 2025</div>
           </div>
           <div style="display:flex; gap:10px; align-items:center;">
-            <span style="font-size:18px; cursor:pointer;">🔔</span>
+            <span style="font-size:18px; cursor:pointer;"><img src="images/bell.svg" class="icon" alt="" style="vertical-align:middle"></span>
             <div style="width:36px; height:36px; background:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700;">A</div>
           </div>
         </div>
         <div class="admin-main">
           <div class="kpi-grid">
-            <div class="kpi-card"><div class="label">Ingresos</div><div id="admin-revenue" class="value">$0<span class="icon-big">💰</span></div></div>
-            <div class="kpi-card"><div class="label">Pedidos</div><div id="admin-order-count" class="value">0<span class="icon-big">🛒</span></div></div>
-            <div class="kpi-card"><div class="label">Clientes</div><div id="admin-user-count" class="value">0<span class="icon-big">👥</span></div></div>
-            <div class="kpi-card"><div class="label">Productos</div><div id="admin-prod-count" class="value">0<span class="icon-big">👗</span></div></div>
+            <div class="kpi-card"><div class="label">Ingresos</div><div id="admin-revenue" class="value">$0<span class="icon-big"><img src="images/money.svg" class="icon" alt="" style="vertical-align:middle"></span></div></div>
+            <div class="kpi-card"><div class="label">Pedidos</div><div id="admin-order-count" class="value">0<span class="icon-big"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></span></div></div>
+            <div class="kpi-card"><div class="label">Clientes</div><div id="admin-user-count" class="value">0<span class="icon-big"><img src="images/users.svg" class="icon" alt="" style="vertical-align:middle"></span></div></div>
+            <div class="kpi-card"><div class="label">Productos</div><div id="admin-prod-count" class="value">0<span class="icon-big"><img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle"></span></div></div>
           </div>
           <div style="display:grid; grid-template-columns:1.5fr 1fr; gap:16px;">
             <div class="card" style="padding:16px;">
@@ -442,13 +442,13 @@
     <div class="admin-layout">
       <div class="admin-sidebar">
         <div class="logo">LUMURA</div>
-        <div class="menu-item" onclick="showScreen('admin-dash')"><span class="icon">📊</span>Dashboard</div>
-        <div class="menu-item active" onclick="showScreen('admin-cat')"><span class="icon">👗</span>Catálogo</div>
-        <div class="menu-item" onclick="showScreen('admin-inv')"><span class="icon">📦</span>Inventario</div>
-        <div class="menu-item" onclick="showScreen('admin-rep')"><span class="icon">📈</span>Reportes</div>
-        <div class="menu-item" onclick="proximamente('Gestión de usuarios')"><span class="icon">👥</span>Usuarios</div>
-        <div class="menu-item" onclick="showScreen('admin-orders')"><span class="icon">🛒</span>Pedidos</div>
-        <div class="menu-item" onclick="proximamente('Configuración')"><span class="icon">⚙️</span>Configuración</div>
+        <div class="menu-item" onclick="showScreen('admin-dash')"><span class="icon"><img src="images/dashboard.svg" class="icon" alt="" style="vertical-align:middle"></span>Dashboard</div>
+        <div class="menu-item active" onclick="showScreen('admin-cat')"><span class="icon"><img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle"></span>Catálogo</div>
+        <div class="menu-item" onclick="showScreen('admin-inv')"><span class="icon"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"></span>Inventario</div>
+        <div class="menu-item" onclick="showScreen('admin-rep')"><span class="icon"><img src="images/chart-up.svg" class="icon" alt="" style="vertical-align:middle"></span>Reportes</div>
+        <div class="menu-item" onclick="proximamente('Gestión de usuarios')"><span class="icon"><img src="images/users.svg" class="icon" alt="" style="vertical-align:middle"></span>Usuarios</div>
+        <div class="menu-item" onclick="showScreen('admin-orders')"><span class="icon"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></span>Pedidos</div>
+        <div class="menu-item" onclick="proximamente('Configuración')"><span class="icon"><img src="images/settings.svg" class="icon" alt="" style="vertical-align:middle"></span>Configuración</div>
       </div>
       <div style="flex:1; display:flex; flex-direction:column;">
         <div class="admin-header">
@@ -458,7 +458,7 @@
         <div class="admin-main">
           <div style="display:flex; gap:12px; margin-bottom:16px; align-items:center;">
             <div class="search-bar" style="margin:0; flex:1;">
-              <span>🔍</span>
+              <span><img src="images/search.svg" class="icon" alt="" style="vertical-align:middle"></span>
               <input id="admin-search-input" placeholder="Buscar prenda..." oninput="filtrarAdminCatalogo()" style="border:none; background:transparent; flex:1; outline:none; font-size:14px;">
             </div>
             <select id="admin-cat-filter" style="padding:10px 14px; border:1.5px solid var(--light); border-radius:10px; font-size:14px; outline:none; background:white;" onchange="filtrarAdminCatalogo()">
@@ -496,26 +496,26 @@
     <div class="admin-layout">
       <div class="admin-sidebar">
         <div class="logo">LUMURA</div>
-        <div class="menu-item" onclick="showScreen('admin-dash')"><span class="icon">📊</span>Dashboard</div>
-        <div class="menu-item" onclick="showScreen('admin-cat')"><span class="icon">👗</span>Catálogo</div>
-        <div class="menu-item active" onclick="showScreen('admin-inv')"><span class="icon">📦</span>Inventario</div>
-        <div class="menu-item" onclick="showScreen('admin-rep')"><span class="icon">📈</span>Reportes</div>
-        <div class="menu-item" onclick="proximamente('Gestión de usuarios')"><span class="icon">👥</span>Usuarios</div>
-        <div class="menu-item" onclick="showScreen('admin-orders')"><span class="icon">🛒</span>Pedidos</div>
-        <div class="menu-item" onclick="proximamente('Configuración')"><span class="icon">⚙️</span>Configuración</div>
+        <div class="menu-item" onclick="showScreen('admin-dash')"><span class="icon"><img src="images/dashboard.svg" class="icon" alt="" style="vertical-align:middle"></span>Dashboard</div>
+        <div class="menu-item" onclick="showScreen('admin-cat')"><span class="icon"><img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle"></span>Catálogo</div>
+        <div class="menu-item active" onclick="showScreen('admin-inv')"><span class="icon"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"></span>Inventario</div>
+        <div class="menu-item" onclick="showScreen('admin-rep')"><span class="icon"><img src="images/chart-up.svg" class="icon" alt="" style="vertical-align:middle"></span>Reportes</div>
+        <div class="menu-item" onclick="proximamente('Gestión de usuarios')"><span class="icon"><img src="images/users.svg" class="icon" alt="" style="vertical-align:middle"></span>Usuarios</div>
+        <div class="menu-item" onclick="showScreen('admin-orders')"><span class="icon"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></span>Pedidos</div>
+        <div class="menu-item" onclick="proximamente('Configuración')"><span class="icon"><img src="images/settings.svg" class="icon" alt="" style="vertical-align:middle"></span>Configuración</div>
       </div>
       <div style="flex:1; display:flex; flex-direction:column;">
         <div class="admin-header">
           <div><div style="font-size:18px; font-weight:800;">Control de Inventario</div><div style="font-size:12px; color:var(--gray);">Stock actualizado al 15 Abr 2025</div></div>
-          <button class="btn-sm" style="background:var(--accent); color:white; padding:10px 20px;" onclick="proximamente('Registro de entrada')">📥 Registrar entrada</button>
+          <button class="btn-sm" style="background:var(--accent); color:white; padding:10px 20px;" onclick="proximamente('Registro de entrada')"><img src="images/inbox.svg" class="icon" alt="" style="vertical-align:middle"> Registrar entrada</button>
         </div>
         <div class="admin-main">
           <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:16px; margin-bottom:20px;">
             <div class="kpi-card"><div class="label">Total unidades</div><div id="inv-total-unidades" class="value">0</div><div class="change">Cargando...</div></div>
-            <div class="kpi-card"><div class="label">Productos agotados</div><div id="inv-agotados" class="value" style="color:var(--accent);">0</div><div class="change" style="color:var(--accent);">⚠ Requiere atención</div></div>
-            <div class="kpi-card"><div class="label">Stock bajo (&lt;10)</div><div id="inv-stock-bajo" class="value" style="color:var(--warning);">0</div><div class="change" style="color:var(--warning);">⚡ Revisar pronto</div></div>
+            <div class="kpi-card"><div class="label">Productos agotados</div><div id="inv-agotados" class="value" style="color:var(--accent);">0</div><div class="change" style="color:var(--accent);"><img src="images/warning.svg" class="icon" alt="" style="vertical-align:middle"> Requiere atención</div></div>
+            <div class="kpi-card"><div class="label">Stock bajo (&lt;10)</div><div id="inv-stock-bajo" class="value" style="color:var(--warning);">0</div><div class="change" style="color:var(--warning);"><img src="images/lightning.svg" class="icon" alt="" style="vertical-align:middle"> Revisar pronto</div></div>
           </div>
-          <div class="notif">⚠️ <strong>Alerta:</strong> 5 productos sin stock. Se recomienda realizar un nuevo pedido de reabastecimiento.</div>
+          <div class="notif"><img src="images/warning.svg" class="icon" alt="" style="vertical-align:middle"> <strong>Alerta:</strong> 5 productos sin stock. Se recomienda realizar un nuevo pedido de reabastecimiento.</div>
           <div class="card" style="padding:0; margin-top:12px;">
             <table class="data-table">
               <thead><tr>
@@ -540,13 +540,13 @@
     <div class="admin-layout">
       <div class="admin-sidebar">
         <div class="logo">LUMURA</div>
-        <div class="menu-item" onclick="showScreen('admin-dash')"><span class="icon">📊</span>Dashboard</div>
-        <div class="menu-item" onclick="showScreen('admin-cat')"><span class="icon">👗</span>Catálogo</div>
-        <div class="menu-item" onclick="showScreen('admin-inv')"><span class="icon">📦</span>Inventario</div>
-        <div class="menu-item active" onclick="showScreen('admin-rep')"><span class="icon">📈</span>Reportes</div>
-        <div class="menu-item" onclick="proximamente('Gestión de usuarios')"><span class="icon">👥</span>Usuarios</div>
-        <div class="menu-item" onclick="showScreen('admin-orders')"><span class="icon">🛒</span>Pedidos</div>
-        <div class="menu-item" onclick="proximamente('Configuración')"><span class="icon">⚙️</span>Configuración</div>
+        <div class="menu-item" onclick="showScreen('admin-dash')"><span class="icon"><img src="images/dashboard.svg" class="icon" alt="" style="vertical-align:middle"></span>Dashboard</div>
+        <div class="menu-item" onclick="showScreen('admin-cat')"><span class="icon"><img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle"></span>Catálogo</div>
+        <div class="menu-item" onclick="showScreen('admin-inv')"><span class="icon"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"></span>Inventario</div>
+        <div class="menu-item active" onclick="showScreen('admin-rep')"><span class="icon"><img src="images/chart-up.svg" class="icon" alt="" style="vertical-align:middle"></span>Reportes</div>
+        <div class="menu-item" onclick="proximamente('Gestión de usuarios')"><span class="icon"><img src="images/users.svg" class="icon" alt="" style="vertical-align:middle"></span>Usuarios</div>
+        <div class="menu-item" onclick="showScreen('admin-orders')"><span class="icon"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></span>Pedidos</div>
+        <div class="menu-item" onclick="proximamente('Configuración')"><span class="icon"><img src="images/settings.svg" class="icon" alt="" style="vertical-align:middle"></span>Configuración</div>
       </div>
       <div style="flex:1; display:flex; flex-direction:column;">
         <div class="admin-header">
@@ -555,7 +555,7 @@
             <select style="padding:8px 12px; border:1.5px solid var(--light); border-radius:8px; font-size:13px; outline:none;" onchange="proximamente('Cambio de período')">
               <option>Abril 2025</option><option>Marzo 2025</option>
             </select>
-            <button class="btn-sm" style="background:var(--accent); color:white;" onclick="exportarPDF()">📄 Exportar PDF</button>
+            <button class="btn-sm" style="background:var(--accent); color:white;" onclick="exportarPDF()"><img src="images/document.svg" class="icon" alt="" style="vertical-align:middle"> Exportar PDF</button>
           </div>
         </div>
         <div class="admin-main">
@@ -575,27 +575,27 @@
                 <div class="chart-bar-col"><div class="chart-bar" style="height:80px;"></div><div class="chart-bar-label">Sem 4</div></div>
               </div>
               <div style="display:flex; gap:16px; margin-top:8px; font-size:12px; color:var(--gray);">
-                <span>📈 Pico: Sem 3 – $4.1M</span>
-                <span>📉 Mínimo: Sem 1 – $2.8M</span>
+                <span><img src="images/chart-up.svg" class="icon" alt="" style="vertical-align:middle"> Pico: Sem 3 – $4.1M</span>
+                <span><img src="images/chart-down.svg" class="icon" alt="" style="vertical-align:middle"> Mínimo: Sem 1 – $2.8M</span>
               </div>
             </div>
             <div class="card" style="padding:16px;">
               <div style="font-weight:700; margin-bottom:14px;">Top productos vendidos</div>
               <div style="display:flex; flex-direction:column; gap:10px;">
                 <div style="display:flex; align-items:center; gap:10px;">
-                  <span>🥇</span>
+                  <span><img src="images/gold.svg" class="icon" alt="" style="vertical-align:middle"></span>
                   <div style="flex:1;"><div style="font-size:13px; font-weight:600;">Jeans Slim Fit</div>
                   <div style="height:6px; background:var(--light); border-radius:3px; margin-top:4px;"><div style="width:85%; height:100%; background:var(--accent); border-radius:3px;"></div></div></div>
                   <span style="font-size:12px; font-weight:700; color:var(--accent);">85u</span>
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
-                  <span>🥈</span>
+                  <span><img src="images/silver.svg" class="icon" alt="" style="vertical-align:middle"></span>
                   <div style="flex:1;"><div style="font-size:13px; font-weight:600;">Camiseta Premium</div>
                   <div style="height:6px; background:var(--light); border-radius:3px; margin-top:4px;"><div style="width:68%; height:100%; background:var(--accent2); border-radius:3px;"></div></div></div>
                   <span style="font-size:12px; font-weight:700; color:var(--accent2);">68u</span>
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
-                  <span>🥉</span>
+                  <span><img src="images/bronze.svg" class="icon" alt="" style="vertical-align:middle"></span>
                   <div style="flex:1;"><div style="font-size:13px; font-weight:600;">Vestido Casual</div>
                   <div style="height:6px; background:var(--light); border-radius:3px; margin-top:4px;"><div style="width:50%; height:100%; background:#28a745; border-radius:3px;"></div></div></div>
                   <span style="font-size:12px; font-weight:700; color:#28a745;">50u</span>
@@ -638,7 +638,7 @@
     <div class="form-group"><label>Stock</label><input id="modal-prod-stock" type="number" placeholder="0"></div>
     <div class="form-group"><label>Descripción</label><textarea id="modal-prod-desc" rows="3" placeholder="Descripción del producto..." style="width:100%;padding:10px;border:1.5px solid var(--light);border-radius:8px;font-family:inherit;resize:vertical;"></textarea></div>
     <div style="display:flex;gap:10px;margin-top:16px;">
-      <button class="btn-primary" style="flex:1;" onclick="guardarProducto()">💾 Guardar</button>
+      <button class="btn-primary" style="flex:1;" onclick="guardarProducto()"><img src="images/save.svg" class="icon" alt="" style="vertical-align:middle"> Guardar</button>
       <button class="btn-secondary" style="flex:1;" onclick="cerrarModalProducto()">Cancelar</button>
     </div>
   </div>
@@ -654,13 +654,13 @@
     <div class="admin-layout">
       <div class="admin-sidebar">
         <div class="logo">LUMURA</div>
-        <div class="menu-item" onclick="showScreen('admin-dash')"><span class="icon">📊</span>Dashboard</div>
-        <div class="menu-item" onclick="showScreen('admin-cat')"><span class="icon">👗</span>Catálogo</div>
-        <div class="menu-item" onclick="showScreen('admin-inv')"><span class="icon">📦</span>Inventario</div>
-        <div class="menu-item" onclick="showScreen('admin-rep')"><span class="icon">📈</span>Reportes</div>
-        <div class="menu-item active" onclick="showScreen('admin-orders')"><span class="icon">🛒</span>Pedidos</div>
-        <div class="menu-item" onclick="proximamente('Gestión de usuarios')"><span class="icon">👥</span>Usuarios</div>
-        <div class="menu-item" onclick="proximamente('Configuración')"><span class="icon">⚙️</span>Configuración</div>
+        <div class="menu-item" onclick="showScreen('admin-dash')"><span class="icon"><img src="images/dashboard.svg" class="icon" alt="" style="vertical-align:middle"></span>Dashboard</div>
+        <div class="menu-item" onclick="showScreen('admin-cat')"><span class="icon"><img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle"></span>Catálogo</div>
+        <div class="menu-item" onclick="showScreen('admin-inv')"><span class="icon"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"></span>Inventario</div>
+        <div class="menu-item" onclick="showScreen('admin-rep')"><span class="icon"><img src="images/chart-up.svg" class="icon" alt="" style="vertical-align:middle"></span>Reportes</div>
+        <div class="menu-item active" onclick="showScreen('admin-orders')"><span class="icon"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></span>Pedidos</div>
+        <div class="menu-item" onclick="proximamente('Gestión de usuarios')"><span class="icon"><img src="images/users.svg" class="icon" alt="" style="vertical-align:middle"></span>Usuarios</div>
+        <div class="menu-item" onclick="proximamente('Configuración')"><span class="icon"><img src="images/settings.svg" class="icon" alt="" style="vertical-align:middle"></span>Configuración</div>
       </div>
       <div style="flex:1; display:flex; flex-direction:column;">
         <div class="admin-header">

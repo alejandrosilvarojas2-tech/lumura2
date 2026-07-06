@@ -31,7 +31,7 @@ function mostrarMensaje(texto, tipo) {
 }
 
 function proximamente(func) {
-  mostrarMensaje('🔧 ' + (func || 'Función') + ' — Próximamente', 'info');
+  mostrarMensaje('<img src="images/wrench.svg" class="icon" alt="" style="vertical-align:middle"> ' + (func || 'Función') + ' — Próximamente', 'info');
 }
 
 async function handleLogin(e) {
@@ -99,7 +99,7 @@ async function cargarProductos() {
   }
 }
 
-const iconosProducto = ['👕', '👖', '🧥', '👗', '👟', '🧢', '🧣', '👒'];
+const iconosProducto = ['<img src="images/tshirt.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/jeans.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/coat.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/shoe.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/cap.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/scarf.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/hat.svg" class="icon" alt="" style="vertical-align:middle">'];
 
 function renderProductos(filtroCat, filtroTexto) {
   const grid = document.getElementById('prod-grid');
@@ -147,7 +147,7 @@ async function verProducto(id) {
     document.getElementById('prod-detail-desc').textContent = prod.descripcion || 'Sin descripción disponible.';
     document.getElementById('prod-detail-btn').onclick = function () { agregarAlCarrito(id); };
     const esFav = state.favoritos.includes(id);
-    document.getElementById('prod-detail-fav').textContent = esFav ? '❤️' : '🤍';
+    document.getElementById('prod-detail-fav').innerHTML = esFav ? '<img src="images/heart.svg" class="icon" alt="" style="vertical-align:middle">' : '<img src="images/heart-outline.svg" class="icon" alt="" style="vertical-align:middle">';
     showScreen('product');
   } catch (err) {
     mostrarMensaje('Error al cargar producto', 'error');
@@ -160,14 +160,14 @@ function toggleFavorito() {
   const idx = state.favoritos.indexOf(prod.id_catalogo);
   if (idx === -1) {
     state.favoritos.push(prod.id_catalogo);
-    mostrarMensaje(prod.articulo + ' agregado a favoritos ❤️', 'success');
+    mostrarMensaje(prod.articulo + ' agregado a favoritos <img src="images/heart.svg" class="icon" alt="" style="vertical-align:middle">', 'success');
   } else {
     state.favoritos.splice(idx, 1);
     mostrarMensaje(prod.articulo + ' eliminado de favoritos', 'info');
   }
   localStorage.setItem('lumura_favs', JSON.stringify(state.favoritos));
   const el = document.getElementById('prod-detail-fav');
-  if (el) el.textContent = idx === -1 ? '❤️' : '🤍';
+  if (el) el.innerHTML = idx === -1 ? '<img src="images/heart.svg" class="icon" alt="" style="vertical-align:middle">' : '<img src="images/heart-outline.svg" class="icon" alt="" style="vertical-align:middle">';
 }
 
 async function agregarAlCarrito(idProducto) {
@@ -212,7 +212,7 @@ function renderCarrito() {
     if (contador) contador.textContent = '0';
     return;
   }
-  const iconos = ['👕', '👖', '🧥', '👗', '👟'];
+  const iconos = ['<img src="images/tshirt.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/jeans.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/coat.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/shoe.svg" class="icon" alt="" style="vertical-align:middle">'];
   let total = 0;
   cont.innerHTML = state.carrito.map((item, i) => {
     const precio = Number(item.precio) || 0;
@@ -230,7 +230,7 @@ function renderCarrito() {
       '<button onclick="cambiarCantidad(' + item.id_carrito + ',1)">+</button></div>' +
       '</div>' +
       '<div style="text-align:right;"><div class="price">$' + subtotal.toLocaleString('es-CO') + '</div>' +
-      '<span style="font-size:18px;cursor:pointer;color:var(--gray);" onclick="eliminarDelCarrito(' + item.id_carrito + ')">🗑️</span></div>' +
+      '<span style="font-size:18px;cursor:pointer;color:var(--gray);" onclick="eliminarDelCarrito(' + item.id_carrito + ')"><img src="images/trash.svg" class="icon" alt="" style="vertical-align:middle"></span></div>' +
       '</div>';
   }).join('');
   if (subtotalEl) subtotalEl.textContent = '$' + total.toLocaleString('es-CO');
@@ -391,7 +391,7 @@ function renderAdminCatalogo(filtroTexto, filtroCat) {
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;">No hay productos</td></tr>';
     return;
   }
-  const iconos = ['👕', '👖', '🧥', '👗', '👟'];
+  const iconos = ['<img src="images/tshirt.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/jeans.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/coat.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/shoe.svg" class="icon" alt="" style="vertical-align:middle">'];
   tbody.innerHTML = items.map((p, i) => {
     const stock = Number(p.stock);
     const badge = stock > 0 ? '<span class="badge badge-green">Activo</span>' : '<span class="badge badge-red">Sin stock</span>';
@@ -402,8 +402,8 @@ function renderAdminCatalogo(filtroTexto, filtroCat) {
       '<td style="font-weight:700;color:var(--accent);">$' + Number(p.precio).toLocaleString('es-CO') + '</td>' +
       '<td>' + (p.talla || '-') + '</td>' +
       '<td>' + badge + '</td>' +
-      '<td><button class="btn-sm" style="background:#e3f2fd;color:#1565c0;margin-right:4px;" onclick="abrirModalProducto(' + p.id_catalogo + ')">✏️</button>' +
-      '<button class="btn-sm" style="background:#fce4ec;color:var(--accent);" onclick="eliminarProducto(' + p.id_catalogo + ')">🗑️</button></td></tr>';
+      '<td><button class="btn-sm" style="background:#e3f2fd;color:#1565c0;margin-right:4px;" onclick="abrirModalProducto(' + p.id_catalogo + ')"><img src="images/edit.svg" class="icon" alt="" style="vertical-align:middle"></button>' +
+      '<button class="btn-sm" style="background:#fce4ec;color:var(--accent);" onclick="eliminarProducto(' + p.id_catalogo + ')"><img src="images/trash.svg" class="icon" alt="" style="vertical-align:middle"></button></td></tr>';
   }).join('');
 }
 
@@ -494,13 +494,13 @@ function mostrarFavoritos() {
   state.productos = favs;
   renderProductos();
   showScreen('home');
-  mostrarMensaje('Mostrando ' + favs.length + ' favorito(s) ❤️', 'success');
+  mostrarMensaje('Mostrando ' + favs.length + ' favorito(s) <img src="images/heart.svg" class="icon" alt="" style="vertical-align:middle">', 'success');
   setTimeout(() => { cargarProductos(); }, 5000);
 }
 
 function exportarPDF() {
-  mostrarMensaje('📄 Generando reporte PDF...', 'info');
-  setTimeout(() => mostrarMensaje('✅ PDF exportado (simulado)', 'success'), 1500);
+  mostrarMensaje('<img src="images/document.svg" class="icon" alt="" style="vertical-align:middle"> Generando reporte PDF...', 'info');
+  setTimeout(() => mostrarMensaje('<img src="images/check.svg" class="icon" alt="" style="vertical-align:middle"> PDF exportado (simulado)', 'success'), 1500);
 }
 
 function cargarInventario() {
@@ -517,7 +517,7 @@ function cargarInventario() {
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;">No hay productos</td></tr>';
     return;
   }
-  const iconos = ['👕', '👖', '🧥', '👗', '👟'];
+  const iconos = ['<img src="images/tshirt.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/jeans.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/coat.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/shoe.svg" class="icon" alt="" style="vertical-align:middle">'];
   tbody.innerHTML = productos.map((p, i) => {
     const stock = Number(p.stock);
     const estado = stock === 0 ? '<span class="status-dot red"></span>Agotado'
