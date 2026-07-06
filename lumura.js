@@ -261,14 +261,16 @@ async function handleCheckout() {
   const total = state.carrito.reduce((s, i) => s + Number(i.precio) * Number(i.cantidad), 0);
   const articulos = state.carrito.map(i => i.articulo).join(', ');
   const cantTotal = state.carrito.reduce((s, i) => s + Number(i.cantidad), 0);
+  const metodoPago = document.getElementById('checkout-pago')?.value || 'Tarjeta';
+  const direccion = document.getElementById('checkout-dir')?.value.trim() || 'Por definir';
   try {
     const res = await api.post('/api/pedidos', {
       id_usuario: state.user.id,
       articulo: articulos,
       cantidad_objetos: cantTotal,
-      metodo_pago: 'Tarjeta',
+      metodo_pago: metodoPago,
       total: total,
-      direccion_entrega: 'Por definir',
+      direccion_entrega: direccion,
     });
     document.getElementById('confirm-numero').textContent = '#LUM-' + res.id;
     const fecha = new Date().toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -489,6 +491,8 @@ function showScreen(name) {
     const cant = state.carrito.reduce((s, i) => s + Number(i.cantidad), 0);
     document.getElementById('checkout-count').textContent = cant + ' productos - $' + total.toLocaleString('es-CO');
     document.getElementById('checkout-total').textContent = '$' + total.toLocaleString('es-CO');
+    const dirEl = document.getElementById('checkout-dir');
+    if (dirEl) dirEl.value = state.user?.direccion || '';
   }
   if (name === 'admin-dash') { cargarDashboard(); cargarProductos(); }
   if (name === 'admin-cat') cargarProductos();

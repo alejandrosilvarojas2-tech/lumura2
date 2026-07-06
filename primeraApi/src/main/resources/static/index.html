@@ -278,6 +278,19 @@
           <hr style="border:none; border-top:1px solid var(--light); margin:8px 0;">
           <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:800;"><span>Total</span><span id="checkout-total" style="color:var(--accent);">$0</span></div>
         </div>
+        <div style="margin-bottom:14px;">
+          <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Método de pago</label>
+          <select id="checkout-pago" style="width:100%;padding:10px 14px;border:1.5px solid var(--light);border-radius:10px;font-size:14px;outline:none;background:white;">
+            <option value="Tarjeta">💳 Tarjeta de crédito/débito</option>
+            <option value="Efectivo">💵 Pago en efectivo</option>
+            <option value="Transferencia">🏦 Transferencia bancaria</option>
+            <option value="PSE">🏧 PSE</option>
+          </select>
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Dirección de entrega</label>
+          <textarea id="checkout-dir" rows="2" style="width:100%;padding:10px 14px;border:1.5px solid var(--light);border-radius:10px;font-size:14px;outline:none;resize:vertical;font-family:inherit;"></textarea>
+        </div>
         <button class="btn-primary auth-only" onclick="handleCheckout()">🔒 Confirmar pedido</button>
         <button class="btn-primary no-auth" onclick="showScreen('login')">🔒 Inicia sesión para pagar</button>
         <p style="text-align:center; font-size:11px; color:var(--gray); margin-top:10px;">🔐 Pago seguro con cifrado SSL</p>
