@@ -100,10 +100,15 @@ async function cargarProductos() {
 
 const iconosProducto = ['👕', '👖', '🧥', '👗', '👟', '🧢', '🧣', '👒'];
 
-function renderProductos(filtro) {
+function renderProductos(filtroCat, filtroTexto) {
   const grid = document.getElementById('prod-grid');
   if (!grid) return;
-  const items = filtro ? state.productos.filter(p => p.categoria === filtro) : state.productos;
+  let items = state.productos;
+  if (filtroCat) items = items.filter(p => p.categoria === filtroCat);
+  if (filtroTexto) items = items.filter(p =>
+    p.articulo.toLowerCase().includes(filtroTexto.toLowerCase()) ||
+    (p.categoria || '').toLowerCase().includes(filtroTexto.toLowerCase())
+  );
   if (items.length === 0) {
     grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--gray);">No hay productos disponibles</div>';
     return;
@@ -421,19 +426,18 @@ async function eliminarProducto(id) {
 }
 
 function mostrarBusqueda() {
-  const term = prompt('🔍 Buscar producto:');
-  if (term && term.trim()) {
-    const encontrados = state.productos.filter(p =>
-      p.articulo.toLowerCase().includes(term.toLowerCase()) ||
-      (p.categoria || '').toLowerCase().includes(term.toLowerCase())
-    );
-    if (encontrados.length === 0) return mostrarMensaje('No se encontraron productos', 'info');
-    state.productos = encontrados;
-    renderProductos();
-    mostrarMensaje('Mostrando ' + encontrados.length + ' resultado(s)', 'info');
-    showScreen('home');
-    setTimeout(() => { cargarProductos(); }, 5000);
-  }
+  const input = document.getElementById('search-input');
+  if (input) { input.focus(); input.scrollIntoView({ behavior: 'smooth' }); }
+}
+
+let searchTimeout;
+function filtrarBusqueda() {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    const term = document.getElementById('search-input')?.value || '';
+    const catActiva = document.querySelector('.tag.active')?.dataset?.cat || '';
+    renderProductos(catActiva, term);
+  }, 200);
 }
 
 function mostrarFavoritos() {
@@ -469,7 +473,8 @@ function filtrarCategoria(cat) {
   } else {
     document.querySelector('.tag[data-cat=""]').classList.add('active');
   }
-  renderProductos(cat);
+  const term = document.getElementById('search-input')?.value || '';
+  renderProductos(cat, term);
 }
 
 function showScreen(name) {
