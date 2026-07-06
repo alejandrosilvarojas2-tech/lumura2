@@ -29,6 +29,12 @@ public class Usuario {
     @Column(name = "fecha_registro", updatable = false)
     private LocalDateTime fechaRegistro;
 
+    @Column(length = 20)
+    private String rol = "USER";
+
+    public String getRol() { return rol; }
+    public void setRol(String rol) { this.rol = rol; }
+
     public Integer getIdUsuario() { return idUsuario; }
     public void setIdUsuario(Integer idUsuario) { this.idUsuario = idUsuario; }
     public String getNombreUsuario() { return nombreUsuario; }

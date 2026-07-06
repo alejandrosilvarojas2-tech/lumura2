@@ -34,7 +34,7 @@ public class AdminController {
 
     @GetMapping("/dashboard")
     public ResponseEntity<?> dashboard(@RequestHeader("Authorization") String auth) {
-        if (!validarToken(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+        if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
 
         long totalProductos = catalogoRepository.count();
         long totalUsuarios = usuarioRepository.count();
@@ -50,7 +50,7 @@ public class AdminController {
 
     @GetMapping("/pedidos")
     public ResponseEntity<?> pedidos(@RequestHeader("Authorization") String auth) {
-        if (!validarToken(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+        if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
         return ResponseEntity.ok(compraRepository.findAllByOrderByFechaPedidoDesc());
     }
 
@@ -58,7 +58,7 @@ public class AdminController {
     public ResponseEntity<?> actualizarPedido(@RequestHeader("Authorization") String auth,
                                               @PathVariable Integer id,
                                               @RequestBody Map<String, String> body) {
-        if (!validarToken(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+        if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
 
         return compraRepository.findById(id)
                 .map(compra -> {
@@ -72,7 +72,7 @@ public class AdminController {
     @PostMapping("/productos")
     public ResponseEntity<?> crearProducto(@RequestHeader("Authorization") String auth,
                                            @RequestBody Map<String, String> body) {
-        if (!validarToken(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+        if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
 
         Catalogo p = new Catalogo();
         p.setArticulo(body.get("articulo"));
@@ -94,7 +94,7 @@ public class AdminController {
     public ResponseEntity<?> actualizarProducto(@RequestHeader("Authorization") String auth,
                                                 @PathVariable Integer id,
                                                 @RequestBody Map<String, String> body) {
-        if (!validarToken(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+        if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
 
         return catalogoRepository.findById(id)
                 .map(p -> {
@@ -118,7 +118,7 @@ public class AdminController {
     @DeleteMapping("/productos/{id}")
     public ResponseEntity<?> eliminarProducto(@RequestHeader("Authorization") String auth,
                                               @PathVariable Integer id) {
-        if (!validarToken(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+        if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
 
         if (catalogoRepository.existsById(id)) {
             catalogoRepository.deleteById(id);
@@ -127,8 +127,10 @@ public class AdminController {
         return ResponseEntity.notFound().build();
     }
 
-    private boolean validarToken(String auth) {
+    private boolean validarAdmin(String auth) {
         if (auth == null || !auth.startsWith("Bearer ")) return false;
-        return jwtUtil.validateToken(auth.substring(7));
+        String token = auth.substring(7);
+        if (!jwtUtil.validateToken(token)) return false;
+        return "ADMIN".equals(jwtUtil.getRolFromToken(token));
     }
 }

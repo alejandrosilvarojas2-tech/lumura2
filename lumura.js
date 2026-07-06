@@ -455,6 +455,8 @@ function actualizarUI() {
   document.querySelectorAll('.no-auth').forEach(el => el.style.display = estaLogueado ? 'none' : '');
   if (estaLogueado && state.user) {
     document.querySelectorAll('.user-name').forEach(el => el.textContent = state.user.nombre);
+    const esAdmin = state.user.rol === 'ADMIN';
+    document.querySelectorAll('.admin-only').forEach(el => el.style.display = esAdmin ? '' : 'none');
   }
 }
 

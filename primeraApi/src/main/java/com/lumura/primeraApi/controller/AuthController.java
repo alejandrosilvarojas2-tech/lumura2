@@ -7,7 +7,10 @@ import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.HexFormat;
 import java.util.Map;
 import java.util.Optional;
 
@@ -45,9 +48,20 @@ public class AuthController {
         if (body.containsKey("edad")) usuario.setEdad(Integer.parseInt(body.get("edad")));
         usuario.setDireccionUsuario(body.get("direccion_usuario"));
         usuario.setFechaRegistro(LocalDateTime.now());
+        usuario.setRol("USER");
         usuarioRepository.save(usuario);
 
         return ResponseEntity.ok(Map.of("mensaje", "Usuario registrado correctamente", "id", usuario.getIdUsuario()));
+    }
+
+    private String sha256(String password) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] hash = md.digest(password.getBytes());
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @PostMapping("/login")
@@ -65,17 +79,29 @@ public class AuthController {
         }
 
         Usuario usuario = opt.get();
-        if (!BCrypt.checkpw(password, usuario.getPasswordHash())) {
-            return ResponseEntity.status(401).body(Map.of("error", "Correo o contraseña incorrectos"));
+        String storedHash = usuario.getPasswordHash();
+
+        if (!BCrypt.checkpw(password, storedHash)) {
+            if (!storedHash.equals(sha256(password))) {
+                return ResponseEntity.status(401).body(Map.of("error", "Correo o contraseña incorrectos"));
+            }
+            usuario.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
+            usuarioRepository.save(usuario);
         }
 
-        String token = jwtUtil.generateToken(usuario.getIdUsuario(), usuario.getCorreoUsuario());
+        if ("admin@lumura.com".equals(usuario.getCorreoUsuario()) && !"ADMIN".equals(usuario.getRol())) {
+            usuario.setRol("ADMIN");
+            usuarioRepository.save(usuario);
+        }
+
+        String token = jwtUtil.generateToken(usuario.getIdUsuario(), usuario.getCorreoUsuario(), usuario.getRol());
         return ResponseEntity.ok(Map.of(
             "token", token,
             "usuario", Map.of(
                 "id", usuario.getIdUsuario(),
                 "nombre", usuario.getNombreUsuario(),
-                "correo", usuario.getCorreoUsuario()
+                "correo", usuario.getCorreoUsuario(),
+                "rol", usuario.getRol()
             )
         ));
     }

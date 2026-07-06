@@ -21,32 +21,36 @@ public class JwtUtil {
         this.expiration = expiration;
     }
 
-    public String generateToken(Integer userId, String email) {
+    public String generateToken(Integer userId, String email, String rol) {
         Date now = new Date();
         return Jwts.builder()
                 .subject(userId.toString())
                 .claim("email", email)
+                .claim("rol", rol)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + expiration))
                 .signWith(key)
                 .compact();
     }
 
+    public Claims getClaims(String token) {
+        return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
+    }
+
     public Integer getUserIdFromToken(String token) {
-        Claims claims = Jwts.parser()
-                .verifyWith(key)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-        return Integer.parseInt(claims.getSubject());
+        return Integer.parseInt(getClaims(token).getSubject());
     }
 
     public boolean validateToken(String token) {
         try {
-            Jwts.parser().verifyWith(key).build().parseSignedClaims(token);
+            getClaims(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
+    }
+
+    public String getRolFromToken(String token) {
+        return getClaims(token).get("rol", String.class);
     }
 }
