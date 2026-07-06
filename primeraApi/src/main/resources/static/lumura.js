@@ -322,6 +322,53 @@ async function cargarPedidos() {
   }
 }
 
+async function cargarPedidosAdmin() {
+  try {
+    const pedidos = await api.get('/api/admin/pedidos');
+    const filtro = document.getElementById('orders-filter')?.value || '';
+    const filtrados = filtro ? pedidos.filter(p => p.estado_pedido === filtro) : pedidos;
+    const tbody = document.getElementById('admin-orders-body');
+    if (!tbody) return;
+    if (filtrados.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;">No hay pedidos</td></tr>';
+      return;
+    }
+    tbody.innerHTML = filtrados.map(p => {
+      const badge = p.estado_pedido === 'entregado' ? 'badge-green'
+        : p.estado_pedido === 'enviado' ? 'badge-blue'
+        : p.estado_pedido === 'cancelado' ? 'badge-red' : 'badge-red';
+      return '<tr>'
+        + '<td>#LUM-' + p.id_compra + '</td>'
+        + '<td>' + (p.id_usuario || '-') + '</td>'
+        + '<td>' + (p.articulo || '').split(',').slice(0, 3).join(', ') + '</td>'
+        + '<td style="font-weight:700;">$' + Number(p.total).toLocaleString('es-CO') + '</td>'
+        + '<td>' + new Date(p.fecha_pedido).toLocaleDateString('es-CO') + '</td>'
+        + '<td><span class="badge ' + badge + '">' + (p.estado_pedido || 'pendiente') + '</span></td>'
+        + '<td><select onchange="actualizarEstadoPedido(' + p.id_compra + ', this.value)" style="padding:4px 8px;border:1px solid var(--light);border-radius:6px;font-size:12px;outline:none;">'
+        + '<option value="">Cambiar a...</option>'
+        + '<option value="pendiente">Pendiente</option>'
+        + '<option value="enviado">Enviado</option>'
+        + '<option value="entregado">Entregado</option>'
+        + '<option value="cancelado">Cancelado</option>'
+        + '</select></td>'
+        + '</tr>';
+    }).join('');
+  } catch (err) {
+    mostrarMensaje('Error al cargar pedidos admin', 'error');
+  }
+}
+
+async function actualizarEstadoPedido(id, estado) {
+  if (!estado) return;
+  try {
+    await api.put('/api/admin/pedidos/' + id, { estado_pedido: estado });
+    mostrarMensaje('Pedido #LUM-' + id + ' actualizado a ' + estado, 'success');
+    cargarPedidosAdmin();
+  } catch (err) {
+    mostrarMensaje(err.message, 'error');
+  }
+}
+
 async function cargarDashboard() {
   try {
     const data = await api.get('/api/admin/dashboard');
@@ -565,6 +612,7 @@ function showScreen(name) {
   if (name === 'admin-cat') cargarProductos();
   if (name === 'admin-inv') cargarProductos();
   if (name === 'admin-rep') { cargarProductos(); cargarReportes(); }
+  if (name === 'admin-orders') cargarPedidosAdmin();
   if (name === 'orders' && state.token) cargarPedidos();
 }
 

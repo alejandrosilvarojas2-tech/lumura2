@@ -380,7 +380,7 @@
         <div class="menu-item" onclick="showScreen('admin-inv')"><span class="icon">📦</span>Inventario</div>
         <div class="menu-item" onclick="showScreen('admin-rep')"><span class="icon">📈</span>Reportes</div>
         <div class="menu-item" onclick="proximamente('Gestión de usuarios')"><span class="icon">👥</span>Usuarios</div>
-        <div class="menu-item" onclick="proximamente('Gestión de pedidos')"><span class="icon">🛒</span>Pedidos</div>
+        <div class="menu-item" onclick="showScreen('admin-orders')"><span class="icon">🛒</span>Pedidos</div>
         <div class="menu-item" onclick="proximamente('Configuración')"><span class="icon">⚙️</span>Configuración</div>
         <div style="position:absolute; bottom:20px; left:0; right:0; padding: 0 20px;">
           <div class="menu-item logout-btn"><span class="icon">🔓</span>Cerrar sesión</div>
@@ -447,7 +447,7 @@
         <div class="menu-item" onclick="showScreen('admin-inv')"><span class="icon">📦</span>Inventario</div>
         <div class="menu-item" onclick="showScreen('admin-rep')"><span class="icon">📈</span>Reportes</div>
         <div class="menu-item" onclick="proximamente('Gestión de usuarios')"><span class="icon">👥</span>Usuarios</div>
-        <div class="menu-item" onclick="proximamente('Gestión de pedidos')"><span class="icon">🛒</span>Pedidos</div>
+        <div class="menu-item" onclick="showScreen('admin-orders')"><span class="icon">🛒</span>Pedidos</div>
         <div class="menu-item" onclick="proximamente('Configuración')"><span class="icon">⚙️</span>Configuración</div>
       </div>
       <div style="flex:1; display:flex; flex-direction:column;">
@@ -501,7 +501,7 @@
         <div class="menu-item active" onclick="showScreen('admin-inv')"><span class="icon">📦</span>Inventario</div>
         <div class="menu-item" onclick="showScreen('admin-rep')"><span class="icon">📈</span>Reportes</div>
         <div class="menu-item" onclick="proximamente('Gestión de usuarios')"><span class="icon">👥</span>Usuarios</div>
-        <div class="menu-item" onclick="proximamente('Gestión de pedidos')"><span class="icon">🛒</span>Pedidos</div>
+        <div class="menu-item" onclick="showScreen('admin-orders')"><span class="icon">🛒</span>Pedidos</div>
         <div class="menu-item" onclick="proximamente('Configuración')"><span class="icon">⚙️</span>Configuración</div>
       </div>
       <div style="flex:1; display:flex; flex-direction:column;">
@@ -545,7 +545,7 @@
         <div class="menu-item" onclick="showScreen('admin-inv')"><span class="icon">📦</span>Inventario</div>
         <div class="menu-item active" onclick="showScreen('admin-rep')"><span class="icon">📈</span>Reportes</div>
         <div class="menu-item" onclick="proximamente('Gestión de usuarios')"><span class="icon">👥</span>Usuarios</div>
-        <div class="menu-item" onclick="proximamente('Gestión de pedidos')"><span class="icon">🛒</span>Pedidos</div>
+        <div class="menu-item" onclick="showScreen('admin-orders')"><span class="icon">🛒</span>Pedidos</div>
         <div class="menu-item" onclick="proximamente('Configuración')"><span class="icon">⚙️</span>Configuración</div>
       </div>
       <div style="flex:1; display:flex; flex-direction:column;">
@@ -640,6 +640,54 @@
     <div style="display:flex;gap:10px;margin-top:16px;">
       <button class="btn-primary" style="flex:1;" onclick="guardarProducto()">💾 Guardar</button>
       <button class="btn-secondary" style="flex:1;" onclick="cerrarModalProducto()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 13: ADMIN - PEDIDOS -->
+<!-- ============================================================ -->
+<div class="screen" id="screen-admin-orders">
+  <div class="screen-label">Pantalla 12 – Gestión de Pedidos</div>
+  <div class="desktop-frame">
+    <div class="desktop-bar"><span></span><span></span><span></span><div class="desktop-url"></div></div>
+    <div class="admin-layout">
+      <div class="admin-sidebar">
+        <div class="logo">LUMURA</div>
+        <div class="menu-item" onclick="showScreen('admin-dash')"><span class="icon">📊</span>Dashboard</div>
+        <div class="menu-item" onclick="showScreen('admin-cat')"><span class="icon">👗</span>Catálogo</div>
+        <div class="menu-item" onclick="showScreen('admin-inv')"><span class="icon">📦</span>Inventario</div>
+        <div class="menu-item" onclick="showScreen('admin-rep')"><span class="icon">📈</span>Reportes</div>
+        <div class="menu-item active" onclick="showScreen('admin-orders')"><span class="icon">🛒</span>Pedidos</div>
+        <div class="menu-item" onclick="proximamente('Gestión de usuarios')"><span class="icon">👥</span>Usuarios</div>
+        <div class="menu-item" onclick="proximamente('Configuración')"><span class="icon">⚙️</span>Configuración</div>
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column;">
+        <div class="admin-header">
+          <div><div style="font-size:18px; font-weight:800;">Gestión de Pedidos</div><div style="font-size:12px; color:var(--gray);">Administra los pedidos de los clientes</div></div>
+          <div style="display:flex; gap:8px;">
+            <select id="orders-filter" style="padding:8px 12px; border:1.5px solid var(--light); border-radius:8px; font-size:13px; outline:none;" onchange="cargarPedidosAdmin()">
+              <option value="">Todos los estados</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="enviado">Enviado</option>
+              <option value="entregado">Entregado</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+          </div>
+        </div>
+        <div class="admin-main">
+          <div class="card" style="padding:0;">
+            <table class="data-table">
+              <thead><tr>
+                <th>Pedido</th><th>Cliente ID</th><th>Productos</th><th>Total</th><th>Fecha</th><th>Estado</th><th>Acción</th>
+              </tr></thead>
+              <tbody id="admin-orders-body">
+                <tr><td colspan="7" style="text-align:center;padding:20px;">Cargando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
