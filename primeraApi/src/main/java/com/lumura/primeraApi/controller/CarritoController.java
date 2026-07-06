@@ -67,6 +67,21 @@ public class CarritoController {
         return ResponseEntity.ok(Map.of("mensaje", "Producto agregado al carrito"));
     }
 
+    @PutMapping("/{idCarrito}")
+    public ResponseEntity<?> actualizar(@RequestHeader("Authorization") String auth,
+                                        @PathVariable Integer idCarrito,
+                                        @RequestBody Map<String, String> body) {
+        if (!validarToken(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+
+        return carritoRepository.findById(idCarrito)
+                .map(item -> {
+                    item.setCantidad(Integer.parseInt(body.get("cantidad")));
+                    carritoRepository.save(item);
+                    return ResponseEntity.ok(Map.of("mensaje", "Cantidad actualizada"));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @DeleteMapping("/{idCarrito}")
     public ResponseEntity<?> eliminar(@RequestHeader("Authorization") String auth,
                                       @PathVariable Integer idCarrito) {

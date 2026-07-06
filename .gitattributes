@@ -1,0 +1,23 @@
+# Normalizar a LF en git, mantener CRLF en Windows
+* text=auto
+
+# Archivos específicos
+*.java text
+*.html text
+*.js text
+*.css text
+*.xml text
+*.properties text
+*.yml text
+*.yaml text
+*.md text
+*.sql text
+*.json text
+
+# Binarios
+*.jar binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary

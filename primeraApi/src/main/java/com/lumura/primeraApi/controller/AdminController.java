@@ -44,7 +44,7 @@ public class AdminController {
             "total_productos", totalProductos,
             "total_usuarios", totalUsuarios,
             "total_pedidos", totalPedidos,
-            "ingresos", 0
+            "ingresos", compraRepository.sumTotal()
         ));
     }
 

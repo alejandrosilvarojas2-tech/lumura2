@@ -3,13 +3,11 @@ package com.lumura.primeraApi.controller;
 import com.lumura.primeraApi.entity.Usuario;
 import com.lumura.primeraApi.repository.UsuarioRepository;
 import com.lumura.primeraApi.util.JwtUtil;
+import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
-import java.util.HexFormat;
 import java.util.Map;
 import java.util.Optional;
 
@@ -42,7 +40,7 @@ public class AuthController {
         Usuario usuario = new Usuario();
         usuario.setNombreUsuario(nombre);
         usuario.setCorreoUsuario(correo);
-        usuario.setPasswordHash(hashPassword(password));
+        usuario.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
         usuario.setTelefono(body.get("telefono"));
         if (body.containsKey("edad")) usuario.setEdad(Integer.parseInt(body.get("edad")));
         usuario.setDireccionUsuario(body.get("direccion_usuario"));
@@ -67,7 +65,7 @@ public class AuthController {
         }
 
         Usuario usuario = opt.get();
-        if (!usuario.getPasswordHash().equals(hashPassword(password))) {
+        if (!BCrypt.checkpw(password, usuario.getPasswordHash())) {
             return ResponseEntity.status(401).body(Map.of("error", "Correo o contraseña incorrectos"));
         }
 
@@ -82,13 +80,4 @@ public class AuthController {
         ));
     }
 
-    private String hashPassword(String password) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] hash = md.digest(password.getBytes());
-            return HexFormat.of().formatHex(hash);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-    }
 }

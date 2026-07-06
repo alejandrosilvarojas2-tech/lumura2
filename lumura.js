@@ -238,13 +238,7 @@ async function cambiarCantidad(idCarrito, delta) {
   const nuevaCant = Number(item.cantidad) + delta;
   if (nuevaCant <= 0) return eliminarDelCarrito(idCarrito);
   try {
-    await api.post('/api/carrito', {
-      id_usuario: state.user.id,
-      articulo: item.articulo,
-      talla: item.talla,
-      color: item.color,
-      cantidad: delta,
-    });
+    await api.put('/api/carrito/' + idCarrito, { cantidad: nuevaCant });
     await cargarCarrito();
   } catch (err) {
     mostrarMensaje(err.message, 'error');

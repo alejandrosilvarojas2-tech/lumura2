@@ -1,13 +1,16 @@
+-- ============================================================
+-- ESQUEMA DE REFERENCIA — LUMURA
+-- ⚠ ADVERTENCIA: Spring Boot maneja el schema automáticamente
+-- (ddl-auto=update). Este archivo es SOLO documentación.
+-- NO ejecutar en producción — los INSERT de ejemplo duplican
+-- datos si ya existen.
+-- ============================================================
+
 CREATE DATABASE IF NOT EXISTS publico CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE publico;
 
-SET FOREIGN_KEY_CHECKS = 0;
-DROP TABLE IF EXISTS rel_usuario_compra;
-DROP TABLE IF EXISTS carrito;
-DROP TABLE IF EXISTS compras;
-DROP TABLE IF EXISTS catalogo;
-DROP TABLE IF EXISTS usuario;
-SET FOREIGN_KEY_CHECKS = 1;
+-- La creación de tablas se hace automáticamente via JPA/Hibernate.
+-- Este SQL es solo para referencia de la estructura.
 
 -- Usuarios
 CREATE TABLE IF NOT EXISTS usuario (
@@ -62,10 +65,23 @@ CREATE TABLE IF NOT EXISTS compras (
   FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario) ON DELETE CASCADE
 );
 
--- Productos de ejemplo
-INSERT INTO catalogo (articulo, talla, color, precio, descripcion, categoria, stock) VALUES
-('Camiseta Básica Premium', 'XS,S,M,L,XL', 'Rojo,Negro,Blanco', 45900, 'Camiseta de algodón premium 100%, suave al tacto.', 'Camisetas', 50),
-('Jeans Slim Fit', '28,30,32,34,36', 'Azul,Negro', 89900, 'Jeans de mezclilla con ajuste slim fit.', 'Pantalones', 30),
-('Chaqueta Deportiva', 'S,M,L,XL', 'Negro,Gris', 129900, 'Chaqueta deportiva impermeable y transpirable.', 'Chaquetas', 15),
-('Vestido Casual', 'XS,S,M,L', 'Negro,Azul,Verde', 74900, 'Vestido casual para uso diario, fresco y elegante.', 'Vestidos', 25),
-('Zapatillas Urbanas', '38,39,40,41,42', 'Blanco,Negro', 159900, 'Zapatillas cómodas para uso diario.', 'Calzado', 40);
+-- Datos de ejemplo (solo si la tabla está vacía)
+INSERT INTO catalogo (articulo, talla, color, precio, descripcion, categoria, stock)
+SELECT * FROM (SELECT 'Camiseta Básica Premium' AS articulo, 'XS,S,M,L,XL' AS talla, 'Rojo,Negro,Blanco' AS color, 45900 AS precio, 'Camiseta de algodón premium 100%, suave al tacto.' AS descripcion, 'Camisetas' AS categoria, 50 AS stock) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM catalogo);
+
+INSERT INTO catalogo (articulo, talla, color, precio, descripcion, categoria, stock)
+SELECT * FROM (SELECT 'Jeans Slim Fit' AS articulo, '28,30,32,34,36' AS talla, 'Azul,Negro' AS color, 89900 AS precio, 'Jeans de mezclilla con ajuste slim fit.' AS descripcion, 'Pantalones' AS categoria, 30 AS stock) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM catalogo WHERE articulo = 'Jeans Slim Fit');
+
+INSERT INTO catalogo (articulo, talla, color, precio, descripcion, categoria, stock)
+SELECT * FROM (SELECT 'Chaqueta Deportiva' AS articulo, 'S,M,L,XL' AS talla, 'Negro,Gris' AS color, 129900 AS precio, 'Chaqueta deportiva impermeable y transpirable.' AS descripcion, 'Chaquetas' AS categoria, 15 AS stock) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM catalogo WHERE articulo = 'Chaqueta Deportiva');
+
+INSERT INTO catalogo (articulo, talla, color, precio, descripcion, categoria, stock)
+SELECT * FROM (SELECT 'Vestido Casual' AS articulo, 'XS,S,M,L' AS talla, 'Negro,Azul,Verde' AS color, 74900 AS precio, 'Vestido casual para uso diario, fresco y elegante.' AS descripcion, 'Vestidos' AS categoria, 25 AS stock) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM catalogo WHERE articulo = 'Vestido Casual');
+
+INSERT INTO catalogo (articulo, talla, color, precio, descripcion, categoria, stock)
+SELECT * FROM (SELECT 'Zapatillas Urbanas' AS articulo, '38,39,40,41,42' AS talla, 'Blanco,Negro' AS color, 159900 AS precio, 'Zapatillas cómodas para uso diario.' AS descripcion, 'Calzado' AS categoria, 40 AS stock) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM catalogo WHERE articulo = 'Zapatillas Urbanas');
