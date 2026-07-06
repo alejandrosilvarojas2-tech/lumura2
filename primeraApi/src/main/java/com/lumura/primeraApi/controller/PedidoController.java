@@ -1,6 +1,7 @@
 package com.lumura.primeraApi.controller;
 
 import com.lumura.primeraApi.entity.Compra;
+import com.lumura.primeraApi.repository.CarritoRepository;
 import com.lumura.primeraApi.repository.CompraRepository;
 import com.lumura.primeraApi.util.JwtUtil;
 import org.springframework.http.ResponseEntity;
@@ -14,10 +15,14 @@ import java.util.Map;
 public class PedidoController {
 
     private final CompraRepository compraRepository;
+    private final CarritoRepository carritoRepository;
     private final JwtUtil jwtUtil;
 
-    public PedidoController(CompraRepository compraRepository, JwtUtil jwtUtil) {
+    public PedidoController(CompraRepository compraRepository,
+                            CarritoRepository carritoRepository,
+                            JwtUtil jwtUtil) {
         this.compraRepository = compraRepository;
+        this.carritoRepository = carritoRepository;
         this.jwtUtil = jwtUtil;
     }
 
@@ -36,6 +41,8 @@ public class PedidoController {
         compra.setEstadoPedido("pendiente");
         compra.setFechaPedido(LocalDateTime.now());
         compraRepository.save(compra);
+
+        carritoRepository.deleteByIdUsuario(compra.getIdUsuario());
 
         return ResponseEntity.ok(Map.of(
             "mensaje", "Pedido creado correctamente",
