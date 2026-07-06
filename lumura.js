@@ -93,6 +93,7 @@ async function cargarProductos() {
     state.productos = await api.get('/api/productos');
     renderProductos();
     renderAdminCatalogo();
+    if (document.getElementById('screen-admin-inv')?.classList.contains('active')) cargarInventario();
   } catch (err) {
     mostrarMensaje('Error al cargar productos: ' + err.message, 'error');
   }
@@ -455,6 +456,67 @@ function exportarPDF() {
   setTimeout(() => mostrarMensaje('✅ PDF exportado (simulado)', 'success'), 1500);
 }
 
+function cargarInventario() {
+  const productos = state.productos;
+  const totalUnidades = productos.reduce((s, p) => s + Number(p.stock || 0), 0);
+  const agotados = productos.filter(p => Number(p.stock) === 0);
+  const stockBajo = productos.filter(p => Number(p.stock) > 0 && Number(p.stock) < 10);
+  document.getElementById('inv-total-unidades').textContent = totalUnidades;
+  document.getElementById('inv-agotados').textContent = agotados.length;
+  document.getElementById('inv-stock-bajo').textContent = stockBajo.length;
+  const tbody = document.getElementById('inv-body');
+  if (!tbody) return;
+  if (productos.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;">No hay productos</td></tr>';
+    return;
+  }
+  const iconos = ['👕', '👖', '🧥', '👗', '👟'];
+  tbody.innerHTML = productos.map((p, i) => {
+    const stock = Number(p.stock);
+    const estado = stock === 0 ? '<span class="status-dot red"></span>Agotado'
+      : stock < 10 ? '<span class="status-dot yellow"></span>Bajo'
+      : '<span class="status-dot green"></span>Normal';
+    const color = stock === 0 ? 'var(--accent)' : stock < 10 ? 'var(--warning)' : 'inherit';
+    const btnClass = stock === 0 ? 'background:#fce4ec; color:var(--accent);'
+      : stock < 10 ? 'background:#fff9e6; color:#856404;'
+      : 'background:var(--light);';
+    const btnText = stock === 0 ? 'Urgente' : stock < 10 ? 'Reabastecer' : 'Ajustar';
+    return '<tr><td>' + iconos[i % iconos.length] + ' ' + p.articulo + '</td>'
+      + '<td>' + (p.categoria || '-') + '</td>'
+      + '<td>' + (p.talla || '-') + '</td>'
+      + '<td>' + (p.color || '-') + '</td>'
+      + '<td><span style="font-weight:700;color:' + color + ';">' + stock + '</span> uds.</td>'
+      + '<td>' + estado + '</td>'
+      + '<td><button class="btn-sm" style="' + btnClass + '" onclick="proximamente(\'Ajuste de stock\')">' + btnText + '</button></td>'
+      + '</tr>';
+  }).join('');
+}
+
+async function cargarReportes() {
+  try {
+    const data = await api.get('/api/admin/dashboard');
+    document.getElementById('rep-ingresos').textContent = '$' + Number(data.ingresos || 0).toLocaleString('es-CO');
+    document.getElementById('rep-pedidos').textContent = data.total_pedidos || 0;
+    const pedidos = await api.get('/api/admin/pedidos');
+    const tbody = document.getElementById('rep-transacciones');
+    if (tbody && pedidos.length > 0) {
+      tbody.innerHTML = pedidos.slice(0, 5).map(p => {
+        const badge = p.estado_pedido === 'entregado' ? 'badge-green'
+          : p.estado_pedido === 'enviado' ? 'badge-blue' : 'badge-red';
+        return '<tr>'
+          + '<td>#LUM-' + p.id_compra + '</td>'
+          + '<td>' + (p.articulo || '').split(',').slice(0, 2).join(', ') + '</td>'
+          + '<td style="font-weight:700;">$' + Number(p.total).toLocaleString('es-CO') + '</td>'
+          + '<td>' + new Date(p.fecha_pedido).toLocaleDateString('es-CO') + '</td>'
+          + '<td><span class="badge ' + badge + '">' + (p.estado_pedido || 'pendiente') + '</span></td>'
+          + '</tr>';
+      }).join('');
+    }
+  } catch (err) {
+    mostrarMensaje('Error al cargar reportes', 'error');
+  }
+}
+
 function actualizarUI() {
   const estaLogueado = !!state.token;
   document.querySelectorAll('.auth-only').forEach(el => el.style.display = estaLogueado ? '' : 'none');
@@ -501,6 +563,8 @@ function showScreen(name) {
   }
   if (name === 'admin-dash') { cargarDashboard(); cargarProductos(); }
   if (name === 'admin-cat') cargarProductos();
+  if (name === 'admin-inv') cargarProductos();
+  if (name === 'admin-rep') { cargarProductos(); cargarReportes(); }
   if (name === 'orders' && state.token) cargarPedidos();
 }
 

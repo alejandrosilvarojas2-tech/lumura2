@@ -511,9 +511,9 @@
         </div>
         <div class="admin-main">
           <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:16px; margin-bottom:20px;">
-            <div class="kpi-card"><div class="label">Total unidades</div><div class="value">2.847</div><div class="change">↑ +124 esta semana</div></div>
-            <div class="kpi-card"><div class="label">Productos agotados</div><div class="value" style="color:var(--accent);">5</div><div class="change" style="color:var(--accent);">⚠ Requiere atención</div></div>
-            <div class="kpi-card"><div class="label">Stock bajo (&lt;10)</div><div class="value" style="color:var(--warning);">12</div><div class="change" style="color:var(--warning);">⚡ Revisar pronto</div></div>
+            <div class="kpi-card"><div class="label">Total unidades</div><div id="inv-total-unidades" class="value">0</div><div class="change">Cargando...</div></div>
+            <div class="kpi-card"><div class="label">Productos agotados</div><div id="inv-agotados" class="value" style="color:var(--accent);">0</div><div class="change" style="color:var(--accent);">⚠ Requiere atención</div></div>
+            <div class="kpi-card"><div class="label">Stock bajo (&lt;10)</div><div id="inv-stock-bajo" class="value" style="color:var(--warning);">0</div><div class="change" style="color:var(--warning);">⚡ Revisar pronto</div></div>
           </div>
           <div class="notif">⚠️ <strong>Alerta:</strong> 5 productos sin stock. Se recomienda realizar un nuevo pedido de reabastecimiento.</div>
           <div class="card" style="padding:0; margin-top:12px;">
@@ -521,32 +521,7 @@
               <thead><tr>
                 <th>Producto</th><th>Categoría</th><th>Talla</th><th>Color</th><th>Stock</th><th>Estado</th><th>Acción</th>
               </tr></thead>
-              <tbody>
-                <tr>
-                  <td>👕 Camiseta Básica Premium</td><td>Camisetas</td><td>M</td><td>🔴 Rojo</td>
-                  <td><span style="font-weight:700;">45</span> uds.</td>
-                  <td><span class="status-dot green"></span>Normal</td>
-                   <td><button class="btn-sm" style="background:var(--light);" onclick="proximamente('Ajuste de stock')">Ajustar</button></td>
-                </tr>
-                <tr>
-                  <td>👖 Jeans Slim Fit</td><td>Pantalones</td><td>32</td><td>🔵 Azul</td>
-                  <td><span style="font-weight:700; color:var(--warning);">8</span> uds.</td>
-                  <td><span class="status-dot yellow"></span>Bajo</td>
-                  <td><button class="btn-sm" style="background:#fff9e6; color:#856404;" onclick="proximamente('Reabastecer')">Reabastecer</button></td>
-                </tr>
-                <tr>
-                  <td>🧥 Chaqueta Deportiva</td><td>Chaquetas</td><td>L</td><td>⚫ Negro</td>
-                  <td><span style="font-weight:700; color:var(--accent);">0</span> uds.</td>
-                  <td><span class="status-dot red"></span>Agotado</td>
-                  <td><button class="btn-sm" style="background:#fce4ec; color:var(--accent);" onclick="proximamente('Reabastecer urgente')">Urgente</button></td>
-                </tr>
-                <tr>
-                  <td>👗 Vestido Casual</td><td>Vestidos</td><td>S</td><td>🟡 Amarillo</td>
-                  <td><span style="font-weight:700;">30</span> uds.</td>
-                  <td><span class="status-dot green"></span>Normal</td>
-                  <td><button class="btn-sm" style="background:var(--light);" onclick="proximamente('Ajuste de stock')">Ajustar</button></td>
-                </tr>
-              </tbody>
+              <tbody id="inv-body">
             </table>
           </div>
         </div>
@@ -585,8 +560,8 @@
         </div>
         <div class="admin-main">
           <div style="display:grid; grid-template-columns: repeat(4,1fr); gap:12px; margin-bottom:20px;">
-            <div class="kpi-card"><div class="label">Ingresos totales</div><div class="value" style="font-size:18px;">$14.2M</div><div class="change">↑ +18% vs mes ant.</div></div>
-            <div class="kpi-card"><div class="label">Pedidos completados</div><div class="value" style="font-size:18px;">234</div><div class="change">↑ +32 pedidos</div></div>
+            <div class="kpi-card"><div class="label">Ingresos totales</div><div id="rep-ingresos" class="value" style="font-size:18px;">$0</div><div class="change">Cargando...</div></div>
+            <div class="kpi-card"><div class="label">Pedidos completados</div><div id="rep-pedidos" class="value" style="font-size:18px;">0</div><div class="change">Cargando...</div></div>
             <div class="kpi-card"><div class="label">Ticket promedio</div><div class="value" style="font-size:18px;">$60.7K</div><div class="change">↑ +5.2%</div></div>
             <div class="kpi-card"><div class="label">Tasa conversión</div><div class="value" style="font-size:18px;">3.8%</div><div class="change">↑ +0.4%</div></div>
           </div>
@@ -631,11 +606,9 @@
           <div class="card" style="padding:16px;">
             <div style="font-weight:700; margin-bottom:12px;">Últimas transacciones</div>
             <table class="data-table">
-              <thead><tr><th>Pedido</th><th>Cliente</th><th>Productos</th><th>Total</th><th>Fecha</th><th>Estado</th></tr></thead>
-              <tbody>
-                <tr><td>#LUM-0234</td><td>María López</td><td>Jeans + Camiseta</td><td style="font-weight:700;">$135.800</td><td>15 Abr</td><td><span class="badge badge-green">Completado</span></td></tr>
-                <tr><td>#LUM-0233</td><td>Carlos Ruiz</td><td>Chaqueta</td><td style="font-weight:700;">$129.900</td><td>15 Abr</td><td><span class="badge badge-blue">En camino</span></td></tr>
-                <tr><td>#LUM-0232</td><td>Ana Torres</td><td>Vestido x2</td><td style="font-weight:700;">$149.800</td><td>14 Abr</td><td><span class="badge badge-green">Completado</span></td></tr>
+              <thead><tr><th>Pedido</th><th>Productos</th><th>Total</th><th>Fecha</th><th>Estado</th></tr></thead>
+              <tbody id="rep-transacciones">
+                <tr><td colspan="5" style="text-align:center;padding:20px;">Cargando...</td></tr>
               </tbody>
             </table>
           </div>
