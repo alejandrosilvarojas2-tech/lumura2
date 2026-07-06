@@ -1,16 +1,29 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const db = require('./conexion');
-const connection = require('./conexion');
 
 const app = express();
 const PORT = 3000;
-const JWT_SECRET = 'lumura_secret_2025';
+const JWT_SECRET = process.env.JWT_SECRET || 'lumura_secret_2025';
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
+
+// JWT middleware
+function autenticar(req, res, next) {
+  const header = req.headers['authorization'];
+  if (!header) return res.status(401).json({ error: 'Token requerido' });
+  const token = header.split(' ')[1];
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) return res.status(401).json({ error: 'Token inválido o expirado' });
+    req.usuario = decoded;
+    next();
+  });
+}
 
 // ==================== AUTH ====================
 
@@ -28,7 +41,7 @@ app.post('/api/auth/register', (req, res) => {
     const sql = `INSERT INTO usuario (nombre_usuario, correo_usuario, password_hash, telefono, edad, direccion_usuario)
                  VALUES (?, ?, ?, ?, ?, ?)`;
 
-    connection.query(sql, [nombre_usuario, correo_usuario, hash, telefono, edad, direccion_usuario], (err, result) => {
+    db.query(sql, [nombre_usuario, correo_usuario, hash, telefono, edad, direccion_usuario], (err, result) => {
       if (err) {
         if (err.code === 'ER_DUP_ENTRY') return res.status(400).json({ error: 'El correo ya está registrado' });
         return res.status(500).json({ error: 'Error al registrar usuario' });
@@ -42,7 +55,7 @@ app.post('/api/auth/register', (req, res) => {
 app.post('/api/auth/login', (req, res) => {
   const { correo_usuario, password } = req.body;
 
-  connection.query('SELECT * FROM usuario WHERE correo_usuario = ?', [correo_usuario], (err, results) => {
+  db.query('SELECT * FROM usuario WHERE correo_usuario = ?', [correo_usuario], (err, results) => {
     if (err) return res.status(500).json({ error: 'Error en el servidor' });
     if (results.length === 0) return res.status(401).json({ error: 'Correo o contraseña incorrectos' });
 
@@ -60,18 +73,27 @@ app.post('/api/auth/login', (req, res) => {
 
 // LISTAR PRODUCTOS
 app.get('/api/productos', (req, res) => {
-  connection.query("SELECT * FROM catalogo WHERE estado = 'activo'", (err, results) => {
+  db.query("SELECT * FROM catalogo WHERE estado = 'activo'", (err, results) => {
     if (err) return res.status(500).json({ error: 'Error al obtener productos' });
     res.json(results);
   });
 });
 
+// PRODUCTO POR ID
+app.get('/api/productos/:id', (req, res) => {
+  db.query('SELECT * FROM catalogo WHERE id_catalogo = ?', [req.params.id], (err, results) => {
+    if (err) return res.status(500).json({ error: 'Error al obtener producto' });
+    if (results.length === 0) return res.status(404).json({ error: 'Producto no encontrado' });
+    res.json(results[0]);
+  });
+});
+
 // CREAR PRODUCTO (admin)
-app.post('/api/productos', (req, res) => {
+app.post('/api/productos', autenticar, (req, res) => {
   const { articulo, talla, color, precio, precio_descuento, descripcion, categoria, stock, imagen_url } = req.body;
   const sql = `INSERT INTO catalogo (articulo, talla, color, precio, precio_descuento, descripcion, categoria, stock, imagen_url)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-  connection.query(sql, [articulo, talla, color, precio, precio_descuento, descripcion, categoria, stock, imagen_url], (err, result) => {
+  db.query(sql, [articulo, talla, color, precio, precio_descuento, descripcion, categoria, stock, imagen_url], (err, result) => {
     if (err) return res.status(500).json({ error: 'Error al crear producto' });
     res.json({ mensaje: 'Producto creado', id: result.insertId });
   });
@@ -80,29 +102,29 @@ app.post('/api/productos', (req, res) => {
 // ==================== CARRITO ====================
 
 // VER CARRITO
-app.get('/api/carrito/:id_usuario', (req, res) => {
+app.get('/api/carrito/:id_usuario', autenticar, (req, res) => {
   const sql = `SELECT c.*, cat.precio, cat.imagen_url FROM carrito c
                JOIN catalogo cat ON c.articulo = cat.articulo
                WHERE c.id_usuario = ?`;
-  connection.query(sql, [req.params.id_usuario], (err, results) => {
+  db.query(sql, [req.params.id_usuario], (err, results) => {
     if (err) return res.status(500).json({ error: 'Error al obtener carrito' });
     res.json(results);
   });
 });
 
 // AGREGAR AL CARRITO
-app.post('/api/carrito', (req, res) => {
+app.post('/api/carrito', autenticar, (req, res) => {
   const { id_usuario, articulo, talla, color, cantidad } = req.body;
   const sql = `INSERT INTO carrito (id_usuario, articulo, talla, color, cantidad) VALUES (?, ?, ?, ?, ?)`;
-  connection.query(sql, [id_usuario, articulo, talla, color, cantidad], (err, result) => {
+  db.query(sql, [id_usuario, articulo, talla, color, cantidad], (err, result) => {
     if (err) return res.status(500).json({ error: 'Error al agregar al carrito' });
     res.json({ mensaje: 'Producto agregado al carrito' });
   });
 });
 
 // ELIMINAR DEL CARRITO
-app.delete('/api/carrito/:id_carrito', (req, res) => {
-  connection.query('DELETE FROM carrito WHERE id_carrito = ?', [req.params.id_carrito], (err) => {
+app.delete('/api/carrito/:id_carrito', autenticar, (req, res) => {
+  db.query('DELETE FROM carrito WHERE id_carrito = ?', [req.params.id_carrito], (err) => {
     if (err) return res.status(500).json({ error: 'Error al eliminar del carrito' });
     res.json({ mensaje: 'Producto eliminado del carrito' });
   });
@@ -111,19 +133,19 @@ app.delete('/api/carrito/:id_carrito', (req, res) => {
 // ==================== PEDIDOS ====================
 
 // CREAR PEDIDO
-app.post('/api/pedidos', (req, res) => {
+app.post('/api/pedidos', autenticar, (req, res) => {
   const { id_usuario, articulo, cantidad_objetos, metodo_pago, total, direccion_entrega } = req.body;
   const sql = `INSERT INTO compras (id_usuario, articulo, cantidad_objetos, metodo_pago, total, direccion_entrega)
                VALUES (?, ?, ?, ?, ?, ?)`;
-  connection.query(sql, [id_usuario, articulo, cantidad_objetos, metodo_pago, total, direccion_entrega], (err, result) => {
+  db.query(sql, [id_usuario, articulo, cantidad_objetos, metodo_pago, total, direccion_entrega], (err, result) => {
     if (err) return res.status(500).json({ error: 'Error al crear pedido' });
     res.json({ mensaje: 'Pedido creado correctamente', id: result.insertId });
   });
 });
 
 // VER PEDIDOS DE UN USUARIO
-app.get('/api/pedidos/:id_usuario', (req, res) => {
-  connection.query('SELECT * FROM compras WHERE id_usuario = ? ORDER BY fecha_pedido DESC', [req.params.id_usuario], (err, results) => {
+app.get('/api/pedidos/:id_usuario', autenticar, (req, res) => {
+  db.query('SELECT * FROM compras WHERE id_usuario = ? ORDER BY fecha_pedido DESC', [req.params.id_usuario], (err, results) => {
     if (err) return res.status(500).json({ error: 'Error al obtener pedidos' });
     res.json(results);
   });
@@ -132,7 +154,7 @@ app.get('/api/pedidos/:id_usuario', (req, res) => {
 // ==================== ADMIN ====================
 
 // DASHBOARD
-app.get('/api/admin/dashboard', (req, res) => {
+app.get('/api/admin/dashboard', autenticar, (req, res) => {
   const queries = {
     total_productos: 'SELECT COUNT(*) as total FROM catalogo',
     sin_stock: "SELECT COUNT(*) as total FROM catalogo WHERE stock = 0",
@@ -146,7 +168,7 @@ app.get('/api/admin/dashboard', (req, res) => {
   const keys = Object.keys(queries);
 
   keys.forEach(key => {
-    connection.query(queries[key], (err, result) => {
+    db.query(queries[key], (err, result) => {
       resultados[key] = err ? 0 : result[0].total;
       completados++;
       if (completados === keys.length) res.json(resultados);
@@ -155,17 +177,17 @@ app.get('/api/admin/dashboard', (req, res) => {
 });
 
 // TODOS LOS PEDIDOS (admin)
-app.get('/api/admin/pedidos', (req, res) => {
-  connection.query('SELECT c.*, u.nombre_usuario, u.correo_usuario FROM compras c JOIN usuario u ON c.id_usuario = u.id_usuario ORDER BY fecha_pedido DESC', (err, results) => {
+app.get('/api/admin/pedidos', autenticar, (req, res) => {
+  db.query('SELECT c.*, u.nombre_usuario, u.correo_usuario FROM compras c JOIN usuario u ON c.id_usuario = u.id_usuario ORDER BY fecha_pedido DESC', (err, results) => {
     if (err) return res.status(500).json({ error: 'Error al obtener pedidos' });
     res.json(results);
   });
 });
 
 // ACTUALIZAR ESTADO PEDIDO
-app.put('/api/admin/pedidos/:id', (req, res) => {
+app.put('/api/admin/pedidos/:id', autenticar, (req, res) => {
   const { estado_pedido } = req.body;
-  connection.query('UPDATE compras SET estado_pedido = ? WHERE id_compra = ?', [estado_pedido, req.params.id], (err) => {
+  db.query('UPDATE compras SET estado_pedido = ? WHERE id_compra = ?', [estado_pedido, req.params.id], (err) => {
     if (err) return res.status(500).json({ error: 'Error al actualizar pedido' });
     res.json({ mensaje: 'Estado actualizado' });
   });

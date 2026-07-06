@@ -3,10 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LUMURA S.A.S. – Prototipo de Navegación</title>
+<title>LUMURA S.A.S.</title>
 <link rel="stylesheet" href="lumura.css">
 </head>
 <body>
+
+<div id="msg" class="msg" style="display:none;"></div>
 
 <!-- PROTOTYPE NAVIGATION BAR -->
 <div class="proto-nav">
@@ -40,18 +42,20 @@
       <div style="padding: 28px 24px;">
         <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 6px;">Bienvenido</h2>
         <p style="color: var(--gray); font-size: 14px; margin-bottom: 24px;">Inicia sesión en tu cuenta</p>
+        <form id="login-form">
         <div class="form-group">
           <label>Correo electrónico</label>
-          <input type="email" placeholder="ejemplo@correo.com">
+          <input id="login-email" type="email" placeholder="ejemplo@correo.com" required>
         </div>
         <div class="form-group">
           <label>Contraseña</label>
-          <input type="password" placeholder="••••••••">
+          <input id="login-pass" type="password" placeholder="••••••••" required>
         </div>
         <div style="text-align: right; margin-bottom: 20px;">
           <a style="color: var(--accent); font-size: 13px; text-decoration: none;">¿Olvidaste tu contraseña?</a>
         </div>
-        <button class="btn-primary" onclick="showScreen('home')">Iniciar sesión</button>
+        <button type="submit" class="btn-primary">Iniciar sesión</button>
+        </form>
         <div style="text-align: center; margin-top: 20px; font-size: 14px; color: var(--gray);">
           ¿No tienes cuenta? <a style="color: var(--accent); font-weight: 600; cursor: pointer;" onclick="showScreen('register')">Regístrate</a>
         </div>
@@ -77,44 +81,38 @@
       <div class="app-header">
         <span style="font-size: 20px; cursor:pointer;" onclick="showScreen('login')">←</span>
         <div class="logo">LUMURA</div>
-        <span></span>
+        <span class="user-name" style="font-size:12px;color:rgba(255,255,255,0.7);"></span>
       </div>
       <div style="padding: 20px 24px;">
         <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 4px;">Crear cuenta</h2>
         <p style="color: var(--gray); font-size: 13px; margin-bottom: 20px;">Completa tus datos personales</p>
+        <form id="reg-form">
         <div class="form-group">
           <label>Nombre completo</label>
-          <input type="text" placeholder="Juan Pérez García">
-        </div>
-        <div class="form-group">
-          <label>Número de documento</label>
-          <input type="text" placeholder="CC 1234567890">
+          <input id="reg-nombre" type="text" placeholder="Juan Pérez García" required>
         </div>
         <div class="form-group">
           <label>Correo electrónico</label>
-          <input type="email" placeholder="ejemplo@correo.com">
+          <input id="reg-email" type="email" placeholder="ejemplo@correo.com" required>
         </div>
         <div class="form-group">
           <label>Teléfono</label>
-          <input type="tel" placeholder="+57 300 000 0000">
+          <input id="reg-tel" type="tel" placeholder="+57 300 000 0000">
         </div>
         <div class="form-group">
           <label>Dirección de entrega</label>
-          <input type="text" placeholder="Calle 10 # 5-20, Ciudad">
+          <input id="reg-dir" type="text" placeholder="Calle 10 # 5-20, Ciudad">
         </div>
         <div class="form-group">
           <label>Contraseña</label>
-          <input type="password" placeholder="Mínimo 8 caracteres">
+          <input id="reg-pass" type="password" placeholder="Mínimo 8 caracteres" required>
         </div>
         <div class="form-group">
           <label>Confirmar contraseña</label>
-          <input type="password" placeholder="Repite tu contraseña">
+          <input id="reg-pass2" type="password" placeholder="Repite tu contraseña" required>
         </div>
-        <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 20px;">
-          <input type="checkbox" style="margin-top: 2px; width: auto;">
-          <span style="font-size: 13px; color: var(--gray);">Acepto los <a style="color:var(--accent);">términos y condiciones</a> y la <a style="color:var(--accent);">política de privacidad</a></span>
-        </div>
-        <button class="btn-primary" onclick="showScreen('home')">Crear cuenta</button>
+        <button type="submit" class="btn-primary">Crear cuenta</button>
+        </form>
         <div style="text-align: center; margin-top: 16px; font-size: 14px; color: var(--gray);">
           ¿Ya tienes cuenta? <a style="color: var(--accent); font-weight: 600; cursor: pointer;" onclick="showScreen('login')">Inicia sesión</a>
         </div>
@@ -133,71 +131,28 @@
     <div class="scrollable">
       <div class="app-header">
         <div class="logo">LUMURA</div>
-        <div class="icons">🔔 🛒</div>
-      </div>
-      <!-- Search -->
-      <div class="search-bar">
-        <span>🔍</span>
-        <input placeholder="Buscar prendas, marcas...">
-        <span style="font-size:16px; color:var(--gray);">⚙️</span>
+        <div class="icons">🔔 <span style="cursor:pointer;" onclick="showScreen('cart')">🛒 <span id="cart-count" style="font-size:10px;background:var(--accent);color:white;border-radius:50%;padding:0 5px;">0</span></span></div>
       </div>
       <!-- Banner -->
       <div class="hero-banner">
         <div class="discount">⚡ OFERTA ESPECIAL</div>
         <h2>Hasta 40% OFF<br>en Temporada</h2>
         <p>Descubre las últimas tendencias de moda</p>
-        <button class="btn-sm" style="background:var(--accent); color:white;" onclick="showScreen('product')">Ver colección →</button>
+        <button class="btn-sm" style="background:var(--accent); color:white;" onclick="showScreen('home')">Ver colección →</button>
       </div>
       <!-- Categorías -->
       <div class="section-label">Categorías</div>
       <div class="tag-filter">
-        <span class="tag active">Todo</span>
-        <span class="tag">Camisetas</span>
-        <span class="tag">Pantalones</span>
-        <span class="tag">Chaquetas</span>
-        <span class="tag">Vestidos</span>
-        <span class="tag">Accesorios</span>
+        <span class="tag active" data-cat="">Todo</span>
+        <span class="tag" data-cat="Camisetas">Camisetas</span>
+        <span class="tag" data-cat="Pantalones">Pantalones</span>
+        <span class="tag" data-cat="Chaquetas">Chaquetas</span>
+        <span class="tag" data-cat="Vestidos">Vestidos</span>
+        <span class="tag" data-cat="Accesorios">Accesorios</span>
       </div>
       <!-- Products -->
-      <div class="section-label">Productos destacados</div>
-      <div class="product-grid">
-        <div class="product-card" onclick="showScreen('product')">
-          <div class="img-placeholder" style="background: linear-gradient(135deg, #fce4ec, #f8bbd9);">👕</div>
-          <div class="info">
-            <div class="name">Camiseta Básica Premium</div>
-            <div class="price">$45.900</div>
-            <div style="font-size:11px; color:var(--gray); margin-top:2px;">⭐ 4.8 · Tallas: XS-XXL</div>
-          </div>
-          <button class="add-btn">+ Agregar al carrito</button>
-        </div>
-        <div class="product-card" onclick="showScreen('product')">
-          <div class="img-placeholder" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb);">👖</div>
-          <div class="info">
-            <div class="name">Jeans Slim Fit</div>
-            <div class="price">$89.900</div>
-            <div style="font-size:11px; color:var(--gray); margin-top:2px;">⭐ 4.6 · Tallas: 28-36</div>
-          </div>
-          <button class="add-btn">+ Agregar al carrito</button>
-        </div>
-        <div class="product-card" onclick="showScreen('product')">
-          <div class="img-placeholder" style="background: linear-gradient(135deg, #e8f5e9, #c8e6c9);">🧥</div>
-          <div class="info">
-            <div class="name">Chaqueta Deportiva</div>
-            <div class="price">$129.900</div>
-            <div style="font-size:11px; color:var(--gray); margin-top:2px;">⭐ 4.9 · Tallas: S-XL</div>
-          </div>
-          <button class="add-btn">+ Agregar al carrito</button>
-        </div>
-        <div class="product-card" onclick="showScreen('product')">
-          <div class="img-placeholder" style="background: linear-gradient(135deg, #fff9c4, #fff176);">👗</div>
-          <div class="info">
-            <div class="name">Vestido Casual</div>
-            <div class="price">$74.900</div>
-            <div style="font-size:11px; color:var(--gray); margin-top:2px;">⭐ 4.7 · Tallas: XS-L</div>
-          </div>
-          <button class="add-btn">+ Agregar al carrito</button>
-        </div>
-      </div>
+      <div class="section-label">Productos</div>
+      <div id="prod-grid" class="product-grid"></div>
       <div style="height: 70px;"></div>
     </div>
     <div class="bottom-nav">
@@ -205,7 +160,7 @@
       <div class="nav-item" onclick="showScreen('home')"><span class="icon">🔍</span>Buscar</div>
       <div class="nav-item" onclick="showScreen('cart')"><span class="icon">🛒</span>Carrito</div>
       <div class="nav-item" onclick="showScreen('home')"><span class="icon">❤️</span>Favoritos</div>
-      <div class="nav-item" onclick="showScreen('home')"><span class="icon">👤</span>Perfil</div>
+      <div class="nav-item logout-btn" style="cursor:pointer;"><span class="icon">👤</span>Perfil</div>
     </div>
   </div>
 </div>
@@ -225,47 +180,26 @@
       </div>
       <!-- Image -->
       <div style="background: linear-gradient(135deg, #fce4ec, #f8bbd9); height: 260px; display: flex; align-items: center; justify-content: center; font-size: 90px; position:relative;">
-        👕
+        <span id="prod-detail-img">👕</span>
         <span class="badge badge-red" style="position:absolute; top:12px; left:12px;">🔥 Nuevo</span>
       </div>
       <div style="padding: 16px 16px 0;">
         <div style="display:flex; justify-content: space-between; align-items: flex-start;">
           <div>
-            <div style="font-size: 19px; font-weight: 800;">Camiseta Básica Premium</div>
-            <div style="color: var(--gray); font-size: 13px; margin-top: 3px;">LUMURA Collection 2025</div>
+            <div id="prod-detail-nombre" style="font-size: 19px; font-weight: 800;">Cargando...</div>
           </div>
           <div style="text-align: right;">
-            <div style="font-size: 22px; font-weight: 800; color: var(--accent);">$45.900</div>
-            <div style="text-decoration: line-through; color: var(--gray); font-size: 13px;">$65.000</div>
+            <div id="prod-detail-precio" style="font-size: 22px; font-weight: 800; color: var(--accent);"></div>
           </div>
         </div>
-        <div style="display: flex; align-items: center; gap: 6px; margin: 10px 0;">
-          <span style="color: #ffc107; font-size: 16px;">★★★★★</span>
-          <span style="font-size: 13px; color: var(--gray);">4.8 · 124 reseñas</span>
-        </div>
         <hr style="border: none; border-top: 1px solid var(--light); margin: 12px 0;">
-        <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--gray);">TALLA</div>
-        <div style="display: flex; gap: 10px; margin-bottom: 16px;">
-          <div style="width:38px; height:38px; border:2px solid var(--accent); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:var(--accent);">XS</div>
-          <div style="width:38px; height:38px; border:2px solid var(--light); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px;">S</div>
-          <div style="width:38px; height:38px; border:2px solid var(--light); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px;">M</div>
-          <div style="width:38px; height:38px; border:2px solid var(--light); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px;">L</div>
-          <div style="width:38px; height:38px; border:2px solid var(--light); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px;">XL</div>
-        </div>
-        <div style="font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--gray);">COLOR</div>
-        <div style="display: flex; gap: 10px; margin-bottom: 16px;">
-          <div style="width:28px; height:28px; border-radius:50%; background:#e94560; border:3px solid #333;"></div>
-          <div style="width:28px; height:28px; border-radius:50%; background:#1a1a2e;"></div>
-          <div style="width:28px; height:28px; border-radius:50%; background:#fff; border:1.5px solid #ddd;"></div>
-          <div style="width:28px; height:28px; border-radius:50%; background:#4CAF50;"></div>
-        </div>
-        <div style="font-size: 13px; color: var(--gray); line-height: 1.6; margin-bottom: 16px;">
-          Camiseta de algodón premium 100%, suave al tacto y con excelente transpirabilidad. Ideal para uso casual o deportivo. Confección de alta calidad con costuras reforzadas.
+        <div id="prod-detail-desc" style="font-size: 13px; color: var(--gray); line-height: 1.6; margin-bottom: 16px;">
+          Cargando...
         </div>
       </div>
       <div style="padding: 0 16px 16px; display: flex; gap: 10px;">
         <button class="btn-secondary" style="width: auto; padding: 14px 18px;">❤️</button>
-        <button class="btn-primary" onclick="showScreen('cart')">Agregar al carrito 🛒</button>
+        <button id="prod-detail-btn" class="btn-primary">Agregar al carrito 🛒</button>
       </div>
     </div>
     <div class="bottom-nav">
@@ -273,7 +207,7 @@
       <div class="nav-item"><span class="icon">🔍</span>Buscar</div>
       <div class="nav-item" onclick="showScreen('cart')"><span class="icon">🛒</span>Carrito</div>
       <div class="nav-item"><span class="icon">❤️</span>Favoritos</div>
-      <div class="nav-item"><span class="icon">👤</span>Perfil</div>
+      <div class="nav-item logout-btn" style="cursor:pointer;"><span class="icon">👤</span>Perfil</div>
     </div>
   </div>
 </div>
@@ -288,73 +222,21 @@
     <div class="scrollable">
       <div class="app-header">
         <span style="font-size: 20px; cursor:pointer;" onclick="showScreen('home')">←</span>
-        <span style="font-weight: 600;">Mi carrito (3)</span>
-        <span style="font-size: 16px; color: var(--accent); cursor:pointer;">Limpiar</span>
+        <span style="font-weight: 600;">Mi carrito</span>
+        <span></span>
       </div>
-      <div class="cart-item">
-        <div class="icon-box" style="background: linear-gradient(135deg, #fce4ec, #f8bbd9);">👕</div>
-        <div class="detail">
-          <div class="name">Camiseta Básica Premium</div>
-          <div class="sub">Talla: M · Color: Rojo</div>
-          <div class="qty-ctrl">
-            <button>−</button>
-            <span style="font-size:14px; font-weight:600;">2</span>
-            <button>+</button>
-          </div>
-        </div>
-        <div style="text-align: right;">
-          <div class="price">$91.800</div>
-          <span style="font-size: 18px; cursor:pointer; color: var(--gray);">🗑️</span>
-        </div>
-      </div>
-      <div class="cart-item">
-        <div class="icon-box" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb);">👖</div>
-        <div class="detail">
-          <div class="name">Jeans Slim Fit</div>
-          <div class="sub">Talla: 32 · Color: Azul</div>
-          <div class="qty-ctrl">
-            <button>−</button>
-            <span style="font-size:14px; font-weight:600;">1</span>
-            <button>+</button>
-          </div>
-        </div>
-        <div style="text-align: right;">
-          <div class="price">$89.900</div>
-          <span style="font-size: 18px; cursor:pointer; color: var(--gray);">🗑️</span>
-        </div>
-      </div>
-      <div class="cart-item">
-        <div class="icon-box" style="background: linear-gradient(135deg, #e8f5e9, #c8e6c9);">🧥</div>
-        <div class="detail">
-          <div class="name">Chaqueta Deportiva</div>
-          <div class="sub">Talla: L · Color: Negro</div>
-          <div class="qty-ctrl">
-            <button>−</button>
-            <span style="font-size:14px; font-weight:600;">1</span>
-            <button>+</button>
-          </div>
-        </div>
-        <div style="text-align: right;">
-          <div class="price">$129.900</div>
-          <span style="font-size: 18px; cursor:pointer; color: var(--gray);">🗑️</span>
-        </div>
-      </div>
-      <!-- Cupon -->
-      <div style="padding: 16px; display: flex; gap: 8px;">
-        <input placeholder="Código de cupón" style="flex:1; padding: 10px 14px; border: 1.5px solid var(--light); border-radius: 10px; font-size: 13px; outline:none;">
-        <button class="btn-sm" style="background: var(--primary); color: white;">Aplicar</button>
-      </div>
+      <div id="cart-items"></div>
       <!-- Summary -->
-      <div style="margin: 0 16px 16px; background: #f8f8fc; border-radius: 12px; padding: 16px;">
+      <div id="cart-summary" style="margin: 0 16px 16px; background: #f8f8fc; border-radius: 12px; padding: 16px;">
         <div style="font-weight: 700; margin-bottom: 12px;">Resumen del pedido</div>
-        <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:8px;"><span style="color:var(--gray);">Subtotal</span><span>$311.600</span></div>
+        <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:8px;"><span style="color:var(--gray);">Subtotal</span><span id="cart-subtotal">$0</span></div>
         <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:8px;"><span style="color:var(--gray);">Envío</span><span style="color:var(--success);">Gratis</span></div>
-        <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:8px;"><span style="color:var(--gray);">Descuento</span><span style="color:var(--accent);">-$0</span></div>
         <hr style="border:none; border-top:1px solid var(--light); margin: 10px 0;">
-        <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:800;"><span>Total</span><span style="color:var(--accent);">$311.600</span></div>
+        <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:800;"><span>Total</span><span id="cart-total" style="color:var(--accent);">$0</span></div>
       </div>
       <div style="padding: 0 16px 20px;">
-        <button class="btn-primary" onclick="showScreen('checkout')">Proceder al pago →</button>
+        <button class="btn-primary no-auth" onclick="showScreen('login')">Inicia sesión para comprar</button>
+        <button class="btn-primary auth-only" onclick="showScreen('checkout')">Proceder al pago →</button>
       </div>
     </div>
     <div class="bottom-nav">
@@ -389,54 +271,14 @@
         <div class="step pending"><div class="step-circle">3</div><div class="step-label">Confirm.</div></div>
       </div>
       <div style="padding: 0 16px 20px;">
-        <div style="font-weight: 700; font-size: 15px; margin-bottom: 12px;">📍 Dirección de entrega</div>
-        <div style="background: white; border-radius: 10px; padding: 14px; border: 1.5px solid var(--light); margin-bottom: 8px;">
-          <div style="font-size: 14px; font-weight: 600;">Juan Pérez García</div>
-          <div style="font-size: 13px; color: var(--gray); margin-top: 4px;">Calle 10 # 5-20, San Alberto, Cesar</div>
-          <div style="font-size: 13px; color: var(--gray);">Tel: +57 300 123 4567</div>
-        </div>
-        <button class="btn-sm" style="background:var(--light); color:var(--gray); margin-bottom:16px;">+ Agregar nueva dirección</button>
-
-        <div style="font-weight: 700; font-size: 15px; margin-bottom: 12px;">💳 Método de pago</div>
-        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom: 16px;">
-          <div style="background:white; border:2px solid var(--accent); border-radius:10px; padding:14px; display:flex; align-items:center; gap:10px;">
-            <span style="font-size:24px;">💳</span>
-            <div style="flex:1;"><div style="font-size:14px; font-weight:600;">Tarjeta crédito/débito</div><div style="font-size:12px;color:var(--gray);">Visa, Mastercard, Amex</div></div>
-            <span style="color:var(--accent); font-size:16px;">●</span>
-          </div>
-          <div style="background:white; border:1.5px solid var(--light); border-radius:10px; padding:14px; display:flex; align-items:center; gap:10px;">
-            <span style="font-size:24px;">📱</span>
-            <div><div style="font-size:14px; font-weight:600;">PSE / Transferencia</div><div style="font-size:12px;color:var(--gray);">Débito bancario en línea</div></div>
-          </div>
-          <div style="background:white; border:1.5px solid var(--light); border-radius:10px; padding:14px; display:flex; align-items:center; gap:10px;">
-            <span style="font-size:24px;">💰</span>
-            <div><div style="font-size:14px; font-weight:600;">Contraentrega</div><div style="font-size:12px;color:var(--gray);">Paga al recibir tu pedido</div></div>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Número de tarjeta</label>
-          <input placeholder="4242 4242 4242 4242">
-        </div>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-          <div class="form-group">
-            <label>Vencimiento</label>
-            <input placeholder="MM/AA">
-          </div>
-          <div class="form-group">
-            <label>CVV</label>
-            <input placeholder="•••">
-          </div>
-        </div>
-
-        <!-- Summary -->
         <div style="background: #f8f8fc; border-radius: 10px; padding: 14px; margin-bottom: 16px;">
-          <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:6px;"><span style="color:var(--gray);">3 productos</span><span>$311.600</span></div>
+          <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:6px;"><span style="color:var(--gray);">Productos</span><span id="checkout-count">0</span></div>
           <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:6px;"><span style="color:var(--gray);">Envío</span><span style="color:var(--success);">Gratis</span></div>
           <hr style="border:none; border-top:1px solid var(--light); margin:8px 0;">
-          <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:800;"><span>Total</span><span style="color:var(--accent);">$311.600</span></div>
+          <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:800;"><span>Total</span><span id="checkout-total" style="color:var(--accent);">$0</span></div>
         </div>
-        <button class="btn-primary" onclick="showScreen('confirm')">🔒 Pagar $311.600</button>
+        <button class="btn-primary auth-only" onclick="handleCheckout()">🔒 Confirmar pedido</button>
+        <button class="btn-primary no-auth" onclick="showScreen('login')">🔒 Inicia sesión para pagar</button>
         <p style="text-align:center; font-size:11px; color:var(--gray); margin-top:10px;">🔐 Pago seguro con cifrado SSL</p>
       </div>
     </div>
@@ -463,12 +305,9 @@
       <div class="success-sub">Tu pedido fue procesado exitosamente. Recibirás una notificación con el seguimiento de tu envío.</div>
       <div class="order-detail">
         <div style="font-weight:700; margin-bottom:10px;">Detalle del pedido</div>
-        <div class="row"><span style="color:var(--gray);">N° Pedido</span><span style="font-weight:600;">#LUM-20250415</span></div>
-        <div class="row"><span style="color:var(--gray);">Fecha</span><span>15 Abr 2025</span></div>
-        <div class="row"><span style="color:var(--gray);">Método de pago</span><span>Tarjeta Visa ···4242</span></div>
-        <div class="row"><span style="color:var(--gray);">Envío a</span><span>Calle 10 #5-20</span></div>
-        <div class="row"><span style="color:var(--gray);">Entrega estimada</span><span>18-20 Abr 2025</span></div>
-        <div class="row"><span>Total pagado</span><span style="color:var(--accent);">$311.600</span></div>
+        <div class="row"><span style="color:var(--gray);">N° Pedido</span><span id="confirm-numero" style="font-weight:600;">#LUM-XXXX</span></div>
+        <div class="row"><span style="color:var(--gray);">Fecha</span><span id="confirm-fecha">-</span></div>
+        <div class="row"><span style="color:var(--gray);">Total pagado</span><span id="confirm-total" style="color:var(--accent);">$0</span></div>
       </div>
       <div style="padding: 20px 16px; display:flex; flex-direction:column; gap:10px;">
         <button class="btn-primary" onclick="showScreen('home')">🏠 Volver al inicio</button>
@@ -499,7 +338,7 @@
         <div class="menu-item"><span class="icon">🛒</span>Pedidos</div>
         <div class="menu-item"><span class="icon">⚙️</span>Configuración</div>
         <div style="position:absolute; bottom:20px; left:0; right:0; padding: 0 20px;">
-          <div class="menu-item" onclick="showScreen('login')"><span class="icon">🔓</span>Cerrar sesión</div>
+          <div class="menu-item logout-btn"><span class="icon">🔓</span>Cerrar sesión</div>
         </div>
       </div>
       <div style="flex:1; display:flex; flex-direction:column;">
@@ -515,10 +354,10 @@
         </div>
         <div class="admin-main">
           <div class="kpi-grid">
-            <div class="kpi-card"><div class="label">Ventas hoy</div><div class="value">$1.2M<span class="icon-big">💰</span></div><div class="change">↑ +12% vs ayer</div></div>
-            <div class="kpi-card"><div class="label">Pedidos</div><div class="value">48<span class="icon-big">🛒</span></div><div class="change">↑ +8 nuevos</div></div>
-            <div class="kpi-card"><div class="label">Clientes</div><div class="value">1.4K<span class="icon-big">👥</span></div><div class="change">↑ +23 hoy</div></div>
-            <div class="kpi-card"><div class="label">Productos</div><div class="value">312<span class="icon-big">👗</span></div><div class="change" style="color:var(--warning);">⚠ 5 sin stock</div></div>
+            <div class="kpi-card"><div class="label">Ingresos</div><div id="admin-revenue" class="value">$0<span class="icon-big">💰</span></div></div>
+            <div class="kpi-card"><div class="label">Pedidos</div><div id="admin-order-count" class="value">0<span class="icon-big">🛒</span></div></div>
+            <div class="kpi-card"><div class="label">Clientes</div><div id="admin-user-count" class="value">0<span class="icon-big">👥</span></div></div>
+            <div class="kpi-card"><div class="label">Productos</div><div id="admin-prod-count" class="value">0<span class="icon-big">👗</span></div></div>
           </div>
           <div style="display:grid; grid-template-columns:1.5fr 1fr; gap:16px;">
             <div class="card" style="padding:16px;">
@@ -588,35 +427,7 @@
               <thead><tr>
                 <th>ID</th><th>Producto</th><th>Categoría</th><th>Precio</th><th>Tallas</th><th>Estado</th><th>Acciones</th>
               </tr></thead>
-              <tbody>
-                <tr>
-                  <td>#001</td>
-                  <td><div style="display:flex; align-items:center; gap:10px;"><span style="font-size:24px;">👕</span><div><div style="font-weight:600;">Camiseta Básica Premium</div><div style="font-size:12px;color:var(--gray);">LUMURA Collection</div></div></div></td>
-                  <td>Camisetas</td><td style="font-weight:700; color:var(--accent);">$45.900</td><td>XS, S, M, L, XL</td>
-                  <td><span class="badge badge-green">Activo</span></td>
-                  <td><button class="btn-sm" style="background:#e3f2fd; color:#1565c0; margin-right:4px;">✏️ Editar</button><button class="btn-sm" style="background:#fce4ec; color:var(--accent);">🗑️</button></td>
-                </tr>
-                <tr>
-                  <td>#002</td>
-                  <td><div style="display:flex; align-items:center; gap:10px;"><span style="font-size:24px;">👖</span><div><div style="font-weight:600;">Jeans Slim Fit</div><div style="font-size:12px;color:var(--gray);">LUMURA Denim</div></div></div></td>
-                  <td>Pantalones</td><td style="font-weight:700; color:var(--accent);">$89.900</td><td>28, 30, 32, 34, 36</td>
-                  <td><span class="badge badge-green">Activo</span></td>
-                  <td><button class="btn-sm" style="background:#e3f2fd; color:#1565c0; margin-right:4px;">✏️ Editar</button><button class="btn-sm" style="background:#fce4ec; color:var(--accent);">🗑️</button></td>
-                </tr>
-                <tr>
-                  <td>#003</td>
-                  <td><div style="display:flex; align-items:center; gap:10px;"><span style="font-size:24px;">🧥</span><div><div style="font-weight:600;">Chaqueta Deportiva</div><div style="font-size:12px;color:var(--gray);">LUMURA Sport</div></div></div></td>
-                  <td>Chaquetas</td><td style="font-weight:700; color:var(--accent);">$129.900</td><td>S, M, L, XL</td>
-                  <td><span class="badge badge-red">Sin stock</span></td>
-                  <td><button class="btn-sm" style="background:#e3f2fd; color:#1565c0; margin-right:4px;">✏️ Editar</button><button class="btn-sm" style="background:#fce4ec; color:var(--accent);">🗑️</button></td>
-                </tr>
-                <tr>
-                  <td>#004</td>
-                  <td><div style="display:flex; align-items:center; gap:10px;"><span style="font-size:24px;">👗</span><div><div style="font-weight:600;">Vestido Casual</div><div style="font-size:12px;color:var(--gray);">LUMURA Elegance</div></div></div></td>
-                  <td>Vestidos</td><td style="font-weight:700; color:var(--accent);">$74.900</td><td>XS, S, M, L</td>
-                  <td><span class="badge badge-green">Activo</span></td>
-                  <td><button class="btn-sm" style="background:#e3f2fd; color:#1565c0; margin-right:4px;">✏️ Editar</button><button class="btn-sm" style="background:#fce4ec; color:var(--accent);">🗑️</button></td>
-                </tr>
+              <tbody id="admin-cat-body">
               </tbody>
             </table>
           </div>
