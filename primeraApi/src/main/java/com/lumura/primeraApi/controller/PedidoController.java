@@ -1,0 +1,58 @@
+package com.lumura.primeraApi.controller;
+
+import com.lumura.primeraApi.entity.Compra;
+import com.lumura.primeraApi.repository.CompraRepository;
+import com.lumura.primeraApi.util.JwtUtil;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/pedidos")
+public class PedidoController {
+
+    private final CompraRepository compraRepository;
+    private final JwtUtil jwtUtil;
+
+    public PedidoController(CompraRepository compraRepository, JwtUtil jwtUtil) {
+        this.compraRepository = compraRepository;
+        this.jwtUtil = jwtUtil;
+    }
+
+    @PostMapping
+    public ResponseEntity<?> crear(@RequestHeader("Authorization") String auth,
+                                   @RequestBody Map<String, String> body) {
+        if (!validarToken(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+
+        Compra compra = new Compra();
+        compra.setIdUsuario(Integer.parseInt(body.get("id_usuario")));
+        compra.setArticulo(body.get("articulo"));
+        compra.setCantidadObjetos(body.get("cantidad_objetos") != null ? Integer.parseInt(body.get("cantidad_objetos")) : 0);
+        compra.setMetodoPago(body.get("metodo_pago"));
+        compra.setTotal(body.get("total") != null ? new java.math.BigDecimal(body.get("total")) : java.math.BigDecimal.ZERO);
+        compra.setDireccionEntrega(body.get("direccion_entrega"));
+        compra.setEstadoPedido("pendiente");
+        compra.setFechaPedido(LocalDateTime.now());
+        compraRepository.save(compra);
+
+        return ResponseEntity.ok(Map.of(
+            "mensaje", "Pedido creado correctamente",
+            "id", compra.getIdCompra()
+        ));
+    }
+
+    @GetMapping("/{idUsuario}")
+    public ResponseEntity<?> pedidos(@RequestHeader("Authorization") String auth,
+                                     @PathVariable Integer idUsuario) {
+        if (!validarToken(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+
+        return ResponseEntity.ok(compraRepository.findByIdUsuarioOrderByFechaPedidoDesc(idUsuario));
+    }
+
+    private boolean validarToken(String auth) {
+        if (auth == null || !auth.startsWith("Bearer ")) return false;
+        return jwtUtil.validateToken(auth.substring(7));
+    }
+}
