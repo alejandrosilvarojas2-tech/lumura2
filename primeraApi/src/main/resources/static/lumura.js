@@ -471,6 +471,10 @@ function filtrarCategoria(cat) {
 }
 
 function showScreen(name) {
+  if (name.startsWith('admin-') && (!state.token || state.user?.rol !== 'ADMIN')) {
+    mostrarMensaje('Acceso denegado — Solo administradores', 'error');
+    return;
+  }
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.proto-nav button').forEach(b => b.classList.remove('active'));
   const screen = document.getElementById('screen-' + name);
