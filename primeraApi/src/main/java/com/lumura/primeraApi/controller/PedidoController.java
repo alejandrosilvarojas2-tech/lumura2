@@ -7,6 +7,7 @@ import com.lumura.primeraApi.util.JwtUtil;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -27,6 +28,7 @@ public class PedidoController {
     }
 
     @PostMapping
+    @Transactional
     public ResponseEntity<?> crear(@RequestHeader("Authorization") String auth,
                                    @RequestBody Map<String, String> body) {
         if (!validarToken(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
