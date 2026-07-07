@@ -99,7 +99,7 @@ async function cargarProductos() {
   }
 }
 
-const iconosProducto = ['<img src="images/tshirt.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/jeans.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/coat.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/shoe.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/cap.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/scarf.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/hat.svg" class="icon" alt="" style="vertical-align:middle">'];
+const iconosProducto = ['<img src="images/camisetabasicapremium.jpg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/jeans.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/coat.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/shoe.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/cap.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/scarf.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/hat.svg" class="icon" alt="" style="vertical-align:middle">'];
 
 function renderProductos(filtroCat, filtroTexto) {
   const grid = document.getElementById('prod-grid');
@@ -230,7 +230,7 @@ function renderCarrito() {
       '<button onclick="cambiarCantidad(' + item.id_carrito + ',1)">+</button></div>' +
       '</div>' +
       '<div style="text-align:right;"><div class="price">$' + subtotal.toLocaleString('es-CO') + '</div>' +
-      '<span style="font-size:18px;cursor:pointer;color:var(--gray);" onclick="eliminarDelCarrito(' + item.id_carrito + ')"><img src="images/trash.svg" class="icon" alt="" style="vertical-align:middle"></span></div>' +
+      '<button class="btn-remove" onclick="eliminarDelCarrito(' + item.id_carrito + ')"><img src="images/trash.svg" class="icon" alt="" style="vertical-align:middle"> Quitar</button></div>' +
       '</div>';
   }).join('');
   if (subtotalEl) subtotalEl.textContent = '$' + total.toLocaleString('es-CO');
@@ -246,6 +246,46 @@ async function cambiarCantidad(idCarrito, delta) {
   try {
     await api.put('/api/carrito/' + idCarrito, { cantidad: nuevaCant });
     await cargarCarrito();
+  } catch (err) {
+    mostrarMensaje(err.message, 'error');
+  }
+}
+
+async function cargarUsuariosAdmin() {
+  try {
+    const usuarios = await api.get('/api/admin/usuarios');
+    const tbody = document.getElementById('admin-users-body');
+    if (!tbody) return;
+    if (usuarios.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;">No hay usuarios</td></tr>';
+      return;
+    }
+    tbody.innerHTML = usuarios.map(u => {
+      const isAdmin = u.correo_usuario === 'admin@lumura.com';
+      return '<tr>'
+        + '<td>' + u.id_usuario + '</td>'
+        + '<td style="font-weight:600;">' + u.nombre_usuario + '</td>'
+        + '<td>' + u.correo_usuario + '</td>'
+        + '<td>' + (u.telefono || '-') + '</td>'
+        + '<td><span class="badge ' + (isAdmin ? 'badge-green' : 'badge-blue') + '">' + u.rol + '</span></td>'
+        + '<td>' + (u.fecha_registro ? new Date(u.fecha_registro).toLocaleDateString('es-CO') : '-') + '</td>'
+        + '<td>' + (isAdmin
+            ? '<span style="color:var(--gray);font-size:12px;">Protegido</span>'
+            : '<button class="btn-danger-sm" onclick="eliminarUsuarioAdmin(' + u.id_usuario + ')">Eliminar</button>')
+        + '</td>'
+        + '</tr>';
+    }).join('');
+  } catch (err) {
+    mostrarMensaje('Error al cargar usuarios', 'error');
+  }
+}
+
+async function eliminarUsuarioAdmin(id) {
+  if (!confirm('¿Eliminar este usuario? Los datos asociados también se eliminarán.')) return;
+  try {
+    await api.delete('/api/admin/usuarios/' + id);
+    mostrarMensaje('Usuario eliminado correctamente', 'success');
+    cargarUsuariosAdmin();
   } catch (err) {
     mostrarMensaje(err.message, 'error');
   }
@@ -391,7 +431,7 @@ function renderAdminCatalogo(filtroTexto, filtroCat) {
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;">No hay productos</td></tr>';
     return;
   }
-  const iconos = ['<img src="images/tshirt.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/jeans.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/coat.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/shoe.svg" class="icon" alt="" style="vertical-align:middle">'];
+  const iconos = ['<img src="images/camisetabasicapremium.jpg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/jeansslimfit.jpg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/coat.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/vestidocasual.jfif" class="icon" alt="" style="vertical-align:middle">', '<img src="images/zapatillasurbanas.jfif" class="icon" alt="" style="vertical-align:middle">'];
   tbody.innerHTML = items.map((p, i) => {
     const stock = Number(p.stock);
     const badge = stock > 0 ? '<span class="badge badge-green">Activo</span>' : '<span class="badge badge-red">Sin stock</span>';
@@ -517,7 +557,7 @@ function cargarInventario() {
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;">No hay productos</td></tr>';
     return;
   }
-  const iconos = ['<img src="images/tshirt.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/jeans.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/coat.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/shoe.svg" class="icon" alt="" style="vertical-align:middle">'];
+  const iconos = ['<img src="images/camisetabasicapremium.jpg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/jeansslimfit.jpg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/chaquetadeportiva.jpg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/vestidocasual.jfif" class="icon" alt="" style="vertical-align:middle">', '<img src="images/shoe.svg" class="icon" alt="" style="vertical-align:middle">'];
   tbody.innerHTML = productos.map((p, i) => {
     const stock = Number(p.stock);
     const estado = stock === 0 ? '<span class="status-dot red"></span>Agotado'
@@ -613,6 +653,7 @@ function showScreen(name) {
   if (name === 'admin-inv') cargarProductos();
   if (name === 'admin-rep') { cargarProductos(); cargarReportes(); }
   if (name === 'admin-orders') cargarPedidosAdmin();
+  if (name === 'admin-users') cargarUsuariosAdmin();
   if (name === 'orders' && state.token) cargarPedidos();
 }
 

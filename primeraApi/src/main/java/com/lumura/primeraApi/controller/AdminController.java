@@ -2,6 +2,7 @@ package com.lumura.primeraApi.controller;
 
 import com.lumura.primeraApi.entity.Catalogo;
 import com.lumura.primeraApi.entity.Compra;
+import com.lumura.primeraApi.entity.Usuario;
 import com.lumura.primeraApi.repository.CatalogoRepository;
 import com.lumura.primeraApi.repository.CompraRepository;
 import com.lumura.primeraApi.repository.UsuarioRepository;
@@ -11,7 +12,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -125,6 +128,41 @@ public class AdminController {
             return ResponseEntity.ok(Map.of("mensaje", "Producto eliminado"));
         }
         return ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/usuarios")
+    public ResponseEntity<?> listarUsuarios(@RequestHeader("Authorization") String auth) {
+        if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+
+        List<Map<String, Object>> usuarios = usuarioRepository.findAll().stream().map(u -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id_usuario", u.getIdUsuario());
+            m.put("nombre_usuario", u.getNombreUsuario());
+            m.put("correo_usuario", u.getCorreoUsuario());
+            m.put("telefono", u.getTelefono());
+            m.put("direccion_usuario", u.getDireccionUsuario());
+            m.put("rol", u.getRol());
+            m.put("fecha_registro", u.getFechaRegistro());
+            return m;
+        }).collect(Collectors.toList());
+
+        return ResponseEntity.ok(usuarios);
+    }
+
+    @DeleteMapping("/usuarios/{id}")
+    public ResponseEntity<?> eliminarUsuario(@RequestHeader("Authorization") String auth,
+                                              @PathVariable Integer id) {
+        if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+
+        Optional<Usuario> usuario = usuarioRepository.findById(id);
+        if (usuario.isEmpty()) return ResponseEntity.notFound().build();
+
+        if ("admin@lumura.com".equals(usuario.get().getCorreoUsuario())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "No se puede eliminar el usuario admin"));
+        }
+
+        usuarioRepository.deleteById(id);
+        return ResponseEntity.ok(Map.of("mensaje", "Usuario eliminado correctamente"));
     }
 
     private boolean validarAdmin(String auth) {
