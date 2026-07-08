@@ -1,6 +1,8 @@
 package com.lumura.primeraApi.controller;
 
 import com.lumura.primeraApi.entity.Usuario;
+import com.lumura.primeraApi.repository.CarritoRepository;
+import com.lumura.primeraApi.repository.CompraRepository;
 import com.lumura.primeraApi.repository.UsuarioRepository;
 import com.lumura.primeraApi.util.JwtUtil;
 import org.mindrot.jbcrypt.BCrypt;
@@ -19,10 +21,17 @@ import java.util.Optional;
 public class AuthController {
 
     private final UsuarioRepository usuarioRepository;
+    private final CarritoRepository carritoRepository;
+    private final CompraRepository compraRepository;
     private final JwtUtil jwtUtil;
 
-    public AuthController(UsuarioRepository usuarioRepository, JwtUtil jwtUtil) {
+    public AuthController(UsuarioRepository usuarioRepository,
+                          CarritoRepository carritoRepository,
+                          CompraRepository compraRepository,
+                          JwtUtil jwtUtil) {
         this.usuarioRepository = usuarioRepository;
+        this.carritoRepository = carritoRepository;
+        this.compraRepository = compraRepository;
         this.jwtUtil = jwtUtil;
     }
 
@@ -105,6 +114,30 @@ public class AuthController {
                 "direccion", usuario.getDireccionUsuario() != null ? usuario.getDireccionUsuario() : ""
             )
         ));
+    }
+
+    @DeleteMapping("/cuenta")
+    public ResponseEntity<?> eliminarCuenta(@RequestHeader("Authorization") String auth) {
+        if (auth == null || !auth.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+        }
+        String token = auth.substring(7);
+        if (!jwtUtil.validateToken(token)) {
+            return ResponseEntity.status(401).body(Map.of("error", "Token inválido"));
+        }
+        Integer userId = jwtUtil.getUserIdFromToken(token);
+        Optional<Usuario> usuario = usuarioRepository.findById(userId);
+        if (usuario.isEmpty()) return ResponseEntity.notFound().build();
+
+        if ("admin@lumura.com".equals(usuario.get().getCorreoUsuario())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "No se puede eliminar la cuenta admin"));
+        }
+
+        carritoRepository.deleteByIdUsuario(userId);
+        compraRepository.deleteByIdUsuario(userId);
+        usuarioRepository.deleteById(userId);
+
+        return ResponseEntity.ok(Map.of("mensaje", "Cuenta eliminada correctamente"));
     }
 
 }

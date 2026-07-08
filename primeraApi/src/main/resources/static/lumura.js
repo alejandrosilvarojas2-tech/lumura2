@@ -88,6 +88,31 @@ function cerrarSesion() {
   showScreen('login');
 }
 
+function confirmarEliminarCuenta() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = '<div class="modal-content" style="max-width:360px;text-align:center;">' +
+    '<div style="font-size:40px;margin-bottom:12px;"><img src="images/warning.svg" class="icon" alt="" style="width:40px;height:40px;"></div>' +
+    '<h3 style="margin-bottom:8px;">Eliminar cuenta</h3>' +
+    '<p style="color:var(--gray);margin-bottom:20px;">¿Está seguro de eliminar su cuenta? Esta acción no se puede deshacer.</p>' +
+    '<div style="display:flex;gap:10px;justify-content:center;">' +
+    '<button class="btn-primary" style="width:auto;padding:10px 28px;background:#dc3545;" onclick="eliminarCuenta()">Sí, eliminar</button>' +
+    '<button class="btn-secondary" style="width:auto;padding:10px 28px;" onclick="this.closest(\'.modal-overlay\').remove()">Cancelar</button>' +
+    '</div></div>';
+  document.body.appendChild(overlay);
+}
+
+async function eliminarCuenta() {
+  document.querySelector('.modal-overlay')?.remove();
+  try {
+    await api.delete('/api/auth/cuenta');
+    mostrarMensaje('Cuenta eliminada correctamente', 'success');
+    cerrarSesion();
+  } catch (err) {
+    mostrarMensaje(err.message, 'error');
+  }
+}
+
 async function cargarProductos() {
   try {
     state.productos = await api.get('/api/productos');
@@ -100,11 +125,11 @@ async function cargarProductos() {
 }
 
 const imagenesProducto = {
-  'Camiseta Básica Premium': 'images/camisetabasicapremium.jpg',
-  'Jeans Slim Fit': 'images/jeansslimfit.jpg',
-  'Chaqueta Deportiva': 'images/chaquetadeportiva.jpg',
-  'Vestido Casual': 'images/vestidocasual.jfif',
-  'Zapatillas Urbanas': 'images/zapatillasurbanas.jfif'
+  1: 'images/camisetabasicapremium.jpg',
+  2: 'images/jeansslimfit.jpg',
+  3: 'images/chaquetadeportiva.jpg',
+  4: 'images/vestidocasual.jfif',
+  5: 'images/zapatillasurbanas.jfif'
 };
 
 function renderProductos(filtroCat, filtroTexto) {
@@ -121,7 +146,7 @@ function renderProductos(filtroCat, filtroTexto) {
     return;
   }
   grid.innerHTML = items.map((p, i) => {
-    const imgSrc = imagenesProducto[p.articulo] || 'images/tshirt.svg';
+    const imgSrc = imagenesProducto[p.id_catalogo] || 'images/tshirt.svg';
     const precioF = '$' + Number(p.precio).toLocaleString('es-CO');
     return '<div class="product-card" onclick="verProducto(' + p.id_catalogo + ')">' +
       '<div class="img-placeholder" style="background-image:url(' + imgSrc + ');background-size:cover;background-position:center;background-repeat:no-repeat;background-color:#fce4ec;"></div>' +
@@ -145,7 +170,7 @@ async function verProducto(id) {
       productoCache[id] = prod;
     }
     state.productoActual = prod;
-    const imgSrc = imagenesProducto[prod.articulo] || 'images/tshirt.svg';
+    const imgSrc = imagenesProducto[prod.id_catalogo] || 'images/tshirt.svg';
     const precioF = '$' + Number(prod.precio).toLocaleString('es-CO');
     document.getElementById('prod-detail-img').innerHTML = '<img src="' + imgSrc + '" alt="' + prod.articulo + '" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;">';
     document.getElementById('prod-detail-nombre').textContent = prod.articulo;
@@ -224,7 +249,8 @@ function renderCarrito() {
     const cant = Number(item.cantidad) || 1;
     const subtotal = precio * cant;
     total += subtotal;
-    const imgSrc = imagenesProducto[item.articulo] || 'images/tshirt.svg';
+    const prod = state.productos && state.productos.find(p => p.articulo === item.articulo);
+    const imgSrc = prod ? (imagenesProducto[prod.id_catalogo] || 'images/tshirt.svg') : 'images/tshirt.svg';
     return '<div class="cart-item">' +
       '<div class="icon-box" style="background:linear-gradient(135deg,#fce4ec,#f8bbd9);"><img src="' + imgSrc + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:8px;"></div>' +
       '<div class="detail">' +
@@ -352,18 +378,45 @@ async function cargarPedidos() {
     cont.innerHTML = pedidos.map(p => {
       const est = p.estado_pedido || 'pendiente';
       const badge = est === 'entregado' ? 'badge-green' : est === 'enviado' ? 'badge-blue' : 'badge-red';
+      const puedeCancelar = est !== 'cancelado' && est !== 'entregado';
       return '<div style="background:#f8f8fc;border-radius:10px;padding:12px;margin-bottom:10px;">' +
         '<div style="display:flex;justify-content:space-between;margin-bottom:6px;">' +
         '<span style="font-weight:700;">#LUM-' + p.id_compra + '</span>' +
         '<span class="badge ' + badge + '">' + est + '</span></div>' +
         '<div style="font-size:13px;color:var(--gray);">' + (p.articulo || '') + '</div>' +
-        '<div style="display:flex;justify-content:space-between;margin-top:6px;font-size:13px;">' +
+        '<div style="display:flex;justify-content:space-between;margin-top:6px;font-size:13px;align-items:center;">' +
         '<span>' + new Date(p.fecha_pedido).toLocaleDateString('es-CO') + '</span>' +
-        '<span style="font-weight:700;color:var(--accent);">$' + Number(p.total).toLocaleString('es-CO') + '</span></div>' +
-        '</div>';
+        '<span style="font-weight:700;color:var(--accent);">$' + Number(p.total).toLocaleString('es-CO') + '</span>' +
+        (puedeCancelar ? '<button class="btn-danger-sm" onclick="confirmarCancelar(' + p.id_compra + ')">Cancelar pedido</button>' : '') +
+        '</div></div>';
     }).join('');
   } catch (err) {
     mostrarMensaje('Error al cargar pedidos', 'error');
+  }
+}
+
+function confirmarCancelar(idPedido) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = '<div class="modal-content" style="max-width:360px;text-align:center;">' +
+    '<div style="font-size:40px;margin-bottom:12px;"><img src="images/warning.svg" class="icon" alt="" style="width:40px;height:40px;"></div>' +
+    '<h3 style="margin-bottom:8px;">Cancelar pedido</h3>' +
+    '<p style="color:var(--gray);margin-bottom:20px;">¿Desea cancelar su pedido?</p>' +
+    '<div style="display:flex;gap:10px;justify-content:center;">' +
+    '<button class="btn-primary" style="width:auto;padding:10px 28px;background:var(--accent);" onclick="cancelarPedido(' + idPedido + ')">Sí</button>' +
+    '<button class="btn-secondary" style="width:auto;padding:10px 28px;" onclick="this.closest(\'.modal-overlay\').remove()">No</button>' +
+    '</div></div>';
+  document.body.appendChild(overlay);
+}
+
+async function cancelarPedido(id) {
+  document.querySelector('.modal-overlay')?.remove();
+  try {
+    await api.put('/api/pedidos/' + id + '/cancelar');
+    mostrarMensaje('Pedido cancelado correctamente', 'success');
+    cargarPedidos();
+  } catch (err) {
+    mostrarMensaje(err.message, 'error');
   }
 }
 
@@ -438,7 +491,7 @@ function renderAdminCatalogo(filtroTexto, filtroCat) {
   }
   tbody.innerHTML = items.map((p, i) => {
     const stock = Number(p.stock);
-    const imgSrc = imagenesProducto[p.articulo] || 'images/tshirt.svg';
+    const imgSrc = imagenesProducto[p.id_catalogo] || 'images/tshirt.svg';
     const badge = stock > 0 ? '<span class="badge badge-green">Activo</span>' : '<span class="badge badge-red">Sin stock</span>';
     return '<tr><td>#' + String(p.id_catalogo || i + 1).padStart(3, '0') + '</td>' +
       '<td><div style="display:flex;align-items:center;gap:10px;"><img src="' + imgSrc + '" alt="" style="width:32px;height:32px;object-fit:cover;border-radius:4px;">' +
@@ -564,7 +617,7 @@ function cargarInventario() {
   }
   tbody.innerHTML = productos.map((p, i) => {
     const stock = Number(p.stock);
-    const imgSrc = imagenesProducto[p.articulo] || 'images/tshirt.svg';
+    const imgSrc = imagenesProducto[p.id_catalogo] || 'images/tshirt.svg';
     const estado = stock === 0 ? '<span class="status-dot red"></span>Agotado'
       : stock < 10 ? '<span class="status-dot yellow"></span>Bajo'
       : '<span class="status-dot green"></span>Normal';
@@ -616,8 +669,8 @@ function actualizarUI() {
   const userLink = document.getElementById('header-user-link');
   if (userLink) {
     if (estaLogueado && state.user) {
-      userLink.innerHTML = '<img src="images/user.svg" class="icon" alt="" style="width:16px;height:16px;vertical-align:middle"> ' + state.user.nombre;
-      userLink.onclick = function() { showScreen('orders'); };
+      userLink.innerHTML = '<span class="user-menu-wrap" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;" onclick="toggleUserMenu(event)"><img src="images/user.svg" class="icon" alt="" style="width:16px;height:16px;vertical-align:middle"> ' + state.user.nombre + ' <span style="font-size:10px;margin-left:2px;">▾</span></span>';
+      userLink.onclick = null;
     } else {
       userLink.innerHTML = '<img src="images/user.svg" class="icon" alt="" style="width:16px;height:16px;vertical-align:middle"> Iniciar sesión';
       userLink.onclick = function() { showScreen('login'); };
@@ -627,6 +680,25 @@ function actualizarUI() {
   if (adminLink) {
     adminLink.style.display = (estaLogueado && state.user?.rol === 'ADMIN') ? 'flex' : 'none';
   }
+}
+
+function toggleUserMenu(e) {
+  e.stopPropagation();
+  const existing = document.querySelector('.user-dropdown');
+  if (existing) { existing.remove(); return; }
+  const wrap = e.currentTarget;
+  const menu = document.createElement('div');
+  menu.className = 'user-dropdown';
+  menu.innerHTML =
+    '<a onclick="cerrarSesion(); document.querySelector(\'.user-dropdown\')?.remove();"><img src="images/logout.svg" class="icon" alt="" style="width:14px;height:14px;"> Cerrar sesión</a>' +
+    '<a class="danger" onclick="confirmarEliminarCuenta(); document.querySelector(\'.user-dropdown\')?.remove();"><img src="images/trash.svg" class="icon" alt="" style="width:14px;height:14px;"> Eliminar cuenta</a>';
+  wrap.parentNode.appendChild(menu);
+  setTimeout(() => document.addEventListener('click', cerrarUserMenu), 10);
+}
+
+function cerrarUserMenu() {
+  document.querySelector('.user-dropdown')?.remove();
+  document.removeEventListener('click', cerrarUserMenu);
 }
 
 function filtrarCategoria(cat) {

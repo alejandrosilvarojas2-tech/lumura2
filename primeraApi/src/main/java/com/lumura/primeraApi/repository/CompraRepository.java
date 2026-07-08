@@ -10,6 +10,7 @@ import java.util.List;
 public interface CompraRepository extends JpaRepository<Compra, Integer> {
     List<Compra> findByIdUsuarioOrderByFechaPedidoDesc(Integer idUsuario);
     List<Compra> findAllByOrderByFechaPedidoDesc();
+    void deleteByIdUsuario(Integer idUsuario);
 
     @Query("SELECT COALESCE(SUM(c.total), 0) FROM Compra c")
     BigDecimal sumTotal();
