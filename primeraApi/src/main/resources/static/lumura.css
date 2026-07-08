@@ -14,7 +14,14 @@
     --shadow: 0 4px 20px rgba(0,0,0,0.12);
     --radius: 12px;
   }
-  body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; 
+    background-image: url('images/lumuralogo.png');
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-attachment: fixed;
+    background-size: 600px auto;
+    background-blend-mode: overlay;
+  }
 
   /* SCREEN WRAPPER */
   .screen { display: none; padding: 0; }
