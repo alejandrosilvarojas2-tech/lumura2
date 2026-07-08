@@ -140,4 +140,36 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("mensaje", "Cuenta eliminada correctamente"));
     }
 
+    @PutMapping("/cuenta")
+    public ResponseEntity<?> actualizarCuenta(@RequestHeader("Authorization") String auth,
+                                               @RequestBody Map<String, String> body) {
+        if (auth == null || !auth.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+        }
+        String token = auth.substring(7);
+        if (!jwtUtil.validateToken(token)) {
+            return ResponseEntity.status(401).body(Map.of("error", "Token inválido"));
+        }
+        Integer userId = jwtUtil.getUserIdFromToken(token);
+        Optional<Usuario> opt = usuarioRepository.findById(userId);
+        if (opt.isEmpty()) return ResponseEntity.notFound().build();
+
+        Usuario usuario = opt.get();
+        if (body.containsKey("nombre_usuario")) usuario.setNombreUsuario(body.get("nombre_usuario"));
+        if (body.containsKey("telefono")) usuario.setTelefono(body.get("telefono"));
+        if (body.containsKey("direccion_usuario")) usuario.setDireccionUsuario(body.get("direccion_usuario"));
+        usuarioRepository.save(usuario);
+
+        return ResponseEntity.ok(Map.of(
+            "mensaje", "Datos actualizados correctamente",
+            "usuario", Map.of(
+                "id", usuario.getIdUsuario(),
+                "nombre", usuario.getNombreUsuario(),
+                "correo", usuario.getCorreoUsuario(),
+                "rol", usuario.getRol(),
+                "direccion", usuario.getDireccionUsuario() != null ? usuario.getDireccionUsuario() : ""
+            )
+        ));
+    }
+
 }

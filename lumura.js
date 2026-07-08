@@ -113,6 +113,42 @@ async function eliminarCuenta() {
   }
 }
 
+function mostrarActualizarDatos() {
+  if (!state.user) return;
+  const u = state.user;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = '<div class="modal-content" style="max-width:400px;">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+    '<h3 style="margin:0;">Actualizar datos</h3>' +
+    '<span style="font-size:24px;cursor:pointer;" onclick="this.closest(\'.modal-overlay\').remove()">&times;</span></div>' +
+    '<div class="form-group"><label>Nombre</label><input id="upd-nombre" value="' + (u.nombre || '') + '"></div>' +
+    '<div class="form-group"><label>Teléfono</label><input id="upd-tel" value="' + (u.telefono || '') + '"></div>' +
+    '<div class="form-group"><label>Dirección</label><input id="upd-dir" value="' + (u.direccion || '') + '"></div>' +
+    '<div style="display:flex;gap:10px;margin-top:16px;">' +
+    '<button class="btn-primary" style="flex:1;" onclick="actualizarDatos()">Guardar</button>' +
+    '<button class="btn-secondary" style="flex:1;" onclick="this.closest(\'.modal-overlay\').remove()">Cancelar</button></div></div>';
+  document.body.appendChild(overlay);
+}
+
+async function actualizarDatos() {
+  try {
+    const body = {
+      nombre_usuario: document.getElementById('upd-nombre').value,
+      telefono: document.getElementById('upd-tel').value,
+      direccion_usuario: document.getElementById('upd-dir').value
+    };
+    const res = await api.put('/api/auth/cuenta', body);
+    state.user = res.usuario;
+    localStorage.setItem('lumura_user', JSON.stringify(state.user));
+    document.querySelector('.modal-overlay')?.remove();
+    mostrarMensaje('Datos actualizados correctamente', 'success');
+    actualizarUI();
+  } catch (err) {
+    mostrarMensaje(err.message, 'error');
+  }
+}
+
 async function cargarProductos() {
   try {
     state.productos = await api.get('/api/productos');
@@ -709,6 +745,7 @@ function toggleUserMenu(e) {
   const menu = document.createElement('div');
   menu.className = 'user-dropdown';
   menu.innerHTML =
+    '<a onclick="mostrarActualizarDatos(); document.querySelector(\'.user-dropdown\')?.remove();"><img src="images/edit.svg" class="icon" alt="" style="width:14px;height:14px;"> Actualizar datos</a>' +
     '<a onclick="cerrarSesion(); document.querySelector(\'.user-dropdown\')?.remove();"><img src="images/logout.svg" class="icon" alt="" style="width:14px;height:14px;"> Cerrar sesión</a>' +
     '<a class="danger" onclick="confirmarEliminarCuenta(); document.querySelector(\'.user-dropdown\')?.remove();"><img src="images/trash.svg" class="icon" alt="" style="width:14px;height:14px;"> Eliminar cuenta</a>';
   wrap.parentNode.appendChild(menu);
