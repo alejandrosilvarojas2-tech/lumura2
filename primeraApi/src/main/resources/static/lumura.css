@@ -14,7 +14,7 @@
     --shadow: 0 4px 20px rgba(0,0,0,0.12);
     --radius: 12px;
   }
-  body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; 
+  body { font-family: 'Inter', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; 
     background-image: url('images/lumuralogo.png');
     background-repeat: no-repeat;
     background-position: center center;
@@ -82,7 +82,7 @@
     top: 0;
     z-index: 100;
   }
-  .app-header .logo { font-weight: 900; font-size: 22px; letter-spacing: 3px; color: var(--accent); }
+  .app-header .logo { font-family: 'Playfair Display', Georgia, serif; font-weight: 900; font-size: 22px; letter-spacing: 2px; color: var(--accent); }
   .app-nav { display: flex; align-items: center; gap: 24px; }
   .app-nav a { color: rgba(255,255,255,0.8); text-decoration: none; font-size: 14px; font-weight: 500; cursor: pointer; transition: color 0.2s; }
   .app-nav a:hover { color: white; }
@@ -186,7 +186,7 @@
     margin: 0;
     text-align: center;
   }
-  .hero-banner h2 { font-size: 28px; font-weight: 900; line-height: 1.2; }
+  .hero-banner h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 32px; font-weight: 900; line-height: 1.2; }
   .hero-banner p { font-size: 14px; margin: 12px 0 20px; opacity: 0.85; }
   .hero-banner .discount { background: var(--accent); display: inline-block; padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: 700; margin-bottom: 12px; }
 
