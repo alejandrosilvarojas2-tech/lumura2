@@ -99,7 +99,13 @@ async function cargarProductos() {
   }
 }
 
-const iconosProducto = ['<img src="images/camisetabasicapremium.jpg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/jeans.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/coat.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/shoe.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/cap.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/scarf.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/hat.svg" class="icon" alt="" style="vertical-align:middle">'];
+const imagenesProducto = {
+  'Camiseta Básica Premium': 'images/camisetabasicapremium.jpg',
+  'Jeans Slim Fit': 'images/jeansslimfit.jpg',
+  'Chaqueta Deportiva': 'images/chaquetadeportiva.jpg',
+  'Vestido Casual': 'images/vestidocasual.jfif',
+  'Zapatillas Urbanas': 'images/zapatillasurbanas.jfif'
+};
 
 function renderProductos(filtroCat, filtroTexto) {
   const grid = document.getElementById('prod-grid');
@@ -115,10 +121,10 @@ function renderProductos(filtroCat, filtroTexto) {
     return;
   }
   grid.innerHTML = items.map((p, i) => {
-    const icono = iconosProducto[i % iconosProducto.length];
+    const imgSrc = imagenesProducto[p.articulo] || 'images/tshirt.svg';
     const precioF = '$' + Number(p.precio).toLocaleString('es-CO');
     return '<div class="product-card" onclick="verProducto(' + p.id_catalogo + ')">' +
-      '<div class="img-placeholder" style="background:linear-gradient(135deg,#fce4ec,#f8bbd9);font-size:40px;">' + icono + '</div>' +
+      '<div class="img-placeholder" style="background-image:url(' + imgSrc + ');background-size:cover;background-position:center;background-repeat:no-repeat;background-color:#fce4ec;"></div>' +
       '<div class="info">' +
       '<div class="name">' + p.articulo + '</div>' +
       '<div class="price">' + precioF + '</div>' +
@@ -139,9 +145,9 @@ async function verProducto(id) {
       productoCache[id] = prod;
     }
     state.productoActual = prod;
-    const icono = iconosProducto[id % iconosProducto.length];
+    const imgSrc = imagenesProducto[prod.articulo] || 'images/tshirt.svg';
     const precioF = '$' + Number(prod.precio).toLocaleString('es-CO');
-    document.getElementById('prod-detail-img').textContent = icono;
+    document.getElementById('prod-detail-img').innerHTML = '<img src="' + imgSrc + '" alt="' + prod.articulo + '" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;">';
     document.getElementById('prod-detail-nombre').textContent = prod.articulo;
     document.getElementById('prod-detail-precio').textContent = precioF;
     document.getElementById('prod-detail-desc').textContent = prod.descripcion || 'Sin descripción disponible.';
@@ -212,16 +218,15 @@ function renderCarrito() {
     if (contador) contador.textContent = '0';
     return;
   }
-  const iconos = ['<img src="images/tshirt.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/jeans.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/coat.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/shoe.svg" class="icon" alt="" style="vertical-align:middle">'];
   let total = 0;
   cont.innerHTML = state.carrito.map((item, i) => {
     const precio = Number(item.precio) || 0;
     const cant = Number(item.cantidad) || 1;
     const subtotal = precio * cant;
     total += subtotal;
-    const icono = iconos[i % iconos.length];
+    const imgSrc = imagenesProducto[item.articulo] || 'images/tshirt.svg';
     return '<div class="cart-item">' +
-      '<div class="icon-box" style="background:linear-gradient(135deg,#fce4ec,#f8bbd9);">' + icono + '</div>' +
+      '<div class="icon-box" style="background:linear-gradient(135deg,#fce4ec,#f8bbd9);"><img src="' + imgSrc + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:8px;"></div>' +
       '<div class="detail">' +
       '<div class="name">' + item.articulo + '</div>' +
       '<div class="sub">Talla: ' + (item.talla || 'Única') + ' · Color: ' + (item.color || 'Único') + '</div>' +
@@ -431,12 +436,12 @@ function renderAdminCatalogo(filtroTexto, filtroCat) {
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;">No hay productos</td></tr>';
     return;
   }
-  const iconos = ['<img src="images/camisetabasicapremium.jpg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/jeansslimfit.jpg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/coat.svg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/vestidocasual.jfif" class="icon" alt="" style="vertical-align:middle">', '<img src="images/zapatillasurbanas.jfif" class="icon" alt="" style="vertical-align:middle">'];
   tbody.innerHTML = items.map((p, i) => {
     const stock = Number(p.stock);
+    const imgSrc = imagenesProducto[p.articulo] || 'images/tshirt.svg';
     const badge = stock > 0 ? '<span class="badge badge-green">Activo</span>' : '<span class="badge badge-red">Sin stock</span>';
     return '<tr><td>#' + String(p.id_catalogo || i + 1).padStart(3, '0') + '</td>' +
-      '<td><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:24px;">' + iconos[i % iconos.length] + '</span>' +
+      '<td><div style="display:flex;align-items:center;gap:10px;"><img src="' + imgSrc + '" alt="" style="width:32px;height:32px;object-fit:cover;border-radius:4px;">' +
       '<div><div style="font-weight:600;">' + p.articulo + '</div><div style="font-size:12px;color:var(--gray);">' + (p.categoria || '') + '</div></div></div></td>' +
       '<td>' + (p.categoria || '-') + '</td>' +
       '<td style="font-weight:700;color:var(--accent);">$' + Number(p.precio).toLocaleString('es-CO') + '</td>' +
@@ -557,9 +562,9 @@ function cargarInventario() {
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;">No hay productos</td></tr>';
     return;
   }
-  const iconos = ['<img src="images/camisetabasicapremium.jpg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/jeansslimfit.jpg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/chaquetadeportiva.jpg" class="icon" alt="" style="vertical-align:middle">', '<img src="images/vestidocasual.jfif" class="icon" alt="" style="vertical-align:middle">', '<img src="images/shoe.svg" class="icon" alt="" style="vertical-align:middle">'];
   tbody.innerHTML = productos.map((p, i) => {
     const stock = Number(p.stock);
+    const imgSrc = imagenesProducto[p.articulo] || 'images/tshirt.svg';
     const estado = stock === 0 ? '<span class="status-dot red"></span>Agotado'
       : stock < 10 ? '<span class="status-dot yellow"></span>Bajo'
       : '<span class="status-dot green"></span>Normal';
@@ -568,7 +573,7 @@ function cargarInventario() {
       : stock < 10 ? 'background:#fff9e6; color:#856404;'
       : 'background:var(--light);';
     const btnText = stock === 0 ? 'Urgente' : stock < 10 ? 'Reabastecer' : 'Ajustar';
-    return '<tr><td>' + iconos[i % iconos.length] + ' ' + p.articulo + '</td>'
+    return '<tr><td><img src="' + imgSrc + '" alt="" style="width:24px;height:24px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:6px;">' + p.articulo + '</td>'
       + '<td>' + (p.categoria || '-') + '</td>'
       + '<td>' + (p.talla || '-') + '</td>'
       + '<td>' + (p.color || '-') + '</td>'
@@ -608,10 +613,19 @@ function actualizarUI() {
   const estaLogueado = !!state.token;
   document.querySelectorAll('.auth-only').forEach(el => el.style.display = estaLogueado ? '' : 'none');
   document.querySelectorAll('.no-auth').forEach(el => el.style.display = estaLogueado ? 'none' : '');
-  if (estaLogueado && state.user) {
-    document.querySelectorAll('.user-name').forEach(el => el.textContent = state.user.nombre);
-    const esAdmin = state.user.rol === 'ADMIN';
-    document.querySelectorAll('.admin-only').forEach(el => el.style.display = esAdmin ? '' : 'none');
+  const userLink = document.getElementById('header-user-link');
+  if (userLink) {
+    if (estaLogueado && state.user) {
+      userLink.innerHTML = '<img src="images/user.svg" class="icon" alt="" style="width:16px;height:16px;vertical-align:middle"> ' + state.user.nombre;
+      userLink.onclick = function() { showScreen('orders'); };
+    } else {
+      userLink.innerHTML = '<img src="images/user.svg" class="icon" alt="" style="width:16px;height:16px;vertical-align:middle"> Iniciar sesión';
+      userLink.onclick = function() { showScreen('login'); };
+    }
+  }
+  const adminLink = document.getElementById('header-admin-link');
+  if (adminLink) {
+    adminLink.style.display = (estaLogueado && state.user?.rol === 'ADMIN') ? 'flex' : 'none';
   }
 }
 
@@ -632,7 +646,6 @@ function showScreen(name) {
     return;
   }
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.proto-nav button').forEach(b => b.classList.remove('active'));
   const screen = document.getElementById('screen-' + name);
   if (screen) screen.classList.add('active');
   const btn = document.getElementById('btn-' + name);

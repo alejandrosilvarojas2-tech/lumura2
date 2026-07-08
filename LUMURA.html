@@ -10,36 +10,37 @@
 
 <div id="msg" class="msg" style="display:none;"></div>
 
-<!-- PROTOTYPE NAVIGATION BAR -->
-<div class="proto-nav">
-  <span><img src="images/tag.svg" class="icon" alt="" style="vertical-align:middle"> LUMURA — Prototipo</span>
-  <button onclick="showScreen('login')" id="btn-login" class="active"><img src="images/login.svg" class="icon" alt="" style="vertical-align:middle"> Login</button>
-  <button onclick="showScreen('register')" id="btn-register"><img src="images/memo.svg" class="icon" alt="" style="vertical-align:middle"> Registro</button>
-  <button onclick="showScreen('home')" id="btn-home"><img src="images/home.svg" class="icon" alt="" style="vertical-align:middle"> Catálogo</button>
-  <button onclick="showScreen('product')" id="btn-product"><img src="images/tshirt.svg" class="icon" alt="" style="vertical-align:middle"> Producto</button>
-  <button onclick="showScreen('cart')" id="btn-cart"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"> Carrito</button>
-  <button onclick="showScreen('checkout')" id="btn-checkout"><img src="images/credit-card.svg" class="icon" alt="" style="vertical-align:middle"> Pago</button>
-  <button onclick="showScreen('confirm')" id="btn-confirm"><img src="images/check.svg" class="icon" alt="" style="vertical-align:middle"> Confirmación</button>
-  <button onclick="showScreen('admin-dash')" id="btn-admin-dash" class="admin-only"><img src="images/dashboard.svg" class="icon" alt="" style="vertical-align:middle"> Dashboard</button>
-  <button onclick="showScreen('admin-cat')" id="btn-admin-cat" class="admin-only"><img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle"> Catálogo Admin</button>
-  <button onclick="showScreen('admin-inv')" id="btn-admin-inv" class="admin-only"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"> Inventario</button>
-  <button onclick="showScreen('admin-rep')" id="btn-admin-rep" class="admin-only"><img src="images/chart-up.svg" class="icon" alt="" style="vertical-align:middle"> Reportes</button>
+<!-- SITE HEADER -->
+<div class="app-header">
+  <div class="logo">LUMURA</div>
+  <div class="app-nav">
+    <a onclick="showScreen('home')">Inicio</a>
+    <a onclick="showScreen('home')">Productos</a>
+    <a class="auth-only" style="display:none;" onclick="showScreen('orders')">Mis pedidos</a>
+    <a class="cart-link" onclick="showScreen('cart')">
+      <img src="images/cart.svg" class="icon" alt="" style="width:18px;height:18px;vertical-align:middle">
+      Carrito <span id="cart-count" style="font-size:10px;background:var(--accent);color:white;border-radius:50%;padding:0 5px;min-width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;">0</span>
+    </a>
+    <a id="header-user-link" style="display:flex;align-items:center;gap:6px;" onclick="showScreen('login')">
+      <img src="images/user.svg" class="icon" alt="" style="width:16px;height:16px;vertical-align:middle"> Iniciar sesión
+    </a>
+    <a class="admin-only" id="header-admin-link" style="display:none;align-items:center;gap:6px;" onclick="showScreen('admin-dash')">
+      <img src="images/dashboard.svg" class="icon" alt="" style="width:16px;height:16px;vertical-align:middle"> Admin
+    </a>
+  </div>
 </div>
 
 <!-- ============================================================ -->
 <!-- SCREEN 1: LOGIN -->
 <!-- ============================================================ -->
 <div class="screen active" id="screen-login">
-  <div class="screen-label">Pantalla 1 – Inicio de Sesión</div>
-  <div class="device-frame" style="margin: 20px auto;">
-    <div class="device-notch"></div>
-    <div class="scrollable">
-      <div style="background: linear-gradient(160deg, var(--primary) 0%, #0f3460 60%, var(--accent) 100%); padding: 40px 24px 30px; text-align: center;">
+  <div style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 60px);padding:32px;">
+    <div style="width:100%;max-width:400px;">
+      <div style="background: linear-gradient(160deg, var(--primary) 0%, #0f3460 60%, var(--accent) 100%); padding: 40px 24px 30px; text-align: center; border-radius:12px 12px 0 0;">
         <div style="font-size: 42px; font-weight: 900; color: var(--accent); letter-spacing: 6px;">LUMURA</div>
         <div style="color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 4px;">Tu moda, a un clic</div>
-        <div style="font-size: 60px; margin-top: 20px;"><img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle"></div>
       </div>
-      <div style="padding: 28px 24px;">
+      <div style="padding: 28px 24px; background: white; border-radius: 0 0 12px 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.07);">
         <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 6px;">Bienvenido</h2>
         <p style="color: var(--gray); font-size: 14px; margin-bottom: 24px;">Inicia sesión en tu cuenta</p>
         <form id="login-form">
@@ -74,16 +75,9 @@
 <!-- SCREEN 2: REGISTRO -->
 <!-- ============================================================ -->
 <div class="screen" id="screen-register">
-  <div class="screen-label">Pantalla 2 – Registro de Usuario</div>
-  <div class="device-frame">
-    <div class="device-notch"></div>
-    <div class="scrollable">
-      <div class="app-header">
-        <span style="font-size: 20px; cursor:pointer;" onclick="showScreen('login')">←</span>
-        <div class="logo">LUMURA</div>
-        <span class="user-name" style="font-size:12px;color:rgba(255,255,255,0.7);"></span>
-      </div>
-      <div style="padding: 20px 24px;">
+  <div style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 60px);padding:32px;">
+    <div style="width:100%;max-width:440px;background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.07);">
+      <div style="padding: 24px 24px 0;">
         <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 4px;">Crear cuenta</h2>
         <p style="color: var(--gray); font-size: 13px; margin-bottom: 20px;">Completa tus datos personales</p>
         <form id="reg-form">
@@ -117,6 +111,7 @@
           ¿Ya tienes cuenta? <a style="color: var(--accent); font-weight: 600; cursor: pointer;" onclick="showScreen('login')">Inicia sesión</a>
         </div>
       </div>
+      <div style="height:24px;"></div>
     </div>
   </div>
 </div>
@@ -125,94 +120,52 @@
 <!-- SCREEN 3: HOME / CATÁLOGO -->
 <!-- ============================================================ -->
 <div class="screen" id="screen-home">
-  <div class="screen-label">Pantalla 3 – Catálogo de Productos (Cliente)</div>
-  <div class="device-frame">
-    <div class="device-notch"></div>
-    <div class="scrollable">
-      <div class="app-header">
-        <div class="logo">LUMURA</div>
-        <div class="icons"><img src="images/bell.svg" class="icon" alt="" style="vertical-align:middle"> <span style="cursor:pointer;" onclick="showScreen('cart')"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"> <span id="cart-count" style="font-size:10px;background:var(--accent);color:white;border-radius:50%;padding:0 5px;">0</span></span></div>
-      </div>
-      <!-- Banner -->
-      <div class="hero-banner">
-        <div class="discount"><img src="images/lightning.svg" class="icon" alt="" style="vertical-align:middle"> OFERTA ESPECIAL</div>
-        <h2>Hasta 40% OFF<br>en Temporada</h2>
-        <p>Descubre las últimas tendencias de moda</p>
-        <button class="btn-sm" style="background:var(--accent); color:white;" onclick="showScreen('home')">Ver colección →</button>
-      </div>
-      <!-- Categorías -->
-      <div class="section-label">Categorías</div>
-      <div class="tag-filter">
-        <span class="tag active" data-cat="">Todo</span>
-        <span class="tag" data-cat="Camisetas">Camisetas</span>
-        <span class="tag" data-cat="Pantalones">Pantalones</span>
-        <span class="tag" data-cat="Chaquetas">Chaquetas</span>
-        <span class="tag" data-cat="Vestidos">Vestidos</span>
-        <span class="tag" data-cat="Accesorios">Accesorios</span>
-      </div>
-      <!-- Search bar -->
-      <div style="padding:0 16px;margin-bottom:12px;">
-        <input id="search-input" type="text" placeholder="<img src="images/search.svg" class="icon" alt="" style="vertical-align:middle"> Buscar prendas..." oninput="filtrarBusqueda()" style="width:100%;padding:10px 14px;border:1.5px solid var(--light);border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
-      </div>
-      <!-- Products -->
-      <div class="section-label">Productos</div>
-      <div id="prod-grid" class="product-grid"></div>
-      <div style="height: 70px;"></div>
-    </div>
-    <div class="bottom-nav">
-      <div class="nav-item active" onclick="showScreen('home')"><span class="icon"><img src="images/home.svg" class="icon" alt="" style="vertical-align:middle"></span>Inicio</div>
-      <div class="nav-item" onclick="mostrarBusqueda()"><span class="icon"><img src="images/search.svg" class="icon" alt="" style="vertical-align:middle"></span>Buscar</div>
-      <div class="nav-item active" onclick="showScreen('home')"><span class="icon"><img src="images/home.svg" class="icon" alt="" style="vertical-align:middle"></span>Inicio</div>
-      <div class="nav-item" onclick="showScreen('cart')"><span class="icon"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></span>Carrito</div>
-      <div class="nav-item" onclick="mostrarFavoritos()"><span class="icon"><img src="images/heart.svg" class="icon" alt="" style="vertical-align:middle"></span>Favoritos</div>
-      <div class="nav-item logout-btn" style="cursor:pointer;"><span class="icon"><img src="images/user.svg" class="icon" alt="" style="vertical-align:middle"></span>Perfil</div>
-    </div>
+  <!-- Banner -->
+  <div class="hero-banner">
+    <div class="discount"><img src="images/lightning.svg" class="icon" alt="" style="vertical-align:middle"> OFERTA ESPECIAL</div>
+    <h2>Hasta 40% OFF<br>en Temporada</h2>
+    <p>Descubre las últimas tendencias de moda</p>
+    <button class="btn-sm" style="background:var(--accent); color:white;" onclick="showScreen('home')">Ver colección →</button>
   </div>
+  <!-- Categorías -->
+  <div class="section-label">Categorías</div>
+  <div class="tag-filter">
+    <span class="tag active" data-cat="">Todo</span>
+    <span class="tag" data-cat="Camisetas">Camisetas</span>
+    <span class="tag" data-cat="Pantalones">Pantalones</span>
+    <span class="tag" data-cat="Chaquetas">Chaquetas</span>
+    <span class="tag" data-cat="Vestidos">Vestidos</span>
+    <span class="tag" data-cat="Accesorios">Accesorios</span>
+  </div>
+  <!-- Search -->
+  <div style="padding:12px 32px;">
+    <input id="search-input" type="text" placeholder="Buscar prendas..." oninput="filtrarBusqueda()" style="width:100%;max-width:500px;padding:10px 14px;border:1.5px solid var(--light);border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;">
+  </div>
+  <!-- Products -->
+  <div class="section-label">Productos</div>
+  <div id="prod-grid" class="product-grid"></div>
 </div>
 
 <!-- ============================================================ -->
 <!-- SCREEN 4: DETALLE PRODUCTO -->
 <!-- ============================================================ -->
 <div class="screen" id="screen-product">
-  <div class="screen-label">Pantalla 4 – Detalle de Producto</div>
-  <div class="device-frame">
-    <div class="device-notch"></div>
-    <div class="scrollable">
-      <div class="app-header">
-        <span style="font-size: 20px; cursor:pointer;" onclick="showScreen('home')">←</span>
-        <span style="font-weight: 600;">Detalle del producto</span>
-        <span style="font-size: 18px; cursor:pointer;" id="prod-detail-fav" onclick="toggleFavorito()"><img src="images/heart-outline.svg" class="icon" alt="" style="vertical-align:middle"></span>
-      </div>
-      <!-- Image -->
-      <div style="background: linear-gradient(135deg, #fce4ec, #f8bbd9); height: 260px; display: flex; align-items: center; justify-content: center; font-size: 90px; position:relative;">
+  <div style="display:flex;max-width:1000px;margin:32px auto;gap:32px;padding:0 32px;">
+    <div style="flex:1;">
+      <div style="background: linear-gradient(135deg, #fce4ec, #f8bbd9); height: 400px; display: flex; align-items: center; justify-content: center; font-size: 90px; border-radius:12px; position:relative;">
         <span id="prod-detail-img"><img src="images/tshirt.svg" class="icon" alt="" style="vertical-align:middle"></span>
         <span class="badge badge-red" style="position:absolute; top:12px; left:12px;"><img src="images/fire.svg" class="icon" alt="" style="vertical-align:middle"> Nuevo</span>
       </div>
-      <div style="padding: 16px 16px 0;">
-        <div style="display:flex; justify-content: space-between; align-items: flex-start;">
-          <div>
-            <div id="prod-detail-nombre" style="font-size: 19px; font-weight: 800;">Cargando...</div>
-          </div>
-          <div style="text-align: right;">
-            <div id="prod-detail-precio" style="font-size: 22px; font-weight: 800; color: var(--accent);"></div>
-          </div>
-        </div>
-        <hr style="border: none; border-top: 1px solid var(--light); margin: 12px 0;">
-        <div id="prod-detail-desc" style="font-size: 13px; color: var(--gray); line-height: 1.6; margin-bottom: 16px;">
-          Cargando...
-        </div>
-      </div>
-      <div style="padding: 0 16px 16px; display: flex; gap: 10px;">
-        <button class="btn-secondary" style="width: auto; padding: 14px 18px;" onclick="toggleFavorito()"><img src="images/heart.svg" class="icon" alt="" style="vertical-align:middle"></button>
-        <button id="prod-detail-btn" class="btn-primary">Agregar al carrito <img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></button>
-      </div>
     </div>
-    <div class="bottom-nav">
-      <div class="nav-item" onclick="showScreen('home')"><span class="icon"><img src="images/home.svg" class="icon" alt="" style="vertical-align:middle"></span>Inicio</div>
-      <div class="nav-item" onclick="mostrarBusqueda()"><span class="icon"><img src="images/search.svg" class="icon" alt="" style="vertical-align:middle"></span>Buscar</div>
-      <div class="nav-item" onclick="showScreen('cart')"><span class="icon"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></span>Carrito</div>
-      <div class="nav-item" onclick="mostrarFavoritos()"><span class="icon"><img src="images/heart.svg" class="icon" alt="" style="vertical-align:middle"></span>Favoritos</div>
-      <div class="nav-item logout-btn" style="cursor:pointer;"><span class="icon"><img src="images/user.svg" class="icon" alt="" style="vertical-align:middle"></span>Perfil</div>
+    <div style="flex:1;padding-top:16px;">
+      <div id="prod-detail-nombre" style="font-size: 24px; font-weight: 800;">Cargando...</div>
+      <div id="prod-detail-precio" style="font-size: 28px; font-weight: 800; color: var(--accent); margin: 12px 0;"></div>
+      <hr style="border: none; border-top: 1px solid var(--light); margin: 12px 0;">
+      <div id="prod-detail-desc" style="font-size: 14px; color: var(--gray); line-height: 1.8; margin-bottom: 24px;">Cargando...</div>
+      <div style="display: flex; gap: 12px;">
+        <button class="btn-secondary" style="width: auto; padding: 14px 20px;" onclick="toggleFavorito()"><img src="images/heart.svg" class="icon" alt="" style="vertical-align:middle"></button>
+        <button id="prod-detail-btn" class="btn-primary" style="flex:1;">Agregar al carrito <img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></button>
+      </div>
     </div>
   </div>
 </div>
@@ -221,35 +174,19 @@
 <!-- SCREEN 5: CARRITO -->
 <!-- ============================================================ -->
 <div class="screen" id="screen-cart">
-  <div class="screen-label">Pantalla 5 – Carrito de Compras</div>
-  <div class="device-frame">
-    <div class="device-notch"></div>
-    <div class="scrollable">
-      <div class="app-header">
-        <span style="font-size: 20px; cursor:pointer;" onclick="showScreen('home')">←</span>
-        <span style="font-weight: 600;">Mi carrito</span>
-        <span></span>
-      </div>
-      <div id="cart-items"></div>
-      <!-- Summary -->
-      <div id="cart-summary" style="margin: 0 16px 16px; background: #f8f8fc; border-radius: 12px; padding: 16px;">
-        <div style="font-weight: 700; margin-bottom: 12px;">Resumen del pedido</div>
-        <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:8px;"><span style="color:var(--gray);">Subtotal</span><span id="cart-subtotal">$0</span></div>
-        <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:8px;"><span style="color:var(--gray);">Envío</span><span style="color:var(--success);">Gratis</span></div>
-        <hr style="border:none; border-top:1px solid var(--light); margin: 10px 0;">
-        <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:800;"><span>Total</span><span id="cart-total" style="color:var(--accent);">$0</span></div>
-      </div>
-      <div style="padding: 0 16px 20px;">
-        <button class="btn-primary no-auth" onclick="showScreen('login')">Inicia sesión para comprar</button>
-        <button class="btn-primary auth-only" onclick="showScreen('checkout')">Proceder al pago →</button>
-      </div>
+  <div style="max-width:1000px;margin:24px auto;padding:0 32px;">
+    <h2 style="font-size:22px;font-weight:800;margin-bottom:20px;">Mi carrito</h2>
+    <div id="cart-items"></div>
+    <div id="cart-summary" style="max-width:400px;margin:24px 0 16px;background:#f8f8fc;border-radius:12px;padding:20px;">
+      <div style="font-weight: 700; margin-bottom: 12px;">Resumen del pedido</div>
+      <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:8px;"><span style="color:var(--gray);">Subtotal</span><span id="cart-subtotal">$0</span></div>
+      <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:8px;"><span style="color:var(--gray);">Envío</span><span style="color:var(--success);">Gratis</span></div>
+      <hr style="border:none; border-top:1px solid var(--light); margin: 10px 0;">
+      <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:800;"><span>Total</span><span id="cart-total" style="color:var(--accent);">$0</span></div>
     </div>
-    <div class="bottom-nav">
-      <div class="nav-item" onclick="showScreen('home')"><span class="icon"><img src="images/home.svg" class="icon" alt="" style="vertical-align:middle"></span>Inicio</div>
-      <div class="nav-item" onclick="mostrarBusqueda()"><span class="icon"><img src="images/search.svg" class="icon" alt="" style="vertical-align:middle"></span>Buscar</div>
-      <div class="nav-item active"><span class="icon"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></span>Carrito</div>
-      <div class="nav-item" onclick="mostrarFavoritos()"><span class="icon"><img src="images/heart.svg" class="icon" alt="" style="vertical-align:middle"></span>Favoritos</div>
-      <div class="nav-item"><span class="icon"><img src="images/user.svg" class="icon" alt="" style="vertical-align:middle"></span>Perfil</div>
+    <div style="padding-bottom:20px;">
+      <button class="btn-primary no-auth" onclick="showScreen('login')" style="width:auto;padding:12px 32px;">Inicia sesión para comprar</button>
+      <button class="btn-primary auth-only" onclick="showScreen('checkout')" style="width:auto;padding:12px 32px;">Proceder al pago →</button>
     </div>
   </div>
 </div>
@@ -258,47 +195,37 @@
 <!-- SCREEN 6: CHECKOUT -->
 <!-- ============================================================ -->
 <div class="screen" id="screen-checkout">
-  <div class="screen-label">Pantalla 6 – Proceso de Pago (Checkout)</div>
-  <div class="device-frame">
-    <div class="device-notch"></div>
-    <div class="scrollable">
-      <div class="app-header">
-        <span style="font-size: 20px; cursor:pointer;" onclick="showScreen('cart')">←</span>
-        <span style="font-weight: 600;">Finalizar compra</span>
-        <span></span>
+  <div style="max-width:800px;margin:24px auto;padding:0 32px;">
+    <div class="steps">
+      <div class="step done"><div class="step-circle">✓</div><div class="step-label">Carrito</div></div>
+      <div class="step-line done"></div>
+      <div class="step active"><div class="step-circle">2</div><div class="step-label">Pago</div></div>
+      <div class="step-line"></div>
+      <div class="step pending"><div class="step-circle">3</div><div class="step-label">Confirm.</div></div>
+    </div>
+    <div style="max-width:500px;">
+      <div style="background: #f8f8fc; border-radius: 10px; padding: 16px; margin-bottom: 16px;">
+        <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:6px;"><span style="color:var(--gray);">Productos</span><span id="checkout-count">0</span></div>
+        <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:6px;"><span style="color:var(--gray);">Envío</span><span style="color:var(--success);">Gratis</span></div>
+        <hr style="border:none; border-top:1px solid var(--light); margin:8px 0;">
+        <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:800;"><span>Total</span><span id="checkout-total" style="color:var(--accent);">$0</span></div>
       </div>
-      <!-- Steps -->
-      <div class="steps">
-        <div class="step done"><div class="step-circle">✓</div><div class="step-label">Carrito</div></div>
-        <div class="step-line done"></div>
-        <div class="step active"><div class="step-circle">2</div><div class="step-label">Pago</div></div>
-        <div class="step-line"></div>
-        <div class="step pending"><div class="step-circle">3</div><div class="step-label">Confirm.</div></div>
+      <div style="margin-bottom:14px;">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Método de pago</label>
+        <select id="checkout-pago" style="width:100%;padding:10px 14px;border:1.5px solid var(--light);border-radius:10px;font-size:14px;outline:none;background:white;">
+          <option value="Tarjeta"><img src="images/credit-card.svg" class="icon" alt="" style="vertical-align:middle"> Tarjeta de crédito/débito</option>
+          <option value="Efectivo"><img src="images/cash.svg" class="icon" alt="" style="vertical-align:middle"> Pago en efectivo</option>
+          <option value="Transferencia"><img src="images/bank.svg" class="icon" alt="" style="vertical-align:middle"> Transferencia bancaria</option>
+          <option value="PSE">🏧 PSE</option>
+        </select>
       </div>
-      <div style="padding: 0 16px 20px;">
-        <div style="background: #f8f8fc; border-radius: 10px; padding: 14px; margin-bottom: 16px;">
-          <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:6px;"><span style="color:var(--gray);">Productos</span><span id="checkout-count">0</span></div>
-          <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:6px;"><span style="color:var(--gray);">Envío</span><span style="color:var(--success);">Gratis</span></div>
-          <hr style="border:none; border-top:1px solid var(--light); margin:8px 0;">
-          <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:800;"><span>Total</span><span id="checkout-total" style="color:var(--accent);">$0</span></div>
-        </div>
-        <div style="margin-bottom:14px;">
-          <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Método de pago</label>
-          <select id="checkout-pago" style="width:100%;padding:10px 14px;border:1.5px solid var(--light);border-radius:10px;font-size:14px;outline:none;background:white;">
-            <option value="Tarjeta"><img src="images/credit-card.svg" class="icon" alt="" style="vertical-align:middle"> Tarjeta de crédito/débito</option>
-            <option value="Efectivo"><img src="images/cash.svg" class="icon" alt="" style="vertical-align:middle"> Pago en efectivo</option>
-            <option value="Transferencia"><img src="images/bank.svg" class="icon" alt="" style="vertical-align:middle"> Transferencia bancaria</option>
-            <option value="PSE">🏧 PSE</option>
-          </select>
-        </div>
-        <div style="margin-bottom:14px;">
-          <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Dirección de entrega</label>
-          <textarea id="checkout-dir" rows="2" style="width:100%;padding:10px 14px;border:1.5px solid var(--light);border-radius:10px;font-size:14px;outline:none;resize:vertical;font-family:inherit;"></textarea>
-        </div>
-        <button class="btn-primary auth-only" onclick="handleCheckout()"><img src="images/lock.svg" class="icon" alt="" style="vertical-align:middle"> Confirmar pedido</button>
-        <button class="btn-primary no-auth" onclick="showScreen('login')"><img src="images/lock.svg" class="icon" alt="" style="vertical-align:middle"> Inicia sesión para pagar</button>
-        <p style="text-align:center; font-size:11px; color:var(--gray); margin-top:10px;"><img src="images/login.svg" class="icon" alt="" style="vertical-align:middle"> Pago seguro con cifrado SSL</p>
+      <div style="margin-bottom:14px;">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Dirección de entrega</label>
+        <textarea id="checkout-dir" rows="2" style="width:100%;padding:10px 14px;border:1.5px solid var(--light);border-radius:10px;font-size:14px;outline:none;resize:vertical;font-family:inherit;"></textarea>
       </div>
+      <button class="btn-primary auth-only" onclick="handleCheckout()" style="width:auto;padding:12px 32px;"><img src="images/lock.svg" class="icon" alt="" style="vertical-align:middle"> Confirmar pedido</button>
+      <button class="btn-primary no-auth" onclick="showScreen('login')" style="width:auto;padding:12px 32px;"><img src="images/lock.svg" class="icon" alt="" style="vertical-align:middle"> Inicia sesión para pagar</button>
+      <p style="text-align:center; font-size:11px; color:var(--gray); margin-top:10px;"><img src="images/login.svg" class="icon" alt="" style="vertical-align:middle"> Pago seguro con cifrado SSL</p>
     </div>
   </div>
 </div>
@@ -307,30 +234,26 @@
 <!-- SCREEN 7: CONFIRMACIÓN -->
 <!-- ============================================================ -->
 <div class="screen" id="screen-confirm">
-  <div class="screen-label">Pantalla 7 – Confirmación de Pedido</div>
-  <div class="device-frame">
-    <div class="device-notch"></div>
-    <div class="scrollable">
-      <div class="steps" style="padding-top: 16px;">
-        <div class="step done"><div class="step-circle">✓</div><div class="step-label">Carrito</div></div>
-        <div class="step-line done"></div>
-        <div class="step done"><div class="step-circle">✓</div><div class="step-label">Pago</div></div>
-        <div class="step-line done"></div>
-        <div class="step active"><div class="step-circle">✓</div><div class="step-label">Confirm.</div></div>
-      </div>
-      <div class="success-icon"><img src="images/party.svg" class="icon" alt="" style="vertical-align:middle"></div>
-      <div class="success-title">¡Pedido confirmado!</div>
-      <div class="success-sub">Tu pedido fue procesado exitosamente. Recibirás una notificación con el seguimiento de tu envío.</div>
-      <div class="order-detail">
-        <div style="font-weight:700; margin-bottom:10px;">Detalle del pedido</div>
-        <div class="row"><span style="color:var(--gray);">N° Pedido</span><span id="confirm-numero" style="font-weight:600;">#LUM-XXXX</span></div>
-        <div class="row"><span style="color:var(--gray);">Fecha</span><span id="confirm-fecha">-</span></div>
-        <div class="row"><span style="color:var(--gray);">Total pagado</span><span id="confirm-total" style="color:var(--accent);">$0</span></div>
-      </div>
-      <div style="padding: 20px 16px; display:flex; flex-direction:column; gap:10px;">
-        <button class="btn-primary" onclick="showScreen('home')"><img src="images/home.svg" class="icon" alt="" style="vertical-align:middle"> Volver al inicio</button>
-        <button class="btn-secondary" onclick="verEstadoPedido()"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"> Ver estado del pedido</button>
-      </div>
+  <div style="max-width:600px;margin:24px auto;padding:0 32px;">
+    <div class="steps" style="padding-top: 16px;">
+      <div class="step done"><div class="step-circle">✓</div><div class="step-label">Carrito</div></div>
+      <div class="step-line done"></div>
+      <div class="step done"><div class="step-circle">✓</div><div class="step-label">Pago</div></div>
+      <div class="step-line done"></div>
+      <div class="step active"><div class="step-circle">✓</div><div class="step-label">Confirm.</div></div>
+    </div>
+    <div class="success-icon"><img src="images/party.svg" class="icon" alt="" style="vertical-align:middle"></div>
+    <div class="success-title">¡Pedido confirmado!</div>
+    <div class="success-sub">Tu pedido fue procesado exitosamente. Recibirás una notificación con el seguimiento de tu envío.</div>
+    <div class="order-detail">
+      <div style="font-weight:700; margin-bottom:10px;">Detalle del pedido</div>
+      <div class="row"><span style="color:var(--gray);">N° Pedido</span><span id="confirm-numero" style="font-weight:600;">#LUM-XXXX</span></div>
+      <div class="row"><span style="color:var(--gray);">Fecha</span><span id="confirm-fecha">-</span></div>
+      <div class="row"><span style="color:var(--gray);">Total pagado</span><span id="confirm-total" style="color:var(--accent);">$0</span></div>
+    </div>
+    <div style="padding: 20px 0; display:flex; gap:12px;">
+      <button class="btn-primary" onclick="showScreen('home')" style="width:auto;padding:12px 32px;"><img src="images/home.svg" class="icon" alt="" style="vertical-align:middle"> Volver al inicio</button>
+      <button class="btn-secondary" onclick="verEstadoPedido()" style="width:auto;padding:12px 32px;"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"> Ver estado del pedido</button>
     </div>
   </div>
 </div>
@@ -339,25 +262,10 @@
 <!-- SCREEN 8: MIS PEDIDOS -->
 <!-- ============================================================ -->
 <div class="screen" id="screen-orders">
-  <div class="screen-label">Pantalla – Mis Pedidos</div>
-  <div class="device-frame">
-    <div class="device-notch"></div>
-    <div class="scrollable">
-      <div class="app-header">
-        <span style="font-size: 20px; cursor:pointer;" onclick="showScreen('home')">←</span>
-        <span style="font-weight: 600;">Mis pedidos</span>
-        <span></span>
-      </div>
-      <div id="orders-list" style="padding: 16px;">
-        <p style="text-align:center;color:var(--gray);padding:20px;">Cargando...</p>
-      </div>
-    </div>
-    <div class="bottom-nav">
-      <div class="nav-item" onclick="showScreen('home')"><span class="icon"><img src="images/home.svg" class="icon" alt="" style="vertical-align:middle"></span>Inicio</div>
-      <div class="nav-item" onclick="mostrarBusqueda()"><span class="icon"><img src="images/search.svg" class="icon" alt="" style="vertical-align:middle"></span>Buscar</div>
-      <div class="nav-item" onclick="showScreen('cart')"><span class="icon"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></span>Carrito</div>
-      <div class="nav-item" onclick="mostrarFavoritos()"><span class="icon"><img src="images/heart.svg" class="icon" alt="" style="vertical-align:middle"></span>Favoritos</div>
-      <div class="nav-item logout-btn"><span class="icon"><img src="images/user.svg" class="icon" alt="" style="vertical-align:middle"></span>Perfil</div>
+  <div style="max-width:800px;margin:24px auto;padding:0 32px;">
+    <h2 style="font-size:22px;font-weight:800;margin-bottom:20px;">Mis pedidos</h2>
+    <div id="orders-list">
+      <p style="text-align:center;color:var(--gray);padding:20px;">Cargando...</p>
     </div>
   </div>
 </div>
