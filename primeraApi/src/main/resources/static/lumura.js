@@ -148,18 +148,35 @@ function renderProductos(filtroCat, filtroTexto) {
     grid.innerHTML = items.map((p, i) => {
     const imgSrc = imagenesProducto[p.id_catalogo] || 'images/tshirt.svg';
     const precioF = '$' + Number(p.precio).toLocaleString('es-CO');
-    const desc = (p.descripcion || '').substring(0, 80) + ((p.descripcion || '').length > 80 ? '...' : '');
     return '<div class="product-card" onclick="verProducto(' + p.id_catalogo + ')">' +
-      '<div class="img-placeholder" style="background-image:url(' + imgSrc + ');background-size:cover;background-position:center;background-repeat:no-repeat;background-color:#fce4ec;"></div>' +
+      '<div class="img-placeholder" style="background-image:url(' + imgSrc + ');background-size:cover;background-position:center;background-repeat:no-repeat;background-color:#fce4ec;cursor:pointer;" onclick="event.stopPropagation();mostrarDescripcion(' + p.id_catalogo + ')" title="Click para ver descripción"></div>' +
       '<div class="info">' +
       '<div class="name">' + p.articulo + '</div>' +
       '<div class="price">' + precioF + '</div>' +
-      (desc ? '<div style="font-size:12px;color:#888;line-height:1.4;margin-top:4px;">' + desc + '</div>' : '') +
       (p.talla ? '<div style="font-size:11px;color:var(--gray);margin-top:2px;">Tallas: ' + p.talla + '</div>' : '') +
       '</div>' +
       '<button class="add-btn" onclick="event.stopPropagation();agregarAlCarrito(' + p.id_catalogo + ')">+ Agregar al carrito</button>' +
       '</div>';
   }).join('');
+}
+
+function mostrarDescripcion(id) {
+  const prod = state.productos.find(p => p.id_catalogo === id);
+  if (!prod || !prod.descripcion) {
+    mostrarMensaje('Sin descripción disponible', 'info');
+    return;
+  }
+  const desc = prod.descripcion;
+  const popup = document.createElement('div');
+  popup.className = 'desc-popup';
+  popup.innerHTML =
+    '<div class="desc-popup-content">' +
+    '<span class="desc-popup-close" onclick="this.parentElement.parentElement.remove()">&times;</span>' +
+    '<div class="desc-popup-title">' + prod.articulo + '</div>' +
+    '<div class="desc-popup-text">' + desc + '</div>' +
+    '</div>';
+  document.body.appendChild(popup);
+  setTimeout(() => popup.addEventListener('click', function(e) { if (e.target === this) this.remove(); }), 10);
 }
 
 let productoCache = {};
