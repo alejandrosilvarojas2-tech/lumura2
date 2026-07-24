@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: publico
+      MYSQL_USER: lumura
+      MYSQL_PASSWORD: lumura_prod_pass
+      MYSQL_ROOT_PASSWORD: root_password
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:mysql://db:3306/publico?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      DB_USER: lumura
+      DB_PASSWORD: lumura_prod_pass
+      JWT_SECRET: change_this_jwt_secret_in_production
+      CORS_ORIGINS: http://localhost:8080
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
