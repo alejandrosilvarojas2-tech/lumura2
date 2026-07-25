@@ -8,12 +8,12 @@ import com.lumura.primeraApi.repository.CompraRepository;
 import com.lumura.primeraApi.repository.UsuarioRepository;
 import com.lumura.primeraApi.util.JwtUtil;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Collectors;
 
 @RestController
@@ -150,6 +150,7 @@ public class AdminController {
     }
 
     @DeleteMapping("/usuarios/{id}")
+    @Transactional
     public ResponseEntity<?> eliminarUsuario(@RequestHeader("Authorization") String auth,
                                               @PathVariable Integer id) {
         if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
@@ -163,6 +164,36 @@ public class AdminController {
 
         usuarioRepository.deleteById(id);
         return ResponseEntity.ok(Map.of("mensaje", "Usuario eliminado correctamente"));
+    }
+
+    @PostMapping("/seed")
+    @Transactional
+    public ResponseEntity<?> sembrarProductos(@RequestHeader("Authorization") String auth) {
+        if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+        if (catalogoRepository.count() > 0) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Ya existen productos en el catálogo"));
+        }
+        catalogoRepository.saveAll(List.of(
+            crearProducto("Camiseta Basica Premium", "Camisetas", new BigDecimal("59900"), "S,M,L,XL", "Negro,Blanco", 50, "Camiseta de algodón 100% premium, corte regular, ideal para el día a día. Tela suave y transpirable.", "activo"),
+            crearProducto("Jeans Slim Fit", "Pantalones", new BigDecimal("129900"), "28,30,32,34", "Azul,Negro", 35, "Jeans de corte slim fit con acabado moderno. Tela elástica para mayor comodidad y libertad de movimiento.", "activo"),
+            crearProducto("Vestido Casual Floral", "Vestidos", new BigDecimal("99900"), "S,M,L", "Floral,Rojo", 25, "Vestido casual con estampado floral, perfecto para ocasiones informales. Tela ligera y fresca.", "activo"),
+            crearProducto("Chaqueta Denim Classic", "Chaquetas", new BigDecimal("189900"), "M,L,XL", "Azul,Negro", 20, "Chaqueta de denim clásica con botones metálicos. Diseño atemporal que combina con todo.", "activo"),
+            crearProducto("Polo Deportivo Fit", "Camisetas", new BigDecimal("79900"), "S,M,L,XL", "Verde,Azul,Gris", 40, "Polo deportivo con tecnología dry-fit, ideal para entrenamientos o uso casual. Ajuste fit.", "activo")
+        ));
+        return ResponseEntity.ok(Map.of("mensaje", "5 productos sembrados correctamente"));
+    }
+
+    private Catalogo crearProducto(String articulo, String categoria, BigDecimal precio, String tallas, String colores, int stock, String descripcion, String estado) {
+        Catalogo c = new Catalogo();
+        c.setArticulo(articulo);
+        c.setCategoria(categoria);
+        c.setPrecio(precio);
+        c.setTalla(tallas);
+        c.setColor(colores);
+        c.setStock(stock);
+        c.setDescripcion(descripcion);
+        c.setEstado(estado);
+        return c;
     }
 
     private boolean validarAdmin(String auth) {

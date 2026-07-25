@@ -7,6 +7,7 @@ import com.lumura.primeraApi.repository.UsuarioRepository;
 import com.lumura.primeraApi.util.JwtUtil;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.MessageDigest;
@@ -117,6 +118,7 @@ public class AuthController {
     }
 
     @DeleteMapping("/cuenta")
+    @Transactional
     public ResponseEntity<?> eliminarCuenta(@RequestHeader("Authorization") String auth) {
         if (auth == null || !auth.startsWith("Bearer ")) {
             return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));

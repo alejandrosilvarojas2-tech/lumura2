@@ -7,6 +7,11 @@ const state = {
   favoritos: JSON.parse(localStorage.getItem('lumura_favs') || '[]'),
 };
 
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 const api = {
   async request(method, path, body) {
     const headers = { 'Content-Type': 'application/json' };
@@ -187,9 +192,9 @@ function renderProductos(filtroCat, filtroTexto) {
     return '<div class="product-card" onclick="verProducto(' + p.id_catalogo + ')">' +
       '<div class="img-placeholder" style="background-image:url(' + imgSrc + ');background-size:cover;background-position:center;background-repeat:no-repeat;background-color:#fce4ec;cursor:pointer;" onclick="event.stopPropagation();mostrarDescripcion(' + p.id_catalogo + ')" title="Click para ver descripción"></div>' +
       '<div class="info">' +
-      '<div class="name">' + p.articulo + '</div>' +
+      '<div class="name">' + escHtml(p.articulo) + '</div>' +
       '<div class="price">' + precioF + '</div>' +
-      (p.talla ? '<div style="font-size:11px;color:var(--gray);margin-top:2px;">Tallas: ' + p.talla + '</div>' : '') +
+      (p.talla ? '<div style="font-size:11px;color:var(--gray);margin-top:2px;">Tallas: ' + escHtml(p.talla) + '</div>' : '') +
       '</div>' +
       '<button class="add-btn" onclick="event.stopPropagation();agregarAlCarrito(' + p.id_catalogo + ')">+ Agregar al carrito</button>' +
       '</div>';
@@ -208,8 +213,8 @@ function mostrarDescripcion(id) {
   popup.innerHTML =
     '<div class="desc-popup-content">' +
     '<span class="desc-popup-close" onclick="this.parentElement.parentElement.remove()">&times;</span>' +
-    '<div class="desc-popup-title">' + prod.articulo + '</div>' +
-    '<div class="desc-popup-text">' + desc + '</div>' +
+    '<div class="desc-popup-title">' + escHtml(prod.articulo) + '</div>' +
+    '<div class="desc-popup-text">' + escHtml(desc) + '</div>' +
     '</div>';
   document.body.appendChild(popup);
   setTimeout(() => popup.addEventListener('click', function(e) { if (e.target === this) this.remove(); }), 10);
@@ -227,7 +232,7 @@ async function verProducto(id) {
     state.productoActual = prod;
     const imgSrc = imagenesProducto[prod.id_catalogo] || 'images/tshirt.svg';
     const precioF = '$' + Number(prod.precio).toLocaleString('es-CO');
-    document.getElementById('prod-detail-img').innerHTML = '<img src="' + imgSrc + '" alt="' + prod.articulo + '" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;">';
+    document.getElementById('prod-detail-img').innerHTML = '<img src="' + imgSrc + '" alt="' + escHtml(prod.articulo) + '" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;">';
     document.getElementById('prod-detail-nombre').textContent = prod.articulo;
     document.getElementById('prod-detail-precio').textContent = precioF;
     document.getElementById('prod-detail-desc').textContent = prod.descripcion || 'Sin descripción disponible.';
@@ -309,8 +314,8 @@ function renderCarrito() {
     return '<div class="cart-item">' +
       '<div class="icon-box" style="background:linear-gradient(135deg,#fce4ec,#f8bbd9);"><img src="' + imgSrc + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:8px;"></div>' +
       '<div class="detail">' +
-      '<div class="name">' + item.articulo + '</div>' +
-      '<div class="sub">Talla: ' + (item.talla || 'Única') + ' · Color: ' + (item.color || 'Único') + '</div>' +
+      '<div class="name">' + escHtml(item.articulo) + '</div>' +
+      '<div class="sub">Talla: ' + escHtml(item.talla || 'Única') + ' · Color: ' + escHtml(item.color || 'Único') + '</div>' +
       '<div class="qty-ctrl"><button onclick="cambiarCantidad(' + item.id_carrito + ',-1)">−</button>' +
       '<span style="font-size:14px;font-weight:600;">' + cant + '</span>' +
       '<button onclick="cambiarCantidad(' + item.id_carrito + ',1)">+</button></div>' +
@@ -438,7 +443,7 @@ async function cargarPedidos() {
         '<div style="display:flex;justify-content:space-between;margin-bottom:6px;">' +
         '<span style="font-weight:700;">#LUM-' + p.id_compra + '</span>' +
         '<span class="badge ' + badge + '">' + est + '</span></div>' +
-        '<div style="font-size:13px;color:var(--gray);">' + (p.articulo || '') + '</div>' +
+        '<div style="font-size:13px;color:var(--gray);">' + escHtml(p.articulo || '') + '</div>' +
         '<div style="display:flex;justify-content:space-between;margin-top:6px;font-size:13px;align-items:center;">' +
         '<span>' + new Date(p.fecha_pedido).toLocaleDateString('es-CO') + '</span>' +
         '<span style="font-weight:700;color:var(--accent);">$' + Number(p.total).toLocaleString('es-CO') + '</span>' +
@@ -493,7 +498,7 @@ async function cargarPedidosAdmin() {
       return '<tr>'
         + '<td>#LUM-' + p.id_compra + '</td>'
         + '<td>' + (p.id_usuario || '-') + '</td>'
-        + '<td>' + (p.articulo || '').split(',').slice(0, 3).join(', ') + '</td>'
+        + '<td>' + escHtml((p.articulo || '').split(',').slice(0, 3).join(', ')) + '</td>'
         + '<td style="font-weight:700;">$' + Number(p.total).toLocaleString('es-CO') + '</td>'
         + '<td>' + new Date(p.fecha_pedido).toLocaleDateString('es-CO') + '</td>'
         + '<td><span class="badge ' + badge + '">' + (p.estado_pedido || 'pendiente') + '</span></td>'
@@ -550,7 +555,7 @@ function renderAdminCatalogo(filtroTexto, filtroCat) {
     const badge = stock > 0 ? '<span class="badge badge-green">Activo</span>' : '<span class="badge badge-red">Sin stock</span>';
     return '<tr><td>#' + String(p.id_catalogo || i + 1).padStart(3, '0') + '</td>' +
       '<td><div style="display:flex;align-items:center;gap:10px;"><img src="' + imgSrc + '" alt="" style="width:32px;height:32px;object-fit:cover;border-radius:4px;">' +
-      '<div><div style="font-weight:600;">' + p.articulo + '</div><div style="font-size:12px;color:var(--gray);">' + (p.categoria || '') + '</div></div></div></td>' +
+      '<div><div style="font-weight:600;">' + escHtml(p.articulo) + '</div><div style="font-size:12px;color:var(--gray);">' + escHtml(p.categoria || '') + '</div></div></div></td>' +
       '<td>' + (p.categoria || '-') + '</td>' +
       '<td style="font-weight:700;color:var(--accent);">$' + Number(p.precio).toLocaleString('es-CO') + '</td>' +
       '<td>' + (p.talla || '-') + '</td>' +
@@ -644,11 +649,23 @@ function filtrarBusqueda() {
 function mostrarFavoritos() {
   const favs = state.productos.filter(p => state.favoritos.includes(p.id_catalogo));
   if (favs.length === 0) return mostrarMensaje('No tienes favoritos aún', 'info');
-  state.productos = favs;
-  renderProductos();
+  const grid = document.getElementById('prod-grid');
+  if (!grid) return;
+  grid.innerHTML = favs.map(p => {
+    const imgSrc = imagenesProducto[p.id_catalogo] || 'images/tshirt.svg';
+    const precioF = '$' + Number(p.precio).toLocaleString('es-CO');
+    return '<div class="product-card" onclick="verProducto(' + p.id_catalogo + ')">' +
+      '<div class="img-placeholder" style="background-image:url(' + imgSrc + ');background-size:cover;background-position:center;background-repeat:no-repeat;background-color:#fce4ec;cursor:pointer;" onclick="event.stopPropagation();mostrarDescripcion(' + p.id_catalogo + ')" title="Click para ver descripción"></div>' +
+      '<div class="info">' +
+      '<div class="name">' + escHtml(p.articulo) + '</div>' +
+      '<div class="price">' + precioF + '</div>' +
+      (p.talla ? '<div style="font-size:11px;color:var(--gray);margin-top:2px;">Tallas: ' + escHtml(p.talla) + '</div>' : '') +
+      '</div>' +
+      '<button class="add-btn" onclick="event.stopPropagation();agregarAlCarrito(' + p.id_catalogo + ')">+ Agregar al carrito</button>' +
+      '</div>';
+  }).join('');
   showScreen('home');
   mostrarMensaje('Mostrando ' + favs.length + ' favorito(s) <img src="images/heart.svg" class="icon" alt="" style="vertical-align:middle">', 'success');
-  setTimeout(() => { cargarProductos(); }, 5000);
 }
 
 function exportarPDF() {
@@ -681,7 +698,7 @@ function cargarInventario() {
       : stock < 10 ? 'background:#fff9e6; color:#856404;'
       : 'background:var(--light);';
     const btnText = stock === 0 ? 'Urgente' : stock < 10 ? 'Reabastecer' : 'Ajustar';
-    return '<tr><td><img src="' + imgSrc + '" alt="" style="width:24px;height:24px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:6px;">' + p.articulo + '</td>'
+    return '<tr><td><img src="' + imgSrc + '" alt="" style="width:24px;height:24px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:6px;">' + escHtml(p.articulo) + '</td>'
       + '<td>' + (p.categoria || '-') + '</td>'
       + '<td>' + (p.talla || '-') + '</td>'
       + '<td>' + (p.color || '-') + '</td>'
@@ -705,7 +722,7 @@ async function cargarReportes() {
           : p.estado_pedido === 'enviado' ? 'badge-blue' : 'badge-red';
         return '<tr>'
           + '<td>#LUM-' + p.id_compra + '</td>'
-          + '<td>' + (p.articulo || '').split(',').slice(0, 2).join(', ') + '</td>'
+          + '<td>' + escHtml((p.articulo || '').split(',').slice(0, 2).join(', ')) + '</td>'
           + '<td style="font-weight:700;">$' + Number(p.total).toLocaleString('es-CO') + '</td>'
           + '<td>' + new Date(p.fecha_pedido).toLocaleDateString('es-CO') + '</td>'
           + '<td><span class="badge ' + badge + '">' + (p.estado_pedido || 'pendiente') + '</span></td>'
