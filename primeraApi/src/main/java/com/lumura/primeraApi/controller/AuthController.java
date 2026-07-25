@@ -61,6 +61,10 @@ public class AuthController {
         if (password.length() < 6) {
             return ResponseEntity.badRequest().body(Map.of("error", "La contraseña debe tener al menos 6 caracteres"));
         }
+        String confirmarPassword = body.get("confirmar_password");
+        if (confirmarPassword == null || !password.equals(confirmarPassword)) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Las contraseñas no coinciden"));
+        }
 
         if (usuarioRepository.findByCorreoUsuario(correo).isPresent()) {
             return ResponseEntity.badRequest().body(Map.of("error", "El correo ya está registrado"));

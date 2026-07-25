@@ -7,7 +7,6 @@ import com.lumura.primeraApi.repository.CatalogoRepository;
 import com.lumura.primeraApi.repository.CompraRepository;
 import com.lumura.primeraApi.repository.UsuarioRepository;
 import com.lumura.primeraApi.util.JwtUtil;
-import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -220,32 +219,5 @@ public class AdminController {
         String token = auth.substring(7);
         if (!jwtUtil.validateToken(token)) return false;
         return "ADMIN".equals(jwtUtil.getRolFromToken(token));
-    }
-
-    @PostMapping("/seed-public")
-    @Transactional
-    public ResponseEntity<?> sembrarProductosPublico() {
-        if (catalogoRepository.count() > 0) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Ya existen productos"));
-        }
-        catalogoRepository.saveAll(List.of(
-            crearProducto("Camiseta Basica Premium", "Camisetas", new BigDecimal("59900"), "S,M,L,XL", "Negro,Blanco", 50, "Camiseta de algodon 100% premium, corte regular, ideal para el dia a dia. Tela suave y transpirable.", "activo"),
-            crearProducto("Jeans Slim Fit", "Pantalones", new BigDecimal("129900"), "28,30,32,34", "Azul,Negro", 35, "Jeans de corte slim fit con acabado moderno. Tela elastica para mayor comodidad y libertad de movimiento.", "activo"),
-            crearProducto("Vestido Casual Floral", "Vestidos", new BigDecimal("99900"), "S,M,L", "Floral,Rojo", 25, "Vestido casual con estampado floral, perfecto para ocasiones informales. Tela ligera y fresca.", "activo"),
-            crearProducto("Chaqueta Denim Classic", "Chaquetas", new BigDecimal("189900"), "M,L,XL", "Azul,Negro", 20, "Chaqueta de denim clasica con botones metalicos. Diseno atemporal que combina con todo.", "activo"),
-            crearProducto("Polo Deportivo Fit", "Camisetas", new BigDecimal("79900"), "S,M,L,XL", "Verde,Azul,Gris", 40, "Polo deportivo con tecnologia dry-fit, ideal para entrenamientos o uso casual. Ajuste fit.", "activo")
-        ));
-        return ResponseEntity.ok(Map.of("mensaje", "5 productos sembrados correctamente"));
-    }
-
-    @PostMapping("/fix-admin-password")
-    @Transactional
-    public ResponseEntity<?> fixAdminPassword() {
-        Optional<Usuario> admin = usuarioRepository.findByCorreoUsuario("admin@lumura.com");
-        if (admin.isEmpty()) return ResponseEntity.badRequest().body(Map.of("error", "Admin no existe"));
-        admin.get().setPasswordHash(BCrypt.hashpw("123456", BCrypt.gensalt()));
-        admin.get().setRol("ADMIN");
-        usuarioRepository.save(admin.get());
-        return ResponseEntity.ok(Map.of("mensaje", "Password admin reseteado"));
     }
 }

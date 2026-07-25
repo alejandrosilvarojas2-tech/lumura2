@@ -35,7 +35,8 @@ public class PedidoController {
     @Transactional
     public ResponseEntity<?> crear(@RequestHeader("Authorization") String auth,
                                    @RequestBody Map<String, String> body) {
-        if (!validarToken(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+        Integer idUsuario = extraerUserId(auth);
+        if (idUsuario == null) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
 
         String articulo = body.get("articulo");
         if (articulo == null || articulo.isBlank()) {
@@ -43,11 +44,7 @@ public class PedidoController {
         }
 
         Compra compra = new Compra();
-        try {
-            compra.setIdUsuario(Integer.parseInt(body.get("id_usuario")));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "id_usuario inválido"));
-        }
+        compra.setIdUsuario(idUsuario);
         compra.setArticulo(articulo);
         compra.setCantidadObjetos(body.get("cantidad_objetos") != null ? Integer.parseInt(body.get("cantidad_objetos")) : 0);
         compra.setMetodoPago(body.get("metodo_pago"));
@@ -69,16 +66,24 @@ public class PedidoController {
     @GetMapping("/{idUsuario}")
     public ResponseEntity<?> pedidos(@RequestHeader("Authorization") String auth,
                                      @PathVariable Integer idUsuario) {
-        if (!validarToken(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+        Integer tokenUserId = extraerUserId(auth);
+        if (tokenUserId == null) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+        if (!tokenUserId.equals(idUsuario)) {
+            return ResponseEntity.status(403).body(Map.of("error", "No tienes acceso a estos pedidos"));
+        }
         return ResponseEntity.ok(compraRepository.findByIdUsuarioOrderByFechaPedidoDesc(idUsuario));
     }
 
     @PutMapping("/{id}/cancelar")
     public ResponseEntity<?> cancelar(@RequestHeader("Authorization") String auth,
                                       @PathVariable Integer id) {
-        if (!validarToken(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+        Integer tokenUserId = extraerUserId(auth);
+        if (tokenUserId == null) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
         return compraRepository.findById(id)
                 .map(compra -> {
+                    if (!compra.getIdUsuario().equals(tokenUserId)) {
+                        return ResponseEntity.status(403).body(Map.of("error", "No puedes cancelar este pedido"));
+                    }
                     if ("cancelado".equals(compra.getEstadoPedido()) || "entregado".equals(compra.getEstadoPedido())) {
                         return ResponseEntity.badRequest().body(Map.of("error", "El pedido ya no puede cancelarse"));
                     }
@@ -90,8 +95,14 @@ public class PedidoController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    private Integer extraerUserId(String auth) {
+        if (auth == null || !auth.startsWith("Bearer ")) return null;
+        String token = auth.substring(7);
+        if (!jwtUtil.validateToken(token)) return null;
+        return jwtUtil.getUserIdFromToken(token);
+    }
+
     private boolean validarToken(String auth) {
-        if (auth == null || !auth.startsWith("Bearer ")) return false;
-        return jwtUtil.validateToken(auth.substring(7));
+        return extraerUserId(auth) != null;
     }
 }

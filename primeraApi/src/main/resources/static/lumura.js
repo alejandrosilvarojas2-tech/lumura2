@@ -75,6 +75,7 @@ async function handleRegister(e) {
       telefono: tel,
       direccion_usuario: dir,
       password: pass,
+      confirmar_password: pass2,
     });
     mostrarMensaje('Registro exitoso. Inicia sesión.', 'success');
     showScreen('login');
@@ -127,9 +128,9 @@ function mostrarActualizarDatos() {
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
     '<h3 style="margin:0;">Actualizar datos</h3>' +
     '<span style="font-size:24px;cursor:pointer;" onclick="this.closest(\'.modal-overlay\').remove()">&times;</span></div>' +
-    '<div class="form-group"><label>Nombre</label><input id="upd-nombre" value="' + (u.nombre || '') + '"></div>' +
-    '<div class="form-group"><label>Teléfono</label><input id="upd-tel" value="' + (u.telefono || '') + '"></div>' +
-    '<div class="form-group"><label>Dirección</label><input id="upd-dir" value="' + (u.direccion || '') + '"></div>' +
+    '<div class="form-group"><label>Nombre</label><input id="upd-nombre" value="' + escHtml(u.nombre || '') + '"></div>' +
+    '<div class="form-group"><label>Teléfono</label><input id="upd-tel" value="' + escHtml(u.telefono || '') + '"></div>' +
+    '<div class="form-group"><label>Dirección</label><input id="upd-dir" value="' + escHtml(u.direccion || '') + '"></div>' +
     '<div style="display:flex;gap:10px;margin-top:16px;">' +
     '<button class="btn-primary" style="flex:1;" onclick="actualizarDatos()">Guardar</button>' +
     '<button class="btn-secondary" style="flex:1;" onclick="this.closest(\'.modal-overlay\').remove()">Cancelar</button></div></div>';
@@ -266,7 +267,6 @@ async function agregarAlCarrito(idProducto) {
   const prod = state.productos.find(p => p.id_catalogo === idProducto) || await api.get('/api/productos/' + idProducto);
   try {
     await api.post('/api/carrito', {
-      id_usuario: state.user.id,
       articulo: prod.articulo,
       talla: prod.talla || 'Única',
       color: prod.color || 'Único',
@@ -355,9 +355,9 @@ async function cargarUsuariosAdmin() {
       const isAdmin = u.correo_usuario === 'admin@lumura.com';
       return '<tr>'
         + '<td>' + u.id_usuario + '</td>'
-        + '<td style="font-weight:600;">' + u.nombre_usuario + '</td>'
-        + '<td>' + u.correo_usuario + '</td>'
-        + '<td>' + (u.telefono || '-') + '</td>'
+        + '<td style="font-weight:600;">' + escHtml(u.nombre_usuario) + '</td>'
+        + '<td>' + escHtml(u.correo_usuario) + '</td>'
+        + '<td>' + escHtml(u.telefono || '-') + '</td>'
         + '<td><span class="badge ' + (isAdmin ? 'badge-green' : 'badge-blue') + '">' + u.rol + '</span></td>'
         + '<td>' + (u.fecha_registro ? new Date(u.fecha_registro).toLocaleDateString('es-CO') : '-') + '</td>'
         + '<td>' + (isAdmin
@@ -402,7 +402,6 @@ async function handleCheckout() {
   const direccion = document.getElementById('checkout-dir')?.value.trim() || 'Por definir';
   try {
     const res = await api.post('/api/pedidos', {
-      id_usuario: state.user.id,
       articulo: articulos,
       cantidad_objetos: cantTotal,
       metodo_pago: metodoPago,
@@ -741,7 +740,7 @@ function actualizarUI() {
   const userLink = document.getElementById('header-user-link');
   if (userLink) {
     if (estaLogueado && state.user) {
-      userLink.innerHTML = '<span class="user-menu-wrap" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;" onclick="toggleUserMenu(event)"><img src="images/user.svg" class="icon" alt="" style="width:16px;height:16px;vertical-align:middle"> ' + state.user.nombre + ' <span style="font-size:10px;margin-left:2px;">▾</span></span>';
+      userLink.innerHTML = '<span class="user-menu-wrap" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;" onclick="toggleUserMenu(event)"><img src="images/user.svg" class="icon" alt="" style="width:16px;height:16px;vertical-align:middle"> ' + escHtml(state.user.nombre) + ' <span style="font-size:10px;margin-left:2px;">▾</span></span>';
       userLink.onclick = null;
     } else {
       userLink.innerHTML = '<img src="images/user.svg" class="icon" alt="" style="width:16px;height:16px;vertical-align:middle"> Iniciar sesión';

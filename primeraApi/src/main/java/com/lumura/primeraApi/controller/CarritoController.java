@@ -35,7 +35,11 @@ public class CarritoController {
     @GetMapping("/{idUsuario}")
     public ResponseEntity<?> listar(@RequestHeader("Authorization") String auth,
                                     @PathVariable Integer idUsuario) {
-        if (!validarToken(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+        Integer tokenUserId = extraerUserId(auth);
+        if (tokenUserId == null) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+        if (!tokenUserId.equals(idUsuario)) {
+            return ResponseEntity.status(403).body(Map.of("error", "No tienes acceso a este carrito"));
+        }
 
         List<Carrito> items = carritoRepository.findByIdUsuario(idUsuario);
         Map<String, BigDecimal> precios = catalogoRepository.findAll().stream()
@@ -59,7 +63,8 @@ public class CarritoController {
     @PostMapping
     public ResponseEntity<?> agregar(@RequestHeader("Authorization") String auth,
                                      @RequestBody Map<String, String> body) {
-        if (!validarToken(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+        Integer idUsuario = extraerUserId(auth);
+        if (idUsuario == null) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
 
         String articulo = body.get("articulo");
         if (articulo == null || articulo.isBlank()) {
@@ -82,13 +87,6 @@ public class CarritoController {
         }
         if (producto.get().getStock() < cantidad) {
             return ResponseEntity.badRequest().body(Map.of("error", "Stock insuficiente. Disponible: " + producto.get().getStock()));
-        }
-
-        int idUsuario;
-        try {
-            idUsuario = Integer.parseInt(body.get("id_usuario"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "id_usuario inválido"));
         }
 
         Carrito item = new Carrito();
@@ -144,8 +142,14 @@ public class CarritoController {
         return ResponseEntity.ok(Map.of("mensaje", "Producto eliminado del carrito"));
     }
 
+    private Integer extraerUserId(String auth) {
+        if (auth == null || !auth.startsWith("Bearer ")) return null;
+        String token = auth.substring(7);
+        if (!jwtUtil.validateToken(token)) return null;
+        return jwtUtil.getUserIdFromToken(token);
+    }
+
     private boolean validarToken(String auth) {
-        if (auth == null || !auth.startsWith("Bearer ")) return false;
-        return jwtUtil.validateToken(auth.substring(7));
+        return extraerUserId(auth) != null;
     }
 }
