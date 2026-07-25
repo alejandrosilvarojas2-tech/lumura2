@@ -168,9 +168,9 @@ async function cargarProductos() {
 const imagenesProducto = {
   1: 'images/camisetabasicapremium.jpg',
   2: 'images/jeansslimfit.jpg',
-  3: 'images/chaquetadeportiva.jpg',
-  4: 'images/vestidocasual.jfif',
-  5: 'images/zapatillasurbanas.jfif'
+  3: 'images/vestidocasual.jfif',
+  4: 'images/chaquetadeportiva.jpg',
+  5: 'images/camisetabasicapremium.jpg'
 };
 
 function renderProductos(filtroCat, filtroTexto) {

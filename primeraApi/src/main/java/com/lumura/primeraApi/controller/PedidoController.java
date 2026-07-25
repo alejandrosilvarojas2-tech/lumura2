@@ -4,6 +4,8 @@ import com.lumura.primeraApi.entity.Compra;
 import com.lumura.primeraApi.repository.CarritoRepository;
 import com.lumura.primeraApi.repository.CompraRepository;
 import com.lumura.primeraApi.util.JwtUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,6 +16,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/pedidos")
 public class PedidoController {
+
+    private static final Logger log = LoggerFactory.getLogger(PedidoController.class);
 
     private final CompraRepository compraRepository;
     private final CarritoRepository carritoRepository;
@@ -33,9 +37,18 @@ public class PedidoController {
                                    @RequestBody Map<String, String> body) {
         if (!validarToken(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
 
+        String articulo = body.get("articulo");
+        if (articulo == null || articulo.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "El artículo es obligatorio"));
+        }
+
         Compra compra = new Compra();
-        compra.setIdUsuario(Integer.parseInt(body.get("id_usuario")));
-        compra.setArticulo(body.get("articulo"));
+        try {
+            compra.setIdUsuario(Integer.parseInt(body.get("id_usuario")));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "id_usuario inválido"));
+        }
+        compra.setArticulo(articulo);
         compra.setCantidadObjetos(body.get("cantidad_objetos") != null ? Integer.parseInt(body.get("cantidad_objetos")) : 0);
         compra.setMetodoPago(body.get("metodo_pago"));
         compra.setTotal(body.get("total") != null ? new java.math.BigDecimal(body.get("total")) : java.math.BigDecimal.ZERO);
@@ -46,6 +59,7 @@ public class PedidoController {
 
         carritoRepository.deleteByIdUsuario(compra.getIdUsuario());
 
+        log.info("Pedido creado: #{} (userId={}, total={}, articulo={})", compra.getIdCompra(), compra.getIdUsuario(), compra.getTotal(), articulo);
         return ResponseEntity.ok(Map.of(
             "mensaje", "Pedido creado correctamente",
             "id", compra.getIdCompra()
@@ -70,6 +84,7 @@ public class PedidoController {
                     }
                     compra.setEstadoPedido("cancelado");
                     compraRepository.save(compra);
+                    log.info("Pedido #{} cancelado", id);
                     return ResponseEntity.ok(Map.of("mensaje", "Pedido cancelado correctamente"));
                 })
                 .orElse(ResponseEntity.notFound().build());

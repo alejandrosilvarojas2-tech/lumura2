@@ -8,6 +8,8 @@ import com.lumura.primeraApi.repository.CompraRepository;
 import com.lumura.primeraApi.repository.UsuarioRepository;
 import com.lumura.primeraApi.util.JwtUtil;
 import org.mindrot.jbcrypt.BCrypt;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +22,8 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/admin")
 public class AdminController {
+
+    private static final Logger log = LoggerFactory.getLogger(AdminController.class);
 
     private final CompraRepository compraRepository;
     private final UsuarioRepository usuarioRepository;
@@ -64,10 +68,16 @@ public class AdminController {
                                               @RequestBody Map<String, String> body) {
         if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
 
+        String estado = body.get("estado_pedido");
+        if (estado == null || !List.of("pendiente","enviado","entregado","cancelado").contains(estado)) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Estado inválido. Valores: pendiente, enviado, entregado, cancelado"));
+        }
+
         return compraRepository.findById(id)
                 .map(compra -> {
-                    compra.setEstadoPedido(body.get("estado_pedido"));
+                    compra.setEstadoPedido(estado);
                     compraRepository.save(compra);
+                    log.info("Pedido #{} actualizado a estado: {}", id, estado);
                     return ResponseEntity.ok(Map.of("mensaje", "Estado actualizado"));
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -78,8 +88,13 @@ public class AdminController {
                                            @RequestBody Map<String, String> body) {
         if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
 
+        String articulo = body.get("articulo");
+        if (articulo == null || articulo.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "El nombre del artículo es obligatorio"));
+        }
+
         Catalogo p = new Catalogo();
-        p.setArticulo(body.get("articulo"));
+        p.setArticulo(articulo);
         p.setTalla(body.get("talla"));
         p.setColor(body.get("color"));
         p.setPrecio(new BigDecimal(body.getOrDefault("precio", "0")));
@@ -91,6 +106,7 @@ public class AdminController {
         p.setEstado("activo");
         p.setFechaCreacion(LocalDateTime.now());
         catalogoRepository.save(p);
+        log.info("Producto creado: {} (id={})", p.getArticulo(), p.getIdCatalogo());
         return ResponseEntity.ok(p);
     }
 
@@ -126,6 +142,7 @@ public class AdminController {
 
         if (catalogoRepository.existsById(id)) {
             catalogoRepository.deleteById(id);
+            log.info("Producto eliminado: id={}", id);
             return ResponseEntity.ok(Map.of("mensaje", "Producto eliminado"));
         }
         return ResponseEntity.notFound().build();
@@ -164,6 +181,7 @@ public class AdminController {
         }
 
         usuarioRepository.deleteById(id);
+        log.info("Usuario eliminado por admin: userId={}", id);
         return ResponseEntity.ok(Map.of("mensaje", "Usuario eliminado correctamente"));
     }
 

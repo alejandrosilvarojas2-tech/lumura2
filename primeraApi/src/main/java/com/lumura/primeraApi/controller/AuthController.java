@@ -1,11 +1,14 @@
 package com.lumura.primeraApi.controller;
 
+import com.lumura.primeraApi.entity.Catalogo;
 import com.lumura.primeraApi.entity.Usuario;
 import com.lumura.primeraApi.repository.CarritoRepository;
 import com.lumura.primeraApi.repository.CompraRepository;
 import com.lumura.primeraApi.repository.UsuarioRepository;
 import com.lumura.primeraApi.util.JwtUtil;
 import org.mindrot.jbcrypt.BCrypt;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -16,10 +19,14 @@ import java.time.LocalDateTime;
 import java.util.HexFormat;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
 
     private final UsuarioRepository usuarioRepository;
     private final CarritoRepository carritoRepository;
@@ -42,8 +49,17 @@ public class AuthController {
         String correo = body.get("correo_usuario");
         String password = body.get("password");
 
-        if (nombre == null || correo == null || password == null) {
+        if (nombre == null || nombre.isBlank() || correo == null || password == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "Faltan campos obligatorios"));
+        }
+        if (nombre.trim().length() < 2) {
+            return ResponseEntity.badRequest().body(Map.of("error", "El nombre debe tener al menos 2 caracteres"));
+        }
+        if (!EMAIL_PATTERN.matcher(correo).matches()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "El correo no tiene un formato válido"));
+        }
+        if (password.length() < 6) {
+            return ResponseEntity.badRequest().body(Map.of("error", "La contraseña debe tener al menos 6 caracteres"));
         }
 
         if (usuarioRepository.findByCorreoUsuario(correo).isPresent()) {
@@ -61,6 +77,7 @@ public class AuthController {
         usuario.setRol("USER");
         usuarioRepository.save(usuario);
 
+        log.info("Nuevo usuario registrado: {} ({})", nombre, correo);
         return ResponseEntity.ok(Map.of("mensaje", "Usuario registrado correctamente", "id", usuario.getIdUsuario()));
     }
 
@@ -82,9 +99,13 @@ public class AuthController {
         if (correo == null || password == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "Faltan credenciales"));
         }
+        if (!EMAIL_PATTERN.matcher(correo).matches()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "El correo no tiene un formato válido"));
+        }
 
         Optional<Usuario> opt = usuarioRepository.findByCorreoUsuario(correo);
         if (opt.isEmpty()) {
+            log.warn("Login fallido - correo no encontrado: {}", correo);
             return ResponseEntity.status(401).body(Map.of("error", "Correo o contraseña incorrectos"));
         }
 
@@ -93,6 +114,7 @@ public class AuthController {
 
         if (!BCrypt.checkpw(password, storedHash)) {
             if (!storedHash.equals(sha256(password))) {
+                log.warn("Login fallido - contraseña incorrecta: {}", correo);
                 return ResponseEntity.status(401).body(Map.of("error", "Correo o contraseña incorrectos"));
             }
             usuario.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
@@ -104,6 +126,7 @@ public class AuthController {
             usuarioRepository.save(usuario);
         }
 
+        log.info("Login exitoso: {} ({})", usuario.getNombreUsuario(), correo);
         String token = jwtUtil.generateToken(usuario.getIdUsuario(), usuario.getCorreoUsuario(), usuario.getRol());
         return ResponseEntity.ok(Map.of(
             "token", token,
@@ -139,6 +162,7 @@ public class AuthController {
         compraRepository.deleteByIdUsuario(userId);
         usuarioRepository.deleteById(userId);
 
+        log.info("Cuenta eliminada: userId={}", userId);
         return ResponseEntity.ok(Map.of("mensaje", "Cuenta eliminada correctamente"));
     }
 
@@ -162,6 +186,7 @@ public class AuthController {
         if (body.containsKey("direccion_usuario")) usuario.setDireccionUsuario(body.get("direccion_usuario"));
         usuarioRepository.save(usuario);
 
+        log.info("Datos actualizados: userId={}", userId);
         return ResponseEntity.ok(Map.of(
             "mensaje", "Datos actualizados correctamente",
             "usuario", Map.of(
