@@ -632,4 +632,116 @@ docker compose up --build
 
 ---
 
-*Fin del documento — LUMURA Documentación Técnica v1.0*
+# 8. Diagnóstico del Proyecto — Actualización 25/07/2026
+
+## 8.1 Puntuación General: 60/100
+
+| Categoría | Máximo | Puntaje | Notas |
+|-----------|--------|---------|-------|
+| Arquitectura y Calidad | 20 | 13 | MVC limpio, separación correcta, sin service layer ni tests |
+| Seguridad | 25 | 8 | BCrypt + JWT + RBAC presentes, pero 3 vulnerabilidades críticas |
+| Funcionalidad | 20 | 15 | CRUD completo, panel admin, paginación, búsqueda, favoritos |
+| Calidad Frontend | 15 | 9 | SPA funcional con buena UX, inline styles, XSS en datos de usuario |
+| DevOps | 10 | 7 | Docker multi-stage, Compose con health checks, config multi-env |
+| Documentación | 10 | 8 | Documentación técnica exhaustiva (635 líneas), AGENTS.md |
+| **TOTAL** | **100** | **60** | |
+
+## 8.2 Vulnerabilidades Críticas Activas
+
+| # | Vulnerabilidad | Ubicación | Impacto |
+|---|---------------|-----------|---------|
+| C1 | **Reset de contraseña admin sin autenticación** | `AdminController.fixAdminPassword()` | Cualquier usuario anónimo puede hacer POST a `/api/admin/fix-admin-password` y restablecer la contraseña del admin a "123456". **Takeover completo de la cuenta admin.** |
+| C2 | **Inserción de productos sin autenticación** | `AdminController.sebrarProductosPublico()` | Cualquier usuario anónimo puede hacer POST a `/api/admin/seed-public` para inyectar productos en la base de datos. |
+| C3 | **XSS almacenado vía perfil de usuario** | `lumura.js` líneas 130-132, 744 | El nombre, teléfono y dirección del usuario se renderizan en `innerHTML` sin `escHtml()`. Un usuario malicioso obtiene XSS ejecutándose en el navegador de todos. |
+
+## 8.3 Vulnerabilidades Altas
+
+| # | Vulnerabilidad | Ubicación | Impacto |
+|---|---------------|-----------|---------|
+| H1 | **IDOR: Manipulación de carrito** | `CarritoController` | `id_usuario` viene del body, no del JWT. Cualquier usuario puede modificar el carrito de otro. |
+| H2 | **IDOR: Cancelación de pedidos** | `PedidoController` | Cualquier usuario autenticado puede cancelar el pedido de otro por ID. |
+| H3 | **IDOR: Creación de pedidos** | `PedidoController` | `id_usuario` del body permite crear pedidos como otro usuario. |
+| H4 | **JWT secret en git** | `application-dev.properties` | `LUMURA_SECRET_KEY_2026_CHANGE_IN_PROD` comprometido en el repositorio. |
+| H5 | **DB credentials en git** | `application-dev.properties` | `alejandro`/`123456` comprometidos. |
+
+## 8.4 Bugs Medios
+
+| # | Bug | Ubicación |
+|---|-----|-----------|
+| M1 | Memory leak en Rate Limiter (entradas nunca se limpian) | `RateLimitFilter` |
+| M2 | Rate Limiter no detecta IP real detrás de proxy | `RateLimitFilter.getRemoteAddr()` |
+| M3 | Password fallback SHA-256 aún activo | `AuthController` |
+| M4 | Falta `@Modifying` en `deleteByIdUsuario()` | `CarritoRepository`, `CompraRepository` |
+| M5 | `ddl-auto=update` activo en producción | `application.properties` |
+| M6 | Admin auto-promocionado si registra `admin@lumura.com` | `AuthController` |
+| M7 | Sin validación de confirmación de contraseña en backend | `AuthController.register()` |
+
+## 8.5 Bugs Bajos
+
+| # | Bug | Ubicación |
+|---|-----|-----------|
+| L1 | Sin unit tests (dependencia `spring-boot-starter-test` existe sin tests) | Todo el proyecto |
+| L2 | Cache de productos nunca se limpia | `productoCache` global |
+| L3 | Imágenes hardcodeadas por ID | `imagenesProducto` mapa |
+| L4 | Admin panels sin responsive | `lumura.css` sin `@media` |
+| L5 | Sidebar admin duplicado 6 veces en HTML | `index.html` |
+| L6 | Gráficas dashboard hardcodeadas | `index.html` |
+| L7 | Fecha "15 Abr 2025" hardcodeada en header admin | `index.html:304` |
+| L8 | `<img>` dentro de `<option>` (inválido) | `index.html:219-222` |
+| L9 | `</div>` huérfanos después de `screen-admin-users` | `index.html:377-379` |
+| L10 | Sin mecanismo de revocación de JWT | `JwtUtil` |
+
+## 8.6 Endpoints Completos (25)
+
+| # | Método | Ruta | Auth | Descripción |
+|---|--------|------|------|-------------|
+| 1 | POST | `/api/auth/register` | No | Registro de usuario |
+| 2 | POST | `/api/auth/login` | No | Login, devuelve JWT |
+| 3 | PUT | `/api/auth/cuenta` | JWT | Actualizar nombre/teléfono/dirección |
+| 4 | DELETE | `/api/auth/cuenta` | JWT | Eliminar cuenta + datos |
+| 5 | GET | `/api/productos` | No | Listar todos los productos |
+| 6 | GET | `/api/productos/page` | No | Productos paginados (?page=0&size=12) |
+| 7 | GET | `/api/productos/{id}` | No | Detalle de producto |
+| 8 | GET | `/api/carrito/{idUsuario}` | JWT | Ver carrito |
+| 9 | POST | `/api/carrito` | JWT | Agregar al carrito (con validación stock) |
+| 10 | PUT | `/api/carrito/{idCarrito}` | JWT | Actualizar cantidad |
+| 11 | DELETE | `/api/carrito/{idCarrito}` | JWT | Eliminar del carrito |
+| 12 | POST | `/api/pedidos` | JWT | Crear pedido (limpia carrito) |
+| 13 | GET | `/api/pedidos/{idUsuario}` | JWT | Historial de pedidos |
+| 14 | PUT | `/api/pedidos/{id}/cancelar` | JWT | Cancelar pedido |
+| 15 | GET | `/api/admin/dashboard` | JWT+ADMIN | KPIs del dashboard |
+| 16 | GET | `/api/admin/pedidos` | JWT+ADMIN | Todos los pedidos |
+| 17 | PUT | `/api/admin/pedidos/{id}` | JWT+ADMIN | Actualizar estado de pedido |
+| 18 | POST | `/api/admin/productos` | JWT+ADMIN | Crear producto |
+| 19 | PUT | `/api/admin/productos/{id}` | JWT+ADMIN | Actualizar producto |
+| 20 | DELETE | `/api/admin/productos/{id}` | JWT+ADMIN | Eliminar producto |
+| 21 | GET | `/api/admin/usuarios` | JWT+ADMIN | Listar usuarios |
+| 22 | DELETE | `/api/admin/usuarios/{id}` | JWT+ADMIN | Eliminar usuario |
+| 23 | POST | `/api/admin/seed` | JWT+ADMIN | Sembrar productos |
+| 24 | POST | `/api/admin/seed-public` | **NINGUNO** | Sembrar productos (sin auth!) |
+| 25 | POST | `/api/admin/fix-admin-password` | **NINGUNO** | Resetear password admin (sin auth!) |
+
+## 8.7 Medidas Correctivas Recomendadas (Prioridad)
+
+### Prioridad 1 — Seguridad Inmediata
+1. **Eliminar o proteger** `fix-admin-password` (agregar auth o eliminar endpoint)
+2. **Eliminar o proteger** `seed-public` (agregar auth o eliminar endpoint)
+3. **Corregir XSS** en `mostrarActualizarDatos()` y `actualizarUI()` — aplicar `escHtml()` a todos los datos de usuario
+4. **Usar userId del JWT** en lugar del body en carrito y pedidos (corregir IDOR)
+5. **Mover secrets** de `application-dev.properties` a variables de entorno
+
+### Prioridad 2 — Integridad de Datos
+6. Agregar `@Modifying` a `deleteByIdUsuario()` en repositorios
+7. Cambiar `ddl-auto=update` a `ddl-auto=validate` en producción
+8. Eliminar fallback SHA-256 de contraseñas
+9. Agregar validación de confirmación de contraseña en backend
+
+### Prioridad 3 — Calidad de Código
+10. Agregar unit tests para controllers
+11. Refactorizar `validarToken()`/`validarAdmin()` a un interceptor o filter
+12. Agregar responsive design para admin panels
+13. Agregar Content Security Policy header
+
+---
+
+*Fin del documento — LUMURA Documentación Técnica v1.1 (Actualizado 25/07/2026)*
