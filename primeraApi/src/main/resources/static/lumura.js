@@ -52,7 +52,13 @@ async function handleLogin(e) {
     localStorage.setItem('lumura_user', JSON.stringify(data.usuario));
     actualizarUI();
     mostrarMensaje('Bienvenido, ' + data.usuario.nombre, 'success');
-    showScreen('home');
+    if (data.usuario.rol === 'ALIADO') {
+      showScreen('aliado-dash');
+    } else if (data.usuario.rol === 'ADMIN') {
+      showScreen('admin-dash');
+    } else {
+      showScreen('home');
+    }
   } catch (err) {
     mostrarMensaje(err.message, 'error');
   }
@@ -111,6 +117,100 @@ async function handleRegisterAliado(e) {
     });
     mostrarMensaje('Aliado registrado exitosamente. Inicia sesión.', 'success');
     showScreen('login');
+  } catch (err) {
+    mostrarMensaje(err.message, 'error');
+  }
+}
+
+async function guardarArticuloAliado(e) {
+  e.preventDefault();
+  const articulo = document.getElementById('aliado-art-articulo').value.trim();
+  const categoria = document.getElementById('aliado-art-categoria').value.trim();
+  const precio = document.getElementById('aliado-art-precio').value;
+  const talla = document.getElementById('aliado-art-talla').value.trim();
+  const color = document.getElementById('aliado-art-color').value.trim();
+  const stock = document.getElementById('aliado-art-stock').value;
+  const desc = document.getElementById('aliado-art-desc').value.trim();
+  if (!articulo || !categoria || !precio || !stock) {
+    return mostrarMensaje('Completa los campos obligatorios', 'error');
+  }
+  try {
+    await api.post('/api/admin/productos', {
+      articulo, categoria, precio, talla, color, stock, descripcion: desc,
+    });
+    mostrarMensaje('Artículo guardado correctamente', 'success');
+    document.getElementById('aliado-add-form').reset();
+  } catch (err) {
+    mostrarMensaje(err.message, 'error');
+  }
+}
+
+async function cargarAliadoStock() {
+  try {
+    const productos = await api.get('/api/productos');
+    const tbody = document.getElementById('aliado-stock-body');
+    if (!tbody) return;
+    if (productos.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;">No hay productos</td></tr>';
+      return;
+    }
+    tbody.innerHTML = productos.map(p => {
+      const estado = p.stock === 0 ? '<span class="badge badge-red">Sin stock</span>'
+        : p.stock < 10 ? '<span class="badge badge-yellow">Bajo</span>'
+        : '<span class="badge badge-green">OK</span>';
+      return '<tr>'
+        + '<td>#' + String(p.id_catalogo).padStart(3, '0') + '</td>'
+        + '<td>' + escHtml(p.articulo) + '</td>'
+        + '<td>' + escHtml(p.categoria || '-') + '</td>'
+        + '<td><input type="number" value="' + p.stock + '" style="width:70px;padding:4px 8px;border:1.5px solid var(--light);border-radius:6px;text-align:center;" id="stock-' + p.id_catalogo + '"></td>'
+        + '<td>' + estado + ' <button class="btn-sm" style="margin-left:8px;padding:4px 10px;font-size:12px;" onclick="actualizarStockAliado(' + p.id_catalogo + ')">Guardar</button></td>'
+        + '</tr>';
+    }).join('');
+  } catch (err) {
+    mostrarMensaje('Error al cargar stock', 'error');
+  }
+}
+
+async function actualizarStockAliado(id) {
+  const input = document.getElementById('stock-' + id);
+  if (!input) return;
+  const nuevoStock = input.value;
+  try {
+    await api.put('/api/admin/productos/' + id, { stock: nuevoStock });
+    mostrarMensaje('Stock actualizado', 'success');
+    cargarAliadoStock();
+  } catch (err) {
+    mostrarMensaje(err.message, 'error');
+  }
+}
+
+async function cargarAliadoDesc() {
+  try {
+    const productos = await api.get('/api/productos');
+    const container = document.getElementById('aliado-desc-list');
+    if (!container) return;
+    if (productos.length === 0) {
+      container.innerHTML = '<div class="card" style="padding:24px;text-align:center;color:var(--gray);">No hay productos</div>';
+      return;
+    }
+    container.innerHTML = productos.map(p => {
+      return '<div class="card" style="padding:16px;margin-bottom:12px;">'
+        + '<div style="font-weight:700;margin-bottom:8px;">' + escHtml(p.articulo) + ' <span style="color:var(--gray);font-size:12px;">#' + String(p.id_catalogo).padStart(3, '0') + '</span></div>'
+        + '<textarea id="desc-' + p.id_catalogo + '" rows="3" style="width:100%;padding:10px;border:1.5px solid var(--light);border-radius:8px;font-family:inherit;resize:vertical;">' + escHtml(p.descripcion || '') + '</textarea>'
+        + '<button class="btn-primary" style="margin-top:8px;padding:8px 16px;font-size:13px;" onclick="guardarDescripcionAliado(' + p.id_catalogo + ')">Guardar descripción</button>'
+        + '</div>';
+    }).join('');
+  } catch (err) {
+    mostrarMensaje('Error al cargar descripciones', 'error');
+  }
+}
+
+async function guardarDescripcionAliado(id) {
+  const textarea = document.getElementById('desc-' + id);
+  if (!textarea) return;
+  try {
+    await api.put('/api/admin/productos/' + id, { descripcion: textarea.value.trim() });
+    mostrarMensaje('Descripción actualizada', 'success');
   } catch (err) {
     mostrarMensaje(err.message, 'error');
   }
@@ -821,6 +921,10 @@ function showScreen(name) {
     mostrarMensaje('Acceso denegado — Solo administradores', 'error');
     return;
   }
+  if (name.startsWith('aliado-') && (!state.token || state.user?.rol !== 'ALIADO')) {
+    mostrarMensaje('Acceso denegado — Solo aliados', 'error');
+    return;
+  }
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const screen = document.getElementById('screen-' + name);
   if (screen) screen.classList.add('active');
@@ -843,6 +947,9 @@ function showScreen(name) {
   if (name === 'admin-rep') { cargarProductos(); cargarReportes(); }
   if (name === 'admin-orders') cargarPedidosAdmin();
   if (name === 'admin-users') cargarUsuariosAdmin();
+  if (name === 'aliado-add') {}
+  if (name === 'aliado-stock') cargarAliadoStock();
+  if (name === 'aliado-desc') cargarAliadoDesc();
   if (name === 'orders' && state.token) cargarPedidos();
 }
 
@@ -853,6 +960,8 @@ document.addEventListener('DOMContentLoaded', function () {
   if (regForm) regForm.addEventListener('submit', handleRegister);
   const aliadoForm = document.getElementById('aliado-form');
   if (aliadoForm) aliadoForm.addEventListener('submit', handleRegisterAliado);
+  const aliadoAddForm = document.getElementById('aliado-add-form');
+  if (aliadoAddForm) aliadoAddForm.addEventListener('submit', guardarArticuloAliado);
   document.querySelectorAll('.logout-btn').forEach(b => b.addEventListener('click', cerrarSesion));
   document.querySelectorAll('.tag').forEach(t => {
     t.addEventListener('click', function () {
