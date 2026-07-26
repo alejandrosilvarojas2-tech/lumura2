@@ -122,6 +122,57 @@ async function handleRegisterAliado(e) {
   }
 }
 
+let aliadoImgUrl = '';
+
+function handleAliadoImgSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    mostrarMensaje('La imagen no puede superar 5MB', 'error');
+    input.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const preview = document.getElementById('aliado-img-preview');
+    preview.src = e.target.result;
+    preview.style.width = '120px';
+    preview.style.height = '120px';
+    preview.style.objectFit = 'cover';
+    preview.style.borderRadius = '8px';
+    preview.style.opacity = '1';
+    document.getElementById('aliado-img-text').textContent = file.name;
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleAliadoImgDrop(e) {
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) {
+    const input = document.getElementById('aliado-art-img');
+    input.files = e.dataTransfer.files;
+    handleAliadoImgSelect(input);
+  }
+}
+
+async function subirImagenAliado() {
+  const input = document.getElementById('aliado-art-img');
+  if (!input.files[0]) return null;
+  const formData = new FormData();
+  formData.append('file', input.files[0]);
+  const res = await fetch('/api/admin/upload', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + state.token },
+    body: formData,
+  });
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || 'Error al subir imagen');
+  }
+  const data = await res.json();
+  return data.url;
+}
+
 async function guardarArticuloAliado(e) {
   e.preventDefault();
   const articulo = document.getElementById('aliado-art-articulo').value.trim();
@@ -134,12 +185,30 @@ async function guardarArticuloAliado(e) {
   if (!articulo || !categoria || !precio || !stock) {
     return mostrarMensaje('Completa los campos obligatorios', 'error');
   }
+  if (Number(stock) > 10000) {
+    return mostrarMensaje('El stock no puede superar 10,000 unidades', 'error');
+  }
   try {
+    let imagen_url = null;
+    const fileInput = document.getElementById('aliado-art-img');
+    if (fileInput.files[0]) {
+      mostrarMensaje('Subiendo imagen...', 'info');
+      imagen_url = await subirImagenAliado();
+    }
     await api.post('/api/admin/productos', {
-      articulo, categoria, precio, talla, color, stock, descripcion: desc,
+      articulo, categoria, precio, talla, color, stock, descripcion: desc, imagen_url,
     });
     mostrarMensaje('Artículo guardado correctamente', 'success');
     document.getElementById('aliado-add-form').reset();
+    aliadoImgUrl = '';
+    const preview = document.getElementById('aliado-img-preview');
+    preview.src = 'images/upload.svg';
+    preview.style.width = '48px';
+    preview.style.height = '48px';
+    preview.style.objectFit = '';
+    preview.style.borderRadius = '';
+    preview.style.opacity = '0.4';
+    document.getElementById('aliado-img-text').textContent = 'Arrastra una imagen o haz clic aquí';
   } catch (err) {
     mostrarMensaje(err.message, 'error');
   }
@@ -151,7 +220,7 @@ async function cargarAliadoStock() {
     const tbody = document.getElementById('aliado-stock-body');
     if (!tbody) return;
     if (productos.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;">No hay productos</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;">No hay productos</td></tr>';
       return;
     }
     tbody.innerHTML = productos.map(p => {
@@ -162,8 +231,12 @@ async function cargarAliadoStock() {
         + '<td>#' + String(p.id_catalogo).padStart(3, '0') + '</td>'
         + '<td>' + escHtml(p.articulo) + '</td>'
         + '<td>' + escHtml(p.categoria || '-') + '</td>'
-        + '<td><input type="number" value="' + p.stock + '" style="width:70px;padding:4px 8px;border:1.5px solid var(--light);border-radius:6px;text-align:center;" id="stock-' + p.id_catalogo + '"></td>'
-        + '<td>' + estado + ' <button class="btn-sm" style="margin-left:8px;padding:4px 10px;font-size:12px;" onclick="actualizarStockAliado(' + p.id_catalogo + ')">Guardar</button></td>'
+        + '<td style="font-weight:700;">' + p.stock + '</td>'
+        + '<td style="display:flex;align-items:center;gap:6px;">'
+        + '<input type="number" min="0" max="10000" value="0" style="width:70px;padding:4px 8px;border:1.5px solid var(--light);border-radius:6px;text-align:center;" id="stock-add-' + p.id_catalogo + '">'
+        + '<button class="btn-sm" style="padding:4px 10px;font-size:12px;background:var(--accent);color:white;" onclick="agregarStockAliado(' + p.id_catalogo + ', ' + p.stock + ')">Agregar</button>'
+        + '</td>'
+        + '<td>' + estado + '</td>'
         + '</tr>';
     }).join('');
   } catch (err) {
@@ -171,13 +244,24 @@ async function cargarAliadoStock() {
   }
 }
 
-async function actualizarStockAliado(id) {
-  const input = document.getElementById('stock-' + id);
+async function agregarStockAliado(id, stockActual) {
+  const input = document.getElementById('stock-add-' + id);
   if (!input) return;
-  const nuevoStock = input.value;
+  const cantidad = parseInt(input.value);
+  if (!cantidad || cantidad <= 0) {
+    return mostrarMensaje('Ingresa una cantidad válida', 'error');
+  }
+  if (cantidad > 10000) {
+    return mostrarMensaje('No se pueden agregar más de 10,000 unidades', 'error');
+  }
+  const nuevoStock = stockActual + cantidad;
+  if (nuevoStock > 10000) {
+    return mostrarMensaje('El stock total no puede superar 10,000 unidades', 'error');
+  }
   try {
     await api.put('/api/admin/productos/' + id, { stock: nuevoStock });
-    mostrarMensaje('Stock actualizado', 'success');
+    mostrarMensaje('+' + cantidad + ' unidades agregadas. Stock total: ' + nuevoStock, 'success');
+    input.value = 0;
     cargarAliadoStock();
   } catch (err) {
     mostrarMensaje(err.message, 'error');
@@ -194,22 +278,35 @@ async function cargarAliadoDesc() {
       return;
     }
     container.innerHTML = productos.map(p => {
+      const desc = escHtml(p.descripcion || '');
       return '<div class="card" style="padding:16px;margin-bottom:12px;">'
         + '<div style="font-weight:700;margin-bottom:8px;">' + escHtml(p.articulo) + ' <span style="color:var(--gray);font-size:12px;">#' + String(p.id_catalogo).padStart(3, '0') + '</span></div>'
-        + '<textarea id="desc-' + p.id_catalogo + '" rows="3" style="width:100%;padding:10px;border:1.5px solid var(--light);border-radius:8px;font-family:inherit;resize:vertical;">' + escHtml(p.descripcion || '') + '</textarea>'
-        + '<button class="btn-primary" style="margin-top:8px;padding:8px 16px;font-size:13px;" onclick="guardarDescripcionAliado(' + p.id_catalogo + ')">Guardar descripción</button>'
-        + '</div>';
+        + '<textarea id="desc-' + p.id_catalogo + '" rows="3" maxlength="500" oninput="actualizarContadorDesc(this)" style="width:100%;padding:10px;border:1.5px solid var(--light);border-radius:8px;font-family:inherit;resize:vertical;">' + desc + '</textarea>'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">'
+        + '<span style="font-size:12px;color:var(--gray);"><span class="desc-count" data-for="' + p.id_catalogo + '">' + (p.descripcion || '').length + '</span>/500</span>'
+        + '<button class="btn-primary" style="padding:8px 16px;font-size:13px;" onclick="guardarDescripcionAliado(' + p.id_catalogo + ')">Guardar descripción</button>'
+        + '</div></div>';
     }).join('');
   } catch (err) {
     mostrarMensaje('Error al cargar descripciones', 'error');
   }
 }
 
+function actualizarContadorDesc(textarea) {
+  const id = textarea.id.replace('desc-', '');
+  const counter = document.querySelector('.desc-count[data-for="' + id + '"]');
+  if (counter) counter.textContent = textarea.value.length;
+}
+
 async function guardarDescripcionAliado(id) {
   const textarea = document.getElementById('desc-' + id);
   if (!textarea) return;
+  const texto = textarea.value.trim();
+  if (texto.length > 500) {
+    return mostrarMensaje('La descripción no puede superar 500 caracteres', 'error');
+  }
   try {
-    await api.put('/api/admin/productos/' + id, { descripcion: textarea.value.trim() });
+    await api.put('/api/admin/productos/' + id, { descripcion: texto });
     mostrarMensaje('Descripción actualizada', 'success');
   } catch (err) {
     mostrarMensaje(err.message, 'error');
@@ -962,6 +1059,10 @@ document.addEventListener('DOMContentLoaded', function () {
   if (aliadoForm) aliadoForm.addEventListener('submit', handleRegisterAliado);
   const aliadoAddForm = document.getElementById('aliado-add-form');
   if (aliadoAddForm) aliadoAddForm.addEventListener('submit', guardarArticuloAliado);
+  const aliadoDescTA = document.getElementById('aliado-art-desc');
+  if (aliadoDescTA) aliadoDescTA.addEventListener('input', function() {
+    document.getElementById('aliado-desc-count').textContent = this.value.length;
+  });
   document.querySelectorAll('.logout-btn').forEach(b => b.addEventListener('click', cerrarSesion));
   document.querySelectorAll('.tag').forEach(t => {
     t.addEventListener('click', function () {

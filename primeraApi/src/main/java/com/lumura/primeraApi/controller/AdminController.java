@@ -9,11 +9,17 @@ import com.lumura.primeraApi.repository.UsuarioRepository;
 import com.lumura.primeraApi.util.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -85,7 +91,7 @@ public class AdminController {
     @PostMapping("/productos")
     public ResponseEntity<?> crearProducto(@RequestHeader("Authorization") String auth,
                                            @RequestBody Map<String, String> body) {
-        if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+        if (!validarAdmin(auth) && !validarAliado(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
 
         String articulo = body.get("articulo");
         if (articulo == null || articulo.isBlank()) {
@@ -113,7 +119,7 @@ public class AdminController {
     public ResponseEntity<?> actualizarProducto(@RequestHeader("Authorization") String auth,
                                                 @PathVariable Integer id,
                                                 @RequestBody Map<String, String> body) {
-        if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+        if (!validarAdmin(auth) && !validarAliado(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
 
         return catalogoRepository.findById(id)
                 .map(p -> {
@@ -184,6 +190,55 @@ public class AdminController {
         return ResponseEntity.ok(Map.of("mensaje", "Usuario eliminado correctamente"));
     }
 
+    @Value("${upload.dir:uploads}")
+    private String uploadDir;
+
+    @PostMapping("/upload")
+    public ResponseEntity<?> subirImagen(@RequestHeader("Authorization") String auth,
+                                         @RequestParam("file") MultipartFile file) {
+        if (!validarAdmin(auth) && !validarAliado(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido o no eres aliado/admin"));
+
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "No se seleccionó ningún archivo"));
+        }
+
+        String originalName = file.getOriginalFilename();
+        if (originalName == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Nombre de archivo inválido"));
+        }
+
+        String extension = "";
+        int dotIndex = originalName.lastIndexOf('.');
+        if (dotIndex > 0) {
+            extension = originalName.substring(dotIndex).toLowerCase();
+        }
+
+        if (!List.of(".jpg", ".jpeg", ".png", ".gif", ".webp", ".jfif").contains(extension)) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Tipo de archivo no permitido. Usa JPG, PNG, GIF o WEBP"));
+        }
+
+        if (file.getSize() > 5 * 1024 * 1024) {
+            return ResponseEntity.badRequest().body(Map.of("error", "El archivo no puede superar 5MB"));
+        }
+
+        try {
+            String filename = "producto_" + System.currentTimeMillis() + extension;
+            Path uploadPath = Paths.get(uploadDir);
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+            Path filePath = uploadPath.resolve(filename);
+            file.transferTo(filePath.toFile());
+
+            String imageUrl = "uploads/" + filename;
+            log.info("Imagen subida: {}", imageUrl);
+            return ResponseEntity.ok(Map.of("url", imageUrl, "mensaje", "Imagen subida correctamente"));
+        } catch (IOException e) {
+            log.error("Error al subir imagen", e);
+            return ResponseEntity.badRequest().body(Map.of("error", "Error al subir la imagen"));
+        }
+    }
+
     @PostMapping("/seed")
     @Transactional
     public ResponseEntity<?> sembrarProductos(@RequestHeader("Authorization") String auth) {
@@ -219,5 +274,13 @@ public class AdminController {
         String token = auth.substring(7);
         if (!jwtUtil.validateToken(token)) return false;
         return "ADMIN".equals(jwtUtil.getRolFromToken(token));
+    }
+
+    private boolean validarAliado(String auth) {
+        if (auth == null || !auth.startsWith("Bearer ")) return false;
+        String token = auth.substring(7);
+        if (!jwtUtil.validateToken(token)) return false;
+        String rol = jwtUtil.getRolFromToken(token);
+        return "ALIADO".equals(rol) || "ADMIN".equals(rol);
     }
 }
