@@ -175,36 +175,19 @@ async function subirImagenAliado() {
 
 async function guardarArticuloAliado(e) {
   e.preventDefault();
-  const articulo = document.getElementById('aliado-art-articulo').value.trim();
-  const categoria = document.getElementById('aliado-art-categoria').value.trim();
-  const precio = document.getElementById('aliado-art-precio').value;
-  const talla = document.getElementById('aliado-art-talla').value.trim();
-  const color = document.getElementById('aliado-art-color').value.trim();
-  const stock = document.getElementById('aliado-art-stock').value;
-  const desc = document.getElementById('aliado-art-desc').value.trim();
-  if (!articulo || !categoria || !precio || !stock) {
-    return mostrarMensaje('Completa los campos obligatorios', 'error');
-  }
-  if (Number(stock) > 10000) {
-    return mostrarMensaje('El stock no puede superar 10,000 unidades', 'error');
+  const fileInput = document.getElementById('aliado-art-img');
+  if (!fileInput.files[0]) {
+    return mostrarMensaje('Selecciona una imagen primero', 'error');
   }
   try {
-    let imagen_url = null;
-    const fileInput = document.getElementById('aliado-art-img');
-    if (fileInput.files[0]) {
-      mostrarMensaje('Subiendo imagen...', 'info');
-      imagen_url = await subirImagenAliado();
-    }
-    await api.post('/api/admin/productos', {
-      articulo, categoria, precio, talla, color, stock, descripcion: desc, imagen_url,
-    });
-    mostrarMensaje('Artículo guardado correctamente', 'success');
+    mostrarMensaje('Subiendo imagen...', 'info');
+    const url = await subirImagenAliado();
+    mostrarMensaje('Imagen subida correctamente: ' + url, 'success');
     document.getElementById('aliado-add-form').reset();
-    aliadoImgUrl = '';
     const preview = document.getElementById('aliado-img-preview');
     preview.src = 'images/upload.svg';
-    preview.style.width = '48px';
-    preview.style.height = '48px';
+    preview.style.width = '64px';
+    preview.style.height = '64px';
     preview.style.objectFit = '';
     preview.style.borderRadius = '';
     preview.style.opacity = '0.4';
@@ -1059,10 +1042,6 @@ document.addEventListener('DOMContentLoaded', function () {
   if (aliadoForm) aliadoForm.addEventListener('submit', handleRegisterAliado);
   const aliadoAddForm = document.getElementById('aliado-add-form');
   if (aliadoAddForm) aliadoAddForm.addEventListener('submit', guardarArticuloAliado);
-  const aliadoDescTA = document.getElementById('aliado-art-desc');
-  if (aliadoDescTA) aliadoDescTA.addEventListener('input', function() {
-    document.getElementById('aliado-desc-count').textContent = this.value.length;
-  });
   document.querySelectorAll('.logout-btn').forEach(b => b.addEventListener('click', cerrarSesion));
   document.querySelectorAll('.tag').forEach(t => {
     t.addEventListener('click', function () {

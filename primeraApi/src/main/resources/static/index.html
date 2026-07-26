@@ -682,26 +682,15 @@
     <div style="flex:1;padding:32px;">
       <h2 style="font-size:22px;font-weight:800;margin-bottom:8px;">Añadir artículo</h2>
       <p style="color:var(--gray);font-size:14px;margin-bottom:24px;">Registra un nuevo producto en el catálogo</p>
-      <div class="card" style="max-width:600px;padding:24px;">
+      <div class="card" style="max-width:500px;padding:24px;">
         <form id="aliado-add-form">
-          <div style="border:2px dashed var(--light);border-radius:12px;padding:24px;text-align:center;margin-bottom:16px;cursor:pointer;transition:border-color 0.2s;" id="aliado-img-dropzone" onclick="document.getElementById('aliado-art-img').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--light)'" ondrop="event.preventDefault();this.style.borderColor='var(--light)';handleAliadoImgDrop(event)">
-            <img id="aliado-img-preview" src="images/upload.svg" alt="" style="width:48px;height:48px;opacity:0.4;margin-bottom:8px;display:block;margin-left:auto;margin-right:auto;">
-            <div style="font-size:14px;font-weight:600;color:var(--dark);" id="aliado-img-text">Arrastra una imagen o haz clic aquí</div>
-            <div style="font-size:12px;color:var(--gray);">JPG, PNG, WEBP — Máx. 5MB</div>
+          <div style="border:2px dashed var(--light);border-radius:12px;padding:40px 24px;text-align:center;cursor:pointer;transition:border-color 0.2s;" id="aliado-img-dropzone" onclick="document.getElementById('aliado-art-img').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--light)'" ondrop="event.preventDefault();this.style.borderColor='var(--light)';handleAliadoImgDrop(event)">
+            <img id="aliado-img-preview" src="images/upload.svg" alt="" style="width:64px;height:64px;opacity:0.4;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;">
+            <div style="font-size:15px;font-weight:600;color:var(--dark);" id="aliado-img-text">Arrastra una imagen o haz clic aquí</div>
+            <div style="font-size:12px;color:var(--gray);margin-top:4px;">JPG, PNG, WEBP — Máx. 5MB</div>
             <input type="file" id="aliado-art-img" accept="image/*" style="display:none" onchange="handleAliadoImgSelect(this)">
           </div>
-          <div class="form-group"><label>Nombre del artículo *</label><input id="aliado-art-articulo" placeholder="Ej: Camiseta Premium" required></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-            <div class="form-group"><label>Categoría *</label><input id="aliado-art-categoria" placeholder="Ej: Camisetas" required></div>
-            <div class="form-group"><label>Precio *</label><input id="aliado-art-precio" type="number" placeholder="0" required></div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-            <div class="form-group"><label>Talla</label><input id="aliado-art-talla" placeholder="Ej: S,M,L,XL"></div>
-            <div class="form-group"><label>Color</label><input id="aliado-art-color" placeholder="Ej: Rojo,Negro"></div>
-          </div>
-          <div class="form-group"><label>Stock *</label><input id="aliado-art-stock" type="number" placeholder="0" min="0" required></div>
-          <div class="form-group"><label>Descripción</label><textarea id="aliado-art-desc" rows="3" maxlength="500" placeholder="Describe el producto..." style="width:100%;padding:10px;border:1.5px solid var(--light);border-radius:8px;font-family:inherit;resize:vertical;"></textarea><div style="text-align:right;font-size:12px;color:var(--gray);"><span id="aliado-desc-count">0</span>/500</div></div>
-          <button type="submit" class="btn-primary" style="width:100%;margin-top:12px;"><img src="images/save.svg" class="icon" alt="" style="vertical-align:middle"> Guardar artículo</button>
+          <button type="submit" class="btn-primary" style="width:100%;margin-top:20px;"><img src="images/save.svg" class="icon" alt="" style="vertical-align:middle"> Subir imagen</button>
         </form>
       </div>
     </div>
