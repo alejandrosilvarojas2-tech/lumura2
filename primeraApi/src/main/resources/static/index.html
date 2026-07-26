@@ -44,10 +44,6 @@
         <div style="color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 4px;">Tu moda, a un clic</div>
       </div>
       <div style="padding: 28px 24px; background: white; border-radius: 0 0 12px 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.07);">
-        <div style="display:flex; gap:10px; margin-bottom:24px;">
-          <button class="btn-primary" style="flex:1;" onclick="showScreen('home')"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"> Cliente</button>
-          <button class="btn-secondary" style="flex:1;" onclick="showScreen('register-aliado')"><img src="images/users.svg" class="icon" alt="" style="vertical-align:middle"> ¿Eres aliado?</button>
-        </div>
         <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 6px;">Bienvenido</h2>
         <p style="color: var(--gray); font-size: 14px; margin-bottom: 24px;">Inicia sesión en tu cuenta</p>
         <form id="login-form">
@@ -73,6 +69,32 @@
           <div style="flex:1; height:1px; background:var(--light);"></div>
         </div>
         <button class="btn-secondary" onclick="proximamente('Inicio con Google')"><img src="images/google.jfif" class="icon" alt="" style="width:16px;height:16px;vertical-align:middle"> Continuar con Google</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN: SELECCIÓN POST-LOGIN -->
+<!-- ============================================================ -->
+<div class="screen" id="screen-choose-role">
+  <div style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 60px);padding:32px;">
+    <div style="width:100%;max-width:420px;text-align:center;">
+      <div style="background: linear-gradient(160deg, var(--primary) 0%, #0f3460 60%, var(--accent) 100%); padding: 40px 24px 30px; border-radius:12px 12px 0 0;">
+        <div style="font-family:'Playfair Display',Georgia,serif; font-size: 42px; font-weight: 900; color: var(--accent); letter-spacing: 4px;">LUMURA</div>
+      </div>
+      <div style="padding: 32px 24px; background: white; border-radius: 0 0 12px 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.07);">
+        <h2 style="font-size:20px;font-weight:700;margin-bottom:6px;">¿Cómo quieres continuar?</h2>
+        <p style="color:var(--gray);font-size:14px;margin-bottom:28px;">Elige cómo deseas usar LUMURA</p>
+        <button class="btn-primary" style="width:100%;padding:16px;font-size:16px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:10px;" onclick="postLoginRedirect('aliado')">
+          <img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"> Soy aliado
+        </button>
+        <button class="btn-secondary" style="width:100%;padding:16px;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;" onclick="postLoginRedirect('cliente')">
+          <img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"> Cliente — Ir a la tienda
+        </button>
+        <div style="margin-top:20px;font-size:13px;color:var(--gray);">
+          <a style="color:var(--accent);cursor:pointer;font-weight:600;" onclick="cerrarSesion()">Cerrar sesión</a>
+        </div>
       </div>
     </div>
   </div>

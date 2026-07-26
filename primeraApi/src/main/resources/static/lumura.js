@@ -52,15 +52,25 @@ async function handleLogin(e) {
     localStorage.setItem('lumura_user', JSON.stringify(data.usuario));
     actualizarUI();
     mostrarMensaje('Bienvenido, ' + data.usuario.nombre, 'success');
-    if (data.usuario.rol === 'ALIADO') {
-      showScreen('aliado-dash');
-    } else if (data.usuario.rol === 'ADMIN') {
+    if (data.usuario.rol === 'ADMIN') {
       showScreen('admin-dash');
     } else {
-      showScreen('home');
+      showScreen('choose-role');
     }
   } catch (err) {
     mostrarMensaje(err.message, 'error');
+  }
+}
+
+function postLoginRedirect(tipo) {
+  if (tipo === 'aliado') {
+    if (state.user?.rol === 'ALIADO') {
+      showScreen('aliado-dash');
+    } else {
+      mostrarMensaje('Tu cuenta no tiene acceso de aliado', 'error');
+    }
+  } else {
+    showScreen('home');
   }
 }
 
