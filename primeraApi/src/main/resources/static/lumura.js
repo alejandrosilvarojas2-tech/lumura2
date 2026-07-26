@@ -55,11 +55,22 @@ async function handleLogin(e) {
     if (data.usuario.rol === 'ADMIN') {
       showScreen('admin-dash');
     } else {
-      showScreen('choose-role');
+      document.getElementById('modal-politicas').style.display = 'flex';
     }
   } catch (err) {
     mostrarMensaje(err.message, 'error');
   }
+}
+
+function aceptarPoliticas() {
+  document.getElementById('modal-politicas').style.display = 'none';
+  showScreen('choose-role');
+}
+
+function rechazarPoliticas() {
+  document.getElementById('modal-politicas').style.display = 'none';
+  cerrarSesion();
+  mostrarMensaje('Debes aceptar las políticas para usar LUMURA', 'error');
 }
 
 function postLoginRedirect(tipo) {
