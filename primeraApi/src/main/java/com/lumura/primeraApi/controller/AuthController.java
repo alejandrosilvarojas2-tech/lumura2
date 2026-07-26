@@ -85,6 +85,47 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("mensaje", "Usuario registrado correctamente", "id", usuario.getIdUsuario()));
     }
 
+    @PostMapping("/register-aliado")
+    public ResponseEntity<?> registerAliado(@RequestBody Map<String, String> body) {
+        String nombreNegocio = body.get("nombre_negocio");
+        String nit = body.get("nit");
+        String telefono = body.get("telefono");
+        String contacto = body.get("persona_contacto");
+        String correo = body.get("correo_usuario");
+        String password = body.get("password");
+        String confirmarPassword = body.get("confirmar_password");
+
+        if (nombreNegocio == null || nombreNegocio.isBlank() || nit == null || nit.isBlank()
+                || correo == null || password == null || contacto == null || contacto.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Faltan campos obligatorios"));
+        }
+        if (!EMAIL_PATTERN.matcher(correo).matches()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "El correo no tiene un formato válido"));
+        }
+        if (password.length() < 6) {
+            return ResponseEntity.badRequest().body(Map.of("error", "La contraseña debe tener al menos 6 caracteres"));
+        }
+        if (confirmarPassword == null || !password.equals(confirmarPassword)) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Las contraseñas no coinciden"));
+        }
+        if (usuarioRepository.findByCorreoUsuario(correo).isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "El correo ya está registrado"));
+        }
+
+        Usuario usuario = new Usuario();
+        usuario.setNombreUsuario(nombreNegocio + " - " + contacto);
+        usuario.setCorreoUsuario(correo);
+        usuario.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
+        usuario.setTelefono(telefono);
+        usuario.setDireccionUsuario(body.get("direccion"));
+        usuario.setFechaRegistro(LocalDateTime.now());
+        usuario.setRol("ALIADO");
+        usuarioRepository.save(usuario);
+
+        log.info("Nuevo aliado registrado: {} ({}, NIT: {})", nombreNegocio, correo, nit);
+        return ResponseEntity.ok(Map.of("mensaje", "Aliado registrado correctamente", "id", usuario.getIdUsuario()));
+    }
+
     private String sha256(String password) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");

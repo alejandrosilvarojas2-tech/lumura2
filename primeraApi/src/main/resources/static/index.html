@@ -44,6 +44,10 @@
         <div style="color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 4px;">Tu moda, a un clic</div>
       </div>
       <div style="padding: 28px 24px; background: white; border-radius: 0 0 12px 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.07);">
+        <div style="display:flex; gap:10px; margin-bottom:24px;">
+          <button class="btn-primary" style="flex:1;" onclick="showScreen('home')"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"> Cliente</button>
+          <button class="btn-secondary" style="flex:1;" onclick="showScreen('register-aliado')"><img src="images/users.svg" class="icon" alt="" style="vertical-align:middle"> ¿Eres aliado?</button>
+        </div>
         <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 6px;">Bienvenido</h2>
         <p style="color: var(--gray); font-size: 14px; margin-bottom: 24px;">Inicia sesión en tu cuenta</p>
         <form id="login-form">
@@ -115,6 +119,69 @@
         </div>
       </div>
       <div style="height:24px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 2B: REGISTRO ALIADO -->
+<!-- ============================================================ -->
+<div class="screen" id="screen-register-aliado">
+  <div style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 60px);padding:32px;">
+    <div style="width:100%;max-width:480px;background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.07);">
+      <div style="background: linear-gradient(160deg, #0f3460 0%, var(--primary) 100%); padding:30px 24px; text-align:center; border-radius:12px 12px 0 0;">
+        <div style="font-family:'Playfair Display',Georgia,serif; font-size:28px; font-weight:700; color:var(--accent);">Programa de Aliados</div>
+        <div style="color:rgba(255,255,255,0.7); font-size:13px; margin-top:4px;">Únete a nuestra red de aliados comerciales</div>
+      </div>
+      <div style="padding:24px;">
+        <h2 style="font-size:20px; font-weight:700; margin-bottom:4px;">Registrar Aliado</h2>
+        <p style="color:var(--gray); font-size:13px; margin-bottom:20px;">Completa los datos de tu negocio</p>
+        <form id="aliado-form">
+          <div class="form-group">
+            <label>Nombre del negocio *</label>
+            <input id="aliado-nombre" placeholder="Ej: Moda Express" required>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div class="form-group">
+              <label>NIT / Documento *</label>
+              <input id="aliado-nit" placeholder="Ej: 900123456-7" required>
+            </div>
+            <div class="form-group">
+              <label>Teléfono *</label>
+              <input id="aliado-tel" type="tel" placeholder="Ej: 3001234567" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Persona de contacto *</label>
+            <input id="aliado-contacto" placeholder="Nombre completo" required>
+          </div>
+          <div class="form-group">
+            <label>Correo electrónico *</label>
+            <input id="aliado-email" type="email" placeholder="aliado@negocio.com" required>
+          </div>
+          <div class="form-group">
+            <label>Dirección del negocio</label>
+            <input id="aliado-direccion" placeholder="Ej: Calle 45 #12-34">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div class="form-group">
+              <label>Contraseña *</label>
+              <input id="aliado-pass" type="password" placeholder="Mínimo 6 caracteres" required>
+            </div>
+            <div class="form-group">
+              <label>Confirmar contraseña *</label>
+              <input id="aliado-pass2" type="password" placeholder="Repite tu contraseña" required>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:20px;">
+            <button type="submit" class="btn-primary" style="flex:2;">Registrarme como aliado</button>
+            <button type="button" class="btn-secondary" style="flex:1;" onclick="showScreen('login')">Volver</button>
+          </div>
+        </form>
+        <div style="text-align:center;margin-top:16px;font-size:13px;color:var(--gray);">
+          ¿Eres cliente? <a style="color:var(--accent);font-weight:600;cursor:pointer;" onclick="showScreen('home')">Ir a la tienda</a>
+        </div>
+      </div>
     </div>
   </div>
 </div>

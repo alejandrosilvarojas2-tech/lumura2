@@ -84,6 +84,38 @@ async function handleRegister(e) {
   }
 }
 
+async function handleRegisterAliado(e) {
+  e.preventDefault();
+  const nombreNegocio = document.getElementById('aliado-nombre').value.trim();
+  const nit = document.getElementById('aliado-nit').value.trim();
+  const tel = document.getElementById('aliado-tel').value.trim();
+  const contacto = document.getElementById('aliado-contacto').value.trim();
+  const email = document.getElementById('aliado-email').value.trim();
+  const dir = document.getElementById('aliado-direccion').value.trim();
+  const pass = document.getElementById('aliado-pass').value;
+  const pass2 = document.getElementById('aliado-pass2').value;
+  if (!nombreNegocio || !nit || !contacto || !email || !pass) {
+    return mostrarMensaje('Completa los campos obligatorios', 'error');
+  }
+  if (pass !== pass2) return mostrarMensaje('Las contraseñas no coinciden', 'error');
+  try {
+    await api.post('/api/auth/register-aliado', {
+      nombre_negocio: nombreNegocio,
+      nit: nit,
+      telefono: tel,
+      persona_contacto: contacto,
+      correo_usuario: email,
+      direccion: dir,
+      password: pass,
+      confirmar_password: pass2,
+    });
+    mostrarMensaje('Aliado registrado exitosamente. Inicia sesión.', 'success');
+    showScreen('login');
+  } catch (err) {
+    mostrarMensaje(err.message, 'error');
+  }
+}
+
 function cerrarSesion() {
   state.token = null;
   state.user = null;
@@ -819,6 +851,8 @@ document.addEventListener('DOMContentLoaded', function () {
   if (loginForm) loginForm.addEventListener('submit', handleLogin);
   const regForm = document.getElementById('reg-form');
   if (regForm) regForm.addEventListener('submit', handleRegister);
+  const aliadoForm = document.getElementById('aliado-form');
+  if (aliadoForm) aliadoForm.addEventListener('submit', handleRegisterAliado);
   document.querySelectorAll('.logout-btn').forEach(b => b.addEventListener('click', cerrarSesion));
   document.querySelectorAll('.tag').forEach(t => {
     t.addEventListener('click', function () {
