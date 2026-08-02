@@ -46,7 +46,7 @@ public class AdminController {
     }
 
     @GetMapping("/dashboard")
-    public ResponseEntity<?> dashboard(@RequestHeader("Authorization") String auth) {
+    public ResponseEntity<?> dashboard(@RequestHeader(value = "Authorization", required = false) String auth) {
         if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
 
         long totalProductos = catalogoRepository.count();
@@ -62,13 +62,13 @@ public class AdminController {
     }
 
     @GetMapping("/pedidos")
-    public ResponseEntity<?> pedidos(@RequestHeader("Authorization") String auth) {
+    public ResponseEntity<?> pedidos(@RequestHeader(value = "Authorization", required = false) String auth) {
         if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
         return ResponseEntity.ok(compraRepository.findAllByOrderByFechaPedidoDesc());
     }
 
     @PutMapping("/pedidos/{id}")
-    public ResponseEntity<?> actualizarPedido(@RequestHeader("Authorization") String auth,
+    public ResponseEntity<?> actualizarPedido(@RequestHeader(value = "Authorization", required = false) String auth,
                                               @PathVariable Integer id,
                                               @RequestBody Map<String, String> body) {
         if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
@@ -89,7 +89,7 @@ public class AdminController {
     }
 
     @PostMapping("/productos")
-    public ResponseEntity<?> crearProducto(@RequestHeader("Authorization") String auth,
+    public ResponseEntity<?> crearProducto(@RequestHeader(value = "Authorization", required = false) String auth,
                                            @RequestBody Map<String, String> body) {
         if (!validarAdmin(auth) && !validarAliado(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
 
@@ -116,7 +116,7 @@ public class AdminController {
     }
 
     @PutMapping("/productos/{id}")
-    public ResponseEntity<?> actualizarProducto(@RequestHeader("Authorization") String auth,
+    public ResponseEntity<?> actualizarProducto(@RequestHeader(value = "Authorization", required = false) String auth,
                                                 @PathVariable Integer id,
                                                 @RequestBody Map<String, String> body) {
         if (!validarAdmin(auth) && !validarAliado(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
@@ -141,7 +141,7 @@ public class AdminController {
     }
 
     @DeleteMapping("/productos/{id}")
-    public ResponseEntity<?> eliminarProducto(@RequestHeader("Authorization") String auth,
+    public ResponseEntity<?> eliminarProducto(@RequestHeader(value = "Authorization", required = false) String auth,
                                               @PathVariable Integer id) {
         if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
 
@@ -154,7 +154,7 @@ public class AdminController {
     }
 
     @GetMapping("/usuarios")
-    public ResponseEntity<?> listarUsuarios(@RequestHeader("Authorization") String auth) {
+    public ResponseEntity<?> listarUsuarios(@RequestHeader(value = "Authorization", required = false) String auth) {
         if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
 
         List<Map<String, Object>> usuarios = usuarioRepository.findAll().stream().map(u -> {
@@ -174,7 +174,7 @@ public class AdminController {
 
     @DeleteMapping("/usuarios/{id}")
     @Transactional
-    public ResponseEntity<?> eliminarUsuario(@RequestHeader("Authorization") String auth,
+    public ResponseEntity<?> eliminarUsuario(@RequestHeader(value = "Authorization", required = false) String auth,
                                               @PathVariable Integer id) {
         if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
 
@@ -194,7 +194,7 @@ public class AdminController {
     private String uploadDir;
 
     @PostMapping("/upload")
-    public ResponseEntity<?> subirImagen(@RequestHeader("Authorization") String auth,
+    public ResponseEntity<?> subirImagen(@RequestHeader(value = "Authorization", required = false) String auth,
                                          @RequestParam("file") MultipartFile file) {
         if (!validarAdmin(auth) && !validarAliado(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido o no eres aliado/admin"));
 
@@ -223,7 +223,7 @@ public class AdminController {
 
         try {
             String filename = "producto_" + System.currentTimeMillis() + extension;
-            Path uploadPath = Paths.get(uploadDir);
+            Path uploadPath = Paths.get(uploadDir).toAbsolutePath();
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
             }
@@ -241,7 +241,7 @@ public class AdminController {
 
     @PostMapping("/seed")
     @Transactional
-    public ResponseEntity<?> sembrarProductos(@RequestHeader("Authorization") String auth) {
+    public ResponseEntity<?> sembrarProductos(@RequestHeader(value = "Authorization", required = false) String auth) {
         if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
         if (catalogoRepository.count() > 0) {
             return ResponseEntity.badRequest().body(Map.of("error", "Ya existen productos en el catálogo"));

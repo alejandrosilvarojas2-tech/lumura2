@@ -33,7 +33,7 @@ public class PedidoController {
 
     @PostMapping
     @Transactional
-    public ResponseEntity<?> crear(@RequestHeader("Authorization") String auth,
+    public ResponseEntity<?> crear(@RequestHeader(value = "Authorization", required = false) String auth,
                                    @RequestBody Map<String, String> body) {
         Integer idUsuario = extraerUserId(auth);
         if (idUsuario == null) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
@@ -64,7 +64,7 @@ public class PedidoController {
     }
 
     @GetMapping("/{idUsuario}")
-    public ResponseEntity<?> pedidos(@RequestHeader("Authorization") String auth,
+    public ResponseEntity<?> pedidos(@RequestHeader(value = "Authorization", required = false) String auth,
                                      @PathVariable Integer idUsuario) {
         Integer tokenUserId = extraerUserId(auth);
         if (tokenUserId == null) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
@@ -75,7 +75,7 @@ public class PedidoController {
     }
 
     @PutMapping("/{id}/cancelar")
-    public ResponseEntity<?> cancelar(@RequestHeader("Authorization") String auth,
+    public ResponseEntity<?> cancelar(@RequestHeader(value = "Authorization", required = false) String auth,
                                       @PathVariable Integer id) {
         Integer tokenUserId = extraerUserId(auth);
         if (tokenUserId == null) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));

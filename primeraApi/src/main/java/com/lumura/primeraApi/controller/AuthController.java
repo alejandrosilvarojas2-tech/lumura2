@@ -170,7 +170,7 @@ public class AuthController {
 
     @DeleteMapping("/cuenta")
     @Transactional
-    public ResponseEntity<?> eliminarCuenta(@RequestHeader("Authorization") String auth) {
+    public ResponseEntity<?> eliminarCuenta(@RequestHeader(value = "Authorization", required = false) String auth) {
         if (auth == null || !auth.startsWith("Bearer ")) {
             return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
         }
@@ -195,7 +195,7 @@ public class AuthController {
     }
 
     @PutMapping("/cuenta")
-    public ResponseEntity<?> actualizarCuenta(@RequestHeader("Authorization") String auth,
+    public ResponseEntity<?> actualizarCuenta(@RequestHeader(value = "Authorization", required = false) String auth,
                                                @RequestBody Map<String, String> body) {
         if (auth == null || !auth.startsWith("Bearer ")) {
             return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));

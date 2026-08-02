@@ -33,7 +33,7 @@ public class CarritoController {
     }
 
     @GetMapping("/{idUsuario}")
-    public ResponseEntity<?> listar(@RequestHeader("Authorization") String auth,
+    public ResponseEntity<?> listar(@RequestHeader(value = "Authorization", required = false) String auth,
                                     @PathVariable Integer idUsuario) {
         Integer tokenUserId = extraerUserId(auth);
         if (tokenUserId == null) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
@@ -61,7 +61,7 @@ public class CarritoController {
     }
 
     @PostMapping
-    public ResponseEntity<?> agregar(@RequestHeader("Authorization") String auth,
+    public ResponseEntity<?> agregar(@RequestHeader(value = "Authorization", required = false) String auth,
                                      @RequestBody Map<String, String> body) {
         Integer idUsuario = extraerUserId(auth);
         if (idUsuario == null) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
@@ -102,7 +102,7 @@ public class CarritoController {
     }
 
     @PutMapping("/{idCarrito}")
-    public ResponseEntity<?> actualizar(@RequestHeader("Authorization") String auth,
+    public ResponseEntity<?> actualizar(@RequestHeader(value = "Authorization", required = false) String auth,
                                         @PathVariable Integer idCarrito,
                                         @RequestBody Map<String, String> body) {
         if (!validarToken(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
@@ -133,7 +133,7 @@ public class CarritoController {
     }
 
     @DeleteMapping("/{idCarrito}")
-    public ResponseEntity<?> eliminar(@RequestHeader("Authorization") String auth,
+    public ResponseEntity<?> eliminar(@RequestHeader(value = "Authorization", required = false) String auth,
                                       @PathVariable Integer idCarrito) {
         if (!validarToken(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
 
