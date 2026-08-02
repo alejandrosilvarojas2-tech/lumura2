@@ -407,3 +407,86 @@ img.icon, img.icon-big, .icon-img { vertical-align: middle; }
     width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto;
     box-shadow: 0 10px 40px rgba(0,0,0,0.3);
   }
+
+  /* ============================================================
+     RESPONSIVE — TABLET (hasta 1024px)
+  ============================================================ */
+  @media (max-width: 1024px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .app-content { max-width: 100%; }
+    .product-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); padding: 16px; }
+    .admin-main { padding: 16px; }
+  }
+
+  /* ============================================================
+     RESPONSIVE — MÓVIL (hasta 768px)
+  ============================================================ */
+  @media (max-width: 768px) {
+    .app-header { padding: 0 16px; height: 54px; }
+    .app-header .logo { font-size: 18px; }
+    .app-nav { gap: 14px; }
+    .app-nav a { font-size: 13px; }
+    .app-nav a span.nav-text { display: none; }
+
+    .hero-banner { padding: 48px 16px; }
+    .hero-banner h2 { font-size: 24px; }
+
+    .product-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 12px; }
+    .product-card .img-placeholder { height: 140px; }
+
+    .search-bar { margin: 10px 12px; }
+    .section-label { padding: 12px 16px 6px; }
+    .tag-filter { padding: 6px 12px; }
+
+    .cart-item { padding: 12px 16px; }
+
+    /* ADMIN LAYOUT -> columnas apiladas */
+    .admin-layout { flex-direction: column; }
+    .admin-sidebar {
+      width: 100%;
+      min-height: auto;
+      display: flex;
+      flex-direction: row;
+      overflow-x: auto;
+      padding: 8px;
+      gap: 4px;
+      align-items: center;
+      position: static !important;
+    }
+    .admin-sidebar .logo { display: none; }
+    .admin-sidebar .menu-item { white-space: nowrap; padding: 10px 14px; border-left: none; }
+    .admin-sidebar .menu-item:hover, .admin-sidebar .menu-item.active { border-left: none; border-bottom: 3px solid var(--accent); }
+    .admin-sidebar div[style*="position:absolute"] { position: static !important; padding: 0; }
+    .admin-sidebar div[style*="position:absolute"] .menu-item { display: inline-flex; }
+    .admin-header { flex-wrap: wrap; gap: 10px; padding: 12px 16px; }
+    .admin-main { padding: 12px; }
+
+    /* ALIADO screens (usa flex inline) */
+    .screen[id^="screen-aliado-"] > div { flex-direction: column !important; }
+    .screen[id^="screen-aliado-"] > div > div[style*="flex:1"] { padding: 20px 16px !important; }
+    .screen[id^="screen-aliado-"] .admin-sidebar { width: 100%; flex-direction: row; }
+
+    /* Tablas con scroll horizontal */
+    .data-table { display: block; overflow-x: auto; white-space: nowrap; }
+    .data-table th, .data-table td { white-space: nowrap; }
+
+    /* Cards de auth */
+    .desktop-frame { margin: 10px; border-radius: 8px; }
+
+    /* Login / choose role / register */
+    .screen:not([id^="screen-admin-"]) > div[style*="padding:32px"] { padding: 16px; }
+  }
+
+  /* ============================================================
+     RESPONSIVE — TELÉFONOS PEQUEÑOS (hasta 480px)
+  ============================================================ */
+  @media (max-width: 480px) {
+    .kpi-grid { grid-template-columns: 1fr; }
+    .product-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .hero-banner h2 { font-size: 20px; }
+    .app-nav { gap: 10px; }
+    .modal-content { padding: 16px; }
+    .success-icon { font-size: 60px; }
+    .success-title { font-size: 22px; }
+  }
+

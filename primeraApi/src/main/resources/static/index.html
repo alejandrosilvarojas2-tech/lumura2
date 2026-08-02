@@ -17,18 +17,18 @@
 <div class="app-header">
   <div class="logo">LUMURA</div>
   <div class="app-nav">
-    <a onclick="showScreen('home')">Inicio</a>
-    <a onclick="showScreen('home')">Productos</a>
-    <a class="auth-only" style="display:none;" onclick="showScreen('orders')">Mis pedidos</a>
+    <a onclick="showScreen('home')"><span class="nav-text">Inicio</span></a>
+    <a onclick="showScreen('home')"><span class="nav-text">Productos</span></a>
+    <a class="auth-only" style="display:none;" onclick="showScreen('orders')"><span class="nav-text">Mis pedidos</span></a>
     <a class="cart-link" onclick="showScreen('cart')">
       <img src="images/cart.svg" class="icon" alt="" style="width:18px;height:18px;vertical-align:middle">
-      Carrito <span id="cart-count" style="font-size:10px;background:var(--accent);color:white;border-radius:50%;padding:0 5px;min-width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;">0</span>
+      <span class="nav-text">Carrito</span> <span id="cart-count" style="font-size:10px;background:var(--accent);color:white;border-radius:50%;padding:0 5px;min-width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;">0</span>
     </a>
     <a id="header-user-link" style="display:flex;align-items:center;gap:6px;" onclick="showScreen('login')">
-      <img src="images/user.svg" class="icon" alt="" style="width:16px;height:16px;vertical-align:middle"> Iniciar sesión
+      <img src="images/user.svg" class="icon" alt="" style="width:16px;height:16px;vertical-align:middle"> <span class="nav-text">Iniciar sesión</span>
     </a>
     <a class="admin-only" id="header-admin-link" style="display:none;align-items:center;gap:6px;" onclick="showScreen('admin-dash')">
-      <img src="images/dashboard.svg" class="icon" alt="" style="width:16px;height:16px;vertical-align:middle"> Admin
+      <img src="images/dashboard.svg" class="icon" alt="" style="width:16px;height:16px;vertical-align:middle"> <span class="nav-text">Admin</span>
     </a>
   </div>
 </div>

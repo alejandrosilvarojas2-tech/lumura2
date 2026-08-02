@@ -13,10 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
-import java.util.HexFormat;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -126,16 +123,6 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("mensaje", "Aliado registrado correctamente", "id", usuario.getIdUsuario()));
     }
 
-    private String sha256(String password) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] hash = md.digest(password.getBytes());
-            return HexFormat.of().formatHex(hash);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
         String correo = body.get("correo_usuario");
@@ -158,12 +145,8 @@ public class AuthController {
         String storedHash = usuario.getPasswordHash();
 
         if (!BCrypt.checkpw(password, storedHash)) {
-            if (!storedHash.equals(sha256(password))) {
-                log.warn("Login fallido - contraseña incorrecta: {}", correo);
-                return ResponseEntity.status(401).body(Map.of("error", "Correo o contraseña incorrectos"));
-            }
-            usuario.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
-            usuarioRepository.save(usuario);
+            log.warn("Login fallido - contraseña incorrecta: {}", correo);
+            return ResponseEntity.status(401).body(Map.of("error", "Correo o contraseña incorrectos"));
         }
 
         if ("admin@lumura.com".equals(usuario.getCorreoUsuario()) && !"ADMIN".equals(usuario.getRol())) {
