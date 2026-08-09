@@ -5,3 +5,6 @@ node_modules/
 hs_err_*.log
 
 replay_pid*.log
+
+# Imagenes subidas en tiempo de ejecucion
+uploads/

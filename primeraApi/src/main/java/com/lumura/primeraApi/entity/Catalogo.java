@@ -39,6 +39,9 @@ public class Catalogo {
     @Column(name = "fecha_creacion", updatable = false)
     private LocalDateTime fechaCreacion;
 
+    @Column(name = "id_aliado")
+    private Integer idAliado;
+
     public Integer getIdCatalogo() { return idCatalogo; }
     public void setIdCatalogo(Integer idCatalogo) { this.idCatalogo = idCatalogo; }
     public String getArticulo() { return articulo; }
@@ -63,4 +66,6 @@ public class Catalogo {
     public void setEstado(String estado) { this.estado = estado; }
     public LocalDateTime getFechaCreacion() { return fechaCreacion; }
     public void setFechaCreacion(LocalDateTime fechaCreacion) { this.fechaCreacion = fechaCreacion; }
+    public Integer getIdAliado() { return idAliado; }
+    public void setIdAliado(Integer idAliado) { this.idAliado = idAliado; }
 }

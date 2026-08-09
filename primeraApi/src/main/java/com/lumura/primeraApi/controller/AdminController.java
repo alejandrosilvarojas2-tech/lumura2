@@ -110,8 +110,11 @@ public class AdminController {
         p.setImagenUrl(body.get("imagen_url"));
         p.setEstado("activo");
         p.setFechaCreacion(LocalDateTime.now());
+        if (validarAliado(auth) && !validarAdmin(auth)) {
+            p.setIdAliado(jwtUtil.getUserIdFromToken(auth.substring(7)));
+        }
         catalogoRepository.save(p);
-        log.info("Producto creado: {} (id={})", p.getArticulo(), p.getIdCatalogo());
+        log.info("Producto creado: {} (id={}, aliado={})", p.getArticulo(), p.getIdCatalogo(), p.getIdAliado());
         return ResponseEntity.ok(p);
     }
 
@@ -123,6 +126,12 @@ public class AdminController {
 
         return catalogoRepository.findById(id)
                 .map(p -> {
+                    if (!validarAdmin(auth) && validarAliado(auth)) {
+                        Integer userId = jwtUtil.getUserIdFromToken(auth.substring(7));
+                        if (!Integer.valueOf(userId).equals(p.getIdAliado())) {
+                            return ResponseEntity.status(403).body(Map.of("error", "Solo puedes modificar tus propios productos"));
+                        }
+                    }
                     if (body.containsKey("articulo")) p.setArticulo(body.get("articulo"));
                     if (body.containsKey("precio")) p.setPrecio(new BigDecimal(body.get("precio")));
                     if (body.containsKey("stock")) p.setStock(Integer.parseInt(body.get("stock")));

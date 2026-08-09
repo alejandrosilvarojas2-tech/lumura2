@@ -669,6 +669,20 @@
       <h2 style="font-size:22px;font-weight:800;margin-bottom:8px;">Panel de Aliado</h2>
       <p style="color:var(--gray);font-size:14px;margin-bottom:24px;">Gestiona tus productos como aliado comercial</p>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px;">
+        <div class="card" style="padding:20px;text-align:center;">
+          <div style="font-size:13px;color:var(--gray);margin-bottom:6px;">Productos propios</div>
+          <div style="font-size:28px;font-weight:800;" id="aliado-metric-productos">-</div>
+        </div>
+        <div class="card" style="padding:20px;text-align:center;">
+          <div style="font-size:13px;color:var(--gray);margin-bottom:6px;">Unidades en stock</div>
+          <div style="font-size:28px;font-weight:800;" id="aliado-metric-stock">-</div>
+        </div>
+        <div class="card" style="padding:20px;text-align:center;">
+          <div style="font-size:13px;color:var(--gray);margin-bottom:6px;">Valor del inventario</div>
+          <div style="font-size:28px;font-weight:800;" id="aliado-metric-valor">-</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px;">
         <div class="card" style="padding:24px;text-align:center;cursor:pointer;" onclick="showScreen('aliado-add')">
           <div style="font-size:40px;margin-bottom:12px;"><img src="images/dress.svg" class="icon" alt="" style="width:48px;height:48px;vertical-align:middle"></div>
           <div style="font-size:16px;font-weight:700;">Añadir artículo</div>
@@ -704,15 +718,47 @@
     <div style="flex:1;padding:32px;">
       <h2 style="font-size:22px;font-weight:800;margin-bottom:8px;">Añadir artículo</h2>
       <p style="color:var(--gray);font-size:14px;margin-bottom:24px;">Registra un nuevo producto en el catálogo</p>
-      <div class="card" style="max-width:500px;padding:24px;">
+      <div class="card" style="max-width:520px;padding:24px;">
         <form id="aliado-add-form">
-          <div style="border:2px dashed var(--light);border-radius:12px;padding:40px 24px;text-align:center;cursor:pointer;transition:border-color 0.2s;" id="aliado-img-dropzone" onclick="document.getElementById('aliado-art-img').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--light)'" ondrop="event.preventDefault();this.style.borderColor='var(--light)';handleAliadoImgDrop(event)">
+          <div class="form-group">
+            <label>Nombre del artículo *</label>
+            <input id="aliado-art-nombre" placeholder="Ej: Camiseta Oversize" required>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div class="form-group">
+              <label>Precio (COP) *</label>
+              <input id="aliado-art-precio" type="number" min="0" step="100" placeholder="Ej: 59900" required>
+            </div>
+            <div class="form-group">
+              <label>Categoría</label>
+              <input id="aliado-art-categoria" placeholder="Ej: Camisetas">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div class="form-group">
+              <label>Tallas (separadas por coma)</label>
+              <input id="aliado-art-talla" placeholder="Ej: S,M,L,XL">
+            </div>
+            <div class="form-group">
+              <label>Colores (separados por coma)</label>
+              <input id="aliado-art-color" placeholder="Ej: Negro,Blanco">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Stock inicial</label>
+            <input id="aliado-art-stock" type="number" min="0" max="10000" value="0">
+          </div>
+          <div class="form-group">
+            <label>Descripción <span style="color:var(--gray);font-size:12px;"><span id="aliado-art-desc-count">0</span>/500</span></label>
+            <textarea id="aliado-art-descripcion" rows="3" maxlength="500" style="width:100%;padding:10px;border:1.5px solid var(--light);border-radius:8px;font-family:inherit;resize:vertical;" oninput="actualizarContadorArtDesc(this)"></textarea>
+          </div>
+          <div style="border:2px dashed var(--light);border-radius:12px;padding:30px 24px;text-align:center;cursor:pointer;transition:border-color 0.2s;" id="aliado-img-dropzone" onclick="document.getElementById('aliado-art-img').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--light)'" ondrop="event.preventDefault();this.style.borderColor='var(--light)';handleAliadoImgDrop(event)">
             <img id="aliado-img-preview" src="images/upload.svg" alt="" style="width:64px;height:64px;opacity:0.4;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;">
             <div style="font-size:15px;font-weight:600;color:var(--dark);" id="aliado-img-text">Arrastra una imagen o haz clic aquí</div>
             <div style="font-size:12px;color:var(--gray);margin-top:4px;">JPG, PNG, WEBP — Máx. 5MB</div>
             <input type="file" id="aliado-art-img" accept="image/*" style="display:none" onchange="handleAliadoImgSelect(this)">
           </div>
-          <button type="submit" class="btn-primary" style="width:100%;margin-top:20px;"><img src="images/save.svg" class="icon" alt="" style="vertical-align:middle"> Subir imagen</button>
+          <button type="submit" class="btn-primary" style="width:100%;margin-top:20px;"><img src="images/save.svg" class="icon" alt="" style="vertical-align:middle"> Publicar artículo</button>
         </form>
       </div>
     </div>

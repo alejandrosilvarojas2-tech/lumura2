@@ -196,31 +196,68 @@ async function subirImagenAliado() {
 
 async function guardarArticuloAliado(e) {
   e.preventDefault();
+  const nombre = document.getElementById('aliado-art-nombre').value.trim();
+  const precio = document.getElementById('aliado-art-precio').value.trim();
+  if (!nombre) return mostrarMensaje('El nombre del artículo es obligatorio', 'error');
+  if (!precio || parseFloat(precio) < 0) return mostrarMensaje('Ingresa un precio válido', 'error');
+
   const fileInput = document.getElementById('aliado-art-img');
-  if (!fileInput.files[0]) {
-    return mostrarMensaje('Selecciona una imagen primero', 'error');
+  let url = null;
+  if (fileInput.files[0]) {
+    try {
+      mostrarMensaje('Subiendo imagen...', 'info');
+      url = await subirImagenAliado();
+    } catch (err) {
+      return mostrarMensaje(err.message, 'error');
+    }
   }
+
+  const stock = parseInt(document.getElementById('aliado-art-stock').value) || 0;
+  if (stock > 10000) return mostrarMensaje('El stock no puede superar 10,000 unidades', 'error');
+
   try {
-    mostrarMensaje('Subiendo imagen...', 'info');
-    const url = await subirImagenAliado();
-    mostrarMensaje('Imagen subida correctamente: ' + url, 'success');
+    const producto = await api.post('/api/admin/productos', {
+      articulo: nombre,
+      precio: precio,
+      categoria: document.getElementById('aliado-art-categoria').value.trim(),
+      talla: document.getElementById('aliado-art-talla').value.trim(),
+      color: document.getElementById('aliado-art-color').value.trim(),
+      stock: String(stock),
+      descripcion: document.getElementById('aliado-art-descripcion').value.trim(),
+      imagen_url: url,
+    });
+    mostrarMensaje('Artículo "' + producto.articulo + '" publicado correctamente', 'success');
     document.getElementById('aliado-add-form').reset();
-    const preview = document.getElementById('aliado-img-preview');
+    resetAliadoFormulario();
+  } catch (err) {
+    mostrarMensaje(err.message, 'error');
+  }
+}
+
+function resetAliadoFormulario() {
+  const preview = document.getElementById('aliado-img-preview');
+  if (preview) {
     preview.src = 'images/upload.svg';
     preview.style.width = '64px';
     preview.style.height = '64px';
     preview.style.objectFit = '';
     preview.style.borderRadius = '';
     preview.style.opacity = '0.4';
-    document.getElementById('aliado-img-text').textContent = 'Arrastra una imagen o haz clic aquí';
-  } catch (err) {
-    mostrarMensaje(err.message, 'error');
   }
+  const txt = document.getElementById('aliado-img-text');
+  if (txt) txt.textContent = 'Arrastra una imagen o haz clic aquí';
+  const count = document.getElementById('aliado-art-desc-count');
+  if (count) count.textContent = '0';
+}
+
+function actualizarContadorArtDesc(textarea) {
+  const counter = document.getElementById('aliado-art-desc-count');
+  if (counter) counter.textContent = textarea.value.length;
 }
 
 async function cargarAliadoStock() {
   try {
-    const productos = await api.get('/api/productos');
+    const productos = await api.get('/api/aliado/productos');
     const tbody = document.getElementById('aliado-stock-body');
     if (!tbody) return;
     if (productos.length === 0) {
@@ -274,7 +311,7 @@ async function agregarStockAliado(id, stockActual) {
 
 async function cargarAliadoDesc() {
   try {
-    const productos = await api.get('/api/productos');
+    const productos = await api.get('/api/aliado/productos');
     const container = document.getElementById('aliado-desc-list');
     if (!container) return;
     if (productos.length === 0) {
@@ -1017,6 +1054,20 @@ function filtrarCategoria(cat) {
   renderProductos(cat, term);
 }
 
+async function cargarAliadoDashboard() {
+  try {
+    const d = await api.get('/api/aliado/dashboard');
+    const el = document.getElementById('aliado-metric-productos');
+    if (el) el.textContent = d.total_productos;
+    const el2 = document.getElementById('aliado-metric-stock');
+    if (el2) el2.textContent = d.unidades_stock;
+    const el3 = document.getElementById('aliado-metric-valor');
+    if (el3) el3.textContent = '$' + Number(d.valor_inventario).toLocaleString('es-CO');
+  } catch (err) {
+    mostrarMensaje('Error al cargar las métricas', 'error');
+  }
+}
+
 function showScreen(name) {
   if (name.startsWith('admin-') && (!state.token || state.user?.rol !== 'ADMIN')) {
     mostrarMensaje('Acceso denegado — Solo administradores', 'error');
@@ -1049,6 +1100,7 @@ function showScreen(name) {
   if (name === 'admin-orders') cargarPedidosAdmin();
   if (name === 'admin-users') cargarUsuariosAdmin();
   if (name === 'aliado-add') {}
+  if (name === 'aliado-dash') cargarAliadoDashboard();
   if (name === 'aliado-stock') cargarAliadoStock();
   if (name === 'aliado-desc') cargarAliadoDesc();
   if (name === 'orders' && state.token) cargarPedidos();
