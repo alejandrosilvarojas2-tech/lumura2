@@ -229,6 +229,8 @@ async function guardarArticuloAliado(e) {
     mostrarMensaje('Artículo "' + producto.articulo + '" publicado correctamente', 'success');
     document.getElementById('aliado-add-form').reset();
     resetAliadoFormulario();
+    await cargarProductos();
+    verProducto(producto.id_catalogo);
   } catch (err) {
     mostrarMensaje(err.message, 'error');
   }
