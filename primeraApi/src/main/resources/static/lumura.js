@@ -230,7 +230,7 @@ async function guardarArticuloAliado(e) {
     document.getElementById('aliado-add-form').reset();
     resetAliadoFormulario();
     await cargarProductos();
-    verProducto(producto.id_catalogo);
+    showScreen('aliado-stock');
   } catch (err) {
     mostrarMensaje(err.message, 'error');
   }
