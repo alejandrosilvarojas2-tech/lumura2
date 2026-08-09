@@ -32,6 +32,22 @@ public class Usuario {
     @Column(length = 20)
     private String rol = "USER";
 
+    @Column(name = "nombre_negocio")
+    private String nombreNegocio;
+
+    @Column(name = "nit", length = 40)
+    private String nit;
+
+    @Column(name = "persona_contacto")
+    private String personaContacto;
+
+    public String getNombreNegocio() { return nombreNegocio; }
+    public void setNombreNegocio(String nombreNegocio) { this.nombreNegocio = nombreNegocio; }
+    public String getNit() { return nit; }
+    public void setNit(String nit) { this.nit = nit; }
+    public String getPersonaContacto() { return personaContacto; }
+    public void setPersonaContacto(String personaContacto) { this.personaContacto = personaContacto; }
+
     public String getRol() { return rol; }
     public void setRol(String rol) { this.rol = rol; }
 

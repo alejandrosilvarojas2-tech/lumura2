@@ -2,6 +2,7 @@ package com.lumura.primeraApi.controller;
 
 import com.lumura.primeraApi.entity.Catalogo;
 import com.lumura.primeraApi.repository.CatalogoRepository;
+import com.lumura.primeraApi.repository.UsuarioRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -26,6 +27,9 @@ class ProductoControllerTest {
 
     @Mock
     private CatalogoRepository catalogoRepository;
+
+    @Mock
+    private UsuarioRepository usuarioRepository;
 
     @InjectMocks
     private ProductoController productoController;

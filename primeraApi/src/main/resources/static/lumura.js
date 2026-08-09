@@ -269,7 +269,7 @@ async function cargarAliadoStock() {
         : p.stock < 10 ? '<span class="badge badge-yellow">Bajo</span>'
         : '<span class="badge badge-green">OK</span>';
       return '<tr>'
-        + '<td>#' + String(p.id_catalogo).padStart(3, '0') + '</td>'
+        + '<td>' + (p.codigo ? escHtml(p.codigo) : '#' + String(p.id_catalogo).padStart(3, '0')) + '</td>'
         + '<td>' + escHtml(p.articulo) + '</td>'
         + '<td>' + escHtml(p.categoria || '-') + '</td>'
         + '<td style="font-weight:700;">' + p.stock + '</td>'
@@ -321,7 +321,7 @@ async function cargarAliadoDesc() {
     container.innerHTML = productos.map(p => {
       const desc = escHtml(p.descripcion || '');
       return '<div class="card" style="padding:16px;margin-bottom:12px;">'
-        + '<div style="font-weight:700;margin-bottom:8px;">' + escHtml(p.articulo) + ' <span style="color:var(--gray);font-size:12px;">#' + String(p.id_catalogo).padStart(3, '0') + '</span></div>'
+        + '<div style="font-weight:700;margin-bottom:8px;">' + escHtml(p.articulo) + ' <span style="color:var(--gray);font-size:12px;">' + (p.codigo ? escHtml(p.codigo) : '#' + String(p.id_catalogo).padStart(3, '0')) + '</span></div>'
         + '<textarea id="desc-' + p.id_catalogo + '" rows="3" maxlength="500" oninput="actualizarContadorDesc(this)" style="width:100%;padding:10px;border:1.5px solid var(--light);border-radius:8px;font-family:inherit;resize:vertical;">' + desc + '</textarea>'
         + '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">'
         + '<span style="font-size:12px;color:var(--gray);"><span class="desc-count" data-for="' + p.id_catalogo + '">' + (p.descripcion || '').length + '</span>/500</span>'
@@ -458,13 +458,14 @@ function renderProductos(filtroCat, filtroTexto) {
     return;
   }
     grid.innerHTML = items.map((p, i) => {
-    const imgSrc = imagenesProducto[p.id_catalogo] || 'images/tshirt.svg';
+    const imgSrc = p.imagen_url || imagenesProducto[p.id_catalogo] || 'images/tshirt.svg';
     const precioF = '$' + Number(p.precio).toLocaleString('es-CO');
     return '<div class="product-card" onclick="verProducto(' + p.id_catalogo + ')">' +
       '<div class="img-placeholder" style="background-image:url(' + imgSrc + ');background-size:cover;background-position:center;background-repeat:no-repeat;background-color:#fce4ec;cursor:pointer;" onclick="event.stopPropagation();mostrarDescripcion(' + p.id_catalogo + ')" title="Click para ver descripción"></div>' +
       '<div class="info">' +
       '<div class="name">' + escHtml(p.articulo) + '</div>' +
       '<div class="price">' + precioF + '</div>' +
+      (p.codigo ? '<div style="font-size:11px;color:var(--gray);margin-top:2px;">Código: ' + escHtml(p.codigo) + '</div>' : '') +
       (p.talla ? '<div style="font-size:11px;color:var(--gray);margin-top:2px;">Tallas: ' + escHtml(p.talla) + '</div>' : '') +
       '</div>' +
       '<button class="add-btn" onclick="event.stopPropagation();agregarAlCarrito(' + p.id_catalogo + ')">+ Agregar al carrito</button>' +
@@ -501,11 +502,34 @@ async function verProducto(id) {
       productoCache[id] = prod;
     }
     state.productoActual = prod;
-    const imgSrc = imagenesProducto[prod.id_catalogo] || 'images/tshirt.svg';
+    const imgSrc = prod.imagen_url || imagenesProducto[prod.id_catalogo] || 'images/tshirt.svg';
     const precioF = '$' + Number(prod.precio).toLocaleString('es-CO');
     document.getElementById('prod-detail-img').innerHTML = '<img src="' + imgSrc + '" alt="' + escHtml(prod.articulo) + '" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;">';
     document.getElementById('prod-detail-nombre').textContent = prod.articulo;
     document.getElementById('prod-detail-precio').textContent = precioF;
+    document.getElementById('prod-detail-codigo').textContent = prod.codigo || '-';
+    const specsEl = document.getElementById('prod-detail-specs');
+    const specs = [
+      ['Categoría', prod.categoria],
+      ['Tallas', prod.talla],
+      ['Colores', prod.color],
+      ['Stock disponible', (prod.stock != null ? prod.stock : 0) + ' unidades']
+    ].filter(s => s[1] != null && s[1] !== '').map(s =>
+      '<div style="display:flex;justify-content:space-between;gap:16px;"><span style="color:var(--gray);">' + s[0] + '</span><span style="font-weight:600;text-align:right;">' + escHtml(String(s[1])) + '</span></div>'
+    ).join('');
+    specsEl.innerHTML = specs || '';
+    const aliadoEl = document.getElementById('prod-detail-aliado');
+    if (prod.aliado && prod.aliado.nombre_negocio) {
+      aliadoEl.style.display = 'block';
+      aliadoEl.innerHTML =
+        '<div style="font-weight:700;margin-bottom:6px;">Vendido por: ' + escHtml(prod.aliado.nombre_negocio) + '</div>' +
+        (prod.aliado.nit ? '<div>NIT: <strong>' + escHtml(prod.aliado.nit) + '</strong></div>' : '') +
+        (prod.aliado.persona_contacto ? '<div>Contacto: ' + escHtml(prod.aliado.persona_contacto) + '</div>' : '') +
+        (prod.aliado.telefono ? '<div>Teléfono: ' + escHtml(prod.aliado.telefono) + '</div>' : '') +
+        (prod.aliado.direccion ? '<div>Dirección: ' + escHtml(prod.aliado.direccion) + '</div>' : '');
+    } else {
+      aliadoEl.style.display = 'none';
+    }
     document.getElementById('prod-detail-desc').textContent = prod.descripcion || 'Sin descripción disponible.';
     document.getElementById('prod-detail-btn').onclick = function () { agregarAlCarrito(id); };
     const esFav = state.favoritos.includes(id);
@@ -580,7 +604,7 @@ function renderCarrito() {
     const subtotal = precio * cant;
     total += subtotal;
     const prod = state.productos && state.productos.find(p => p.articulo === item.articulo);
-    const imgSrc = prod ? (imagenesProducto[prod.id_catalogo] || 'images/tshirt.svg') : 'images/tshirt.svg';
+    const imgSrc = prod ? (prod.imagen_url || imagenesProducto[prod.id_catalogo] || 'images/tshirt.svg') : 'images/tshirt.svg';
     return '<div class="cart-item">' +
       '<div class="icon-box" style="background:linear-gradient(135deg,#fce4ec,#f8bbd9);"><img src="' + imgSrc + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:8px;"></div>' +
       '<div class="detail">' +
@@ -820,7 +844,7 @@ function renderAdminCatalogo(filtroTexto, filtroCat) {
   }
   tbody.innerHTML = items.map((p, i) => {
     const stock = Number(p.stock);
-    const imgSrc = imagenesProducto[p.id_catalogo] || 'images/tshirt.svg';
+    const imgSrc = p.imagen_url || imagenesProducto[p.id_catalogo] || 'images/tshirt.svg';
     const badge = stock > 0 ? '<span class="badge badge-green">Activo</span>' : '<span class="badge badge-red">Sin stock</span>';
     return '<tr><td>#' + String(p.id_catalogo || i + 1).padStart(3, '0') + '</td>' +
       '<td><div style="display:flex;align-items:center;gap:10px;"><img src="' + imgSrc + '" alt="" style="width:32px;height:32px;object-fit:cover;border-radius:4px;">' +
@@ -921,7 +945,7 @@ function mostrarFavoritos() {
   const grid = document.getElementById('prod-grid');
   if (!grid) return;
   grid.innerHTML = favs.map(p => {
-    const imgSrc = imagenesProducto[p.id_catalogo] || 'images/tshirt.svg';
+    const imgSrc = p.imagen_url || imagenesProducto[p.id_catalogo] || 'images/tshirt.svg';
     const precioF = '$' + Number(p.precio).toLocaleString('es-CO');
     return '<div class="product-card" onclick="verProducto(' + p.id_catalogo + ')">' +
       '<div class="img-placeholder" style="background-image:url(' + imgSrc + ');background-size:cover;background-position:center;background-repeat:no-repeat;background-color:#fce4ec;cursor:pointer;" onclick="event.stopPropagation();mostrarDescripcion(' + p.id_catalogo + ')" title="Click para ver descripción"></div>' +
@@ -958,7 +982,7 @@ function cargarInventario() {
   }
   tbody.innerHTML = productos.map((p, i) => {
     const stock = Number(p.stock);
-    const imgSrc = imagenesProducto[p.id_catalogo] || 'images/tshirt.svg';
+    const imgSrc = p.imagen_url || imagenesProducto[p.id_catalogo] || 'images/tshirt.svg';
     const estado = stock === 0 ? '<span class="status-dot red"></span>Agotado'
       : stock < 10 ? '<span class="status-dot yellow"></span>Bajo'
       : '<span class="status-dot green"></span>Normal';

@@ -3,6 +3,7 @@ package com.lumura.primeraApi.entity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Entity
 @Table(name = "catalogo")
@@ -42,6 +43,15 @@ public class Catalogo {
     @Column(name = "id_aliado")
     private Integer idAliado;
 
+    @Column(length = 30)
+    private String codigo;
+
+    @Transient
+    private Map<String, Object> aliado;
+
+    public Map<String, Object> getAliado() { return aliado; }
+    public void setAliado(Map<String, Object> aliado) { this.aliado = aliado; }
+
     public Integer getIdCatalogo() { return idCatalogo; }
     public void setIdCatalogo(Integer idCatalogo) { this.idCatalogo = idCatalogo; }
     public String getArticulo() { return articulo; }
@@ -68,4 +78,6 @@ public class Catalogo {
     public void setFechaCreacion(LocalDateTime fechaCreacion) { this.fechaCreacion = fechaCreacion; }
     public Integer getIdAliado() { return idAliado; }
     public void setIdAliado(Integer idAliado) { this.idAliado = idAliado; }
+    public String getCodigo() { return codigo; }
+    public void setCodigo(String codigo) { this.codigo = codigo; }
 }

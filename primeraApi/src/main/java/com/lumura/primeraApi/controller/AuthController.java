@@ -117,6 +117,9 @@ public class AuthController {
         usuario.setDireccionUsuario(body.get("direccion"));
         usuario.setFechaRegistro(LocalDateTime.now());
         usuario.setRol("ALIADO");
+        usuario.setNombreNegocio(nombreNegocio);
+        usuario.setNit(nit);
+        usuario.setPersonaContacto(contacto);
         usuarioRepository.save(usuario);
 
         log.info("Nuevo aliado registrado: {} ({}, NIT: {})", nombreNegocio, correo, nit);

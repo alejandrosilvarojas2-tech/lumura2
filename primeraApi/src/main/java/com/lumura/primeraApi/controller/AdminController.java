@@ -114,7 +114,11 @@ public class AdminController {
             p.setIdAliado(jwtUtil.getUserIdFromToken(auth.substring(7)));
         }
         catalogoRepository.save(p);
-        log.info("Producto creado: {} (id={}, aliado={})", p.getArticulo(), p.getIdCatalogo(), p.getIdAliado());
+        if (p.getCodigo() == null && p.getIdCatalogo() != null) {
+            p.setCodigo("LUM-" + String.format("%06d", p.getIdCatalogo()));
+            catalogoRepository.save(p);
+        }
+        log.info("Producto creado: {} (id={}, codigo={}, aliado={})", p.getArticulo(), p.getIdCatalogo(), p.getCodigo(), p.getIdAliado());
         return ResponseEntity.ok(p);
     }
 
