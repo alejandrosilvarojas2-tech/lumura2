@@ -895,6 +895,53 @@
   </div>
 </div>
 
+<!-- MODAL AVISO DE COMPROMISO VENDEDOR -->
+<div id="modal-aviso-compromiso" class="modal-overlay" style="display:none;">
+  <div class="modal-content" style="max-width:720px;max-height:85vh;display:flex;flex-direction:column;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-shrink:0;">
+      <h3 style="margin:0;font-size:18px;">Aviso de advertencia a vendedores</h3>
+    </div>
+    <div style="flex:1;overflow-y:auto;font-size:13px;line-height:1.7;color:var(--dark);padding-right:8px;">
+      <h4 style="font-size:17px;font-weight:800;margin:0 0 4px;text-align:center;"># AVISO DE ADVERTENCIA A VENDEDORES — APLICACIÓN LUMURA</h4>
+      <p style="text-align:center;margin:4px 0;"><strong>Dirigido a:</strong> Todos los vendedores registrados en la plataforma Lumura</p>
+      <p style="text-align:center;margin:4px 0;"><strong>Asunto:</strong> Prohibiciones sobre productos con marca registrada y contenido inapropiado — Consecuencias por incumplimiento</p>
+      <hr style="border:none;border-top:1px solid var(--light);margin:16px 0;">
+
+      <h4 style="font-size:14px;font-weight:700;margin-bottom:6px;">1. Prohibición de venta de productos con marca registrada sin autorización</h4>
+      <p>De conformidad con la <strong>Decisión 486 de la Comisión de la Comunidad Andina — Régimen Común sobre Propiedad Industrial</strong>, aplicable en Colombia, el registro de una marca otorga a su titular el <strong>derecho de uso exclusivo</strong> sobre la misma (Artículo 154), así como la facultad de impedir que cualquier tercero, sin su consentimiento, use en el comercio un signo idéntico o similar a dicha marca (Artículo 155, literal d).</p>
+      <p>En consecuencia, queda <strong>estrictamente prohibido</strong> que los vendedores de la aplicación Lumura publiquen, oferten o comercialicen productos que ostenten una marca registrada, <strong>salvo que el vendedor cuente con:</strong></p>
+      <ul style="margin:0;padding-left:18px;">
+        <li>Licencia de uso de marca debidamente otorgada por el titular, o</li>
+        <li>Autorización o contrato como <strong>distribuidor oficial/autorizado</strong> de la marca en cuestión.</li>
+      </ul>
+      <p>El incumplimiento de esta disposición constituye una infracción a los derechos de propiedad industrial del titular de la marca y a las políticas internas de Lumura.</p>
+
+      <h4 style="font-size:14px;font-weight:700;margin:14px 0 6px;">2. Prohibición de contenido explícito, ofensivo o discriminatorio</h4>
+      <p>Está <strong>terminantemente prohibido</strong> publicar, describir o promocionar productos que contengan:</p>
+      <ul style="margin:0;padding-left:18px;">
+        <li>Mensajes o contenido de carácter sexual explícito.</li>
+        <li>Mensajes que inciten a la guerra, la violencia o el odio.</li>
+        <li>Contenido que promueva discriminación de cualquier tipo (racial, de género, religiosa, por orientación sexual, nacionalidad, discapacidad u otra condición).</li>
+        <li>Lenguaje ofensivo, racista o denigrante.</li>
+      </ul>
+
+      <h4 style="font-size:14px;font-weight:700;margin:14px 0 6px;">3. Consecuencias por incumplimiento</h4>
+      <p><strong>Primera infracción y siguientes (hasta la tercera):</strong> El producto que infrinja cualquiera de las normas anteriores será <strong>eliminado inmediatamente</strong> de la sección de ventas de la aplicación Lumura.</p>
+      <p><strong>Reincidencia (más de 3 infracciones repetidas):</strong> Se procederá a la <strong>finalización definitiva del contrato de venta y publicidad</strong>, así como al retiro de <strong>todos los artículos</strong> del vendedor infractor en la aplicación Lumura, quedando el vendedor <strong>baneado de por vida</strong> de la plataforma.</p>
+
+      <h4 style="font-size:14px;font-weight:700;margin:14px 0 6px;">4. Exención de responsabilidad de Lumura</h4>
+      <p>La aplicación Lumura <strong>no se hace responsable</strong> por ningún reclamo realizado por un cliente, de manera directa o indirecta, y por cualquier motivo relacionado con los productos ofertados por los vendedores.</p>
+      <p>Lo anterior, en razón de que Lumura opera como un <strong>marketplace / plataforma de dropshipping</strong>, cuya función es facilitar la exhibición y venta de artículos de múltiples categorías publicados por vendedores que <strong>declaran contar con marca registrada propia o ser distribuidores autorizados</strong> de las marcas que comercializan. La responsabilidad sobre la legalidad, autenticidad y calidad de los productos recae exclusivamente en el vendedor.</p>
+
+      <p style="text-align:center;color:var(--gray);font-size:11px;margin-top:16px;font-style:italic;">Este aviso hace parte de las políticas de uso obligatorias para todos los vendedores de Lumura. Su incumplimiento habilita a la plataforma a aplicar las medidas descritas sin necesidad de requerimiento previo adicional.</p>
+    </div>
+    <div style="flex-shrink:0;padding-top:12px;border-top:1px solid var(--light);display:flex;gap:10px;">
+      <button class="btn-secondary" style="flex:1;" onclick="rechazarAvisoCompromiso()">Rechazar</button>
+      <button class="btn-primary" style="flex:2;" onclick="aceptarAvisoCompromiso()">Acepto las condiciones</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL PRODUCTO -->
 <div id="modal-producto" class="modal-overlay" style="display:none;">
   <div class="modal-content">

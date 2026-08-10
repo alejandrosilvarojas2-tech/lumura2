@@ -201,6 +201,15 @@ async function guardarArticuloAliado(e) {
   if (!nombre) return mostrarMensaje('El nombre del artículo es obligatorio', 'error');
   if (!precio || parseFloat(precio) < 0) return mostrarMensaje('Ingresa un precio válido', 'error');
 
+  const stock = parseInt(document.getElementById('aliado-art-stock').value) || 0;
+  if (stock > 10000) return mostrarMensaje('El stock no puede superar 10,000 unidades', 'error');
+
+  document.getElementById('modal-aviso-compromiso').style.display = 'flex';
+}
+
+async function publicarArticuloAliado() {
+  const nombre = document.getElementById('aliado-art-nombre').value.trim();
+  const precio = document.getElementById('aliado-art-precio').value.trim();
   const fileInput = document.getElementById('aliado-art-img');
   let url = null;
   if (fileInput.files[0]) {
@@ -213,7 +222,6 @@ async function guardarArticuloAliado(e) {
   }
 
   const stock = parseInt(document.getElementById('aliado-art-stock').value) || 0;
-  if (stock > 10000) return mostrarMensaje('El stock no puede superar 10,000 unidades', 'error');
 
   try {
     const producto = await api.post('/api/admin/productos', {
@@ -234,6 +242,16 @@ async function guardarArticuloAliado(e) {
   } catch (err) {
     mostrarMensaje(err.message, 'error');
   }
+}
+
+function aceptarAvisoCompromiso() {
+  document.getElementById('modal-aviso-compromiso').style.display = 'none';
+  publicarArticuloAliado();
+}
+
+function rechazarAvisoCompromiso() {
+  document.getElementById('modal-aviso-compromiso').style.display = 'none';
+  mostrarMensaje('Debes aceptar el aviso de compromiso para publicar el artículo', 'error');
 }
 
 function resetAliadoFormulario() {
