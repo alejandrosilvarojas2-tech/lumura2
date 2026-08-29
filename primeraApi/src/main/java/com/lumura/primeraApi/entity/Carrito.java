@@ -13,6 +13,9 @@ public class Carrito {
     @Column(name = "id_usuario", nullable = false)
     private Integer idUsuario;
 
+    @Column(name = "id_catalogo")
+    private Integer idCatalogo;
+
     @Column(nullable = false)
     private String articulo;
 
@@ -26,6 +29,8 @@ public class Carrito {
     public void setIdCarrito(Integer idCarrito) { this.idCarrito = idCarrito; }
     public Integer getIdUsuario() { return idUsuario; }
     public void setIdUsuario(Integer idUsuario) { this.idUsuario = idUsuario; }
+    public Integer getIdCatalogo() { return idCatalogo; }
+    public void setIdCatalogo(Integer idCatalogo) { this.idCatalogo = idCatalogo; }
     public String getArticulo() { return articulo; }
     public void setArticulo(String articulo) { this.articulo = articulo; }
     public String getTalla() { return talla; }

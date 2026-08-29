@@ -6,9 +6,9 @@ services:
     restart: always
     environment:
       MYSQL_DATABASE: publico
-      MYSQL_USER: lumura
-      MYSQL_PASSWORD: lumura_prod_pass
-      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_USER: ${DB_USER:-lumura}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en el archivo .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Define MYSQL_ROOT_PASSWORD en el archivo .env}
     ports:
       - "3307:3306"
     volumes:
@@ -26,9 +26,9 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: prod
       DB_URL: jdbc:mysql://db:3306/publico?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-      DB_USER: lumura
-      DB_PASSWORD: lumura_prod_pass
-      JWT_SECRET: change_this_jwt_secret_in_production
+      DB_USER: ${DB_USER:-lumura}
+      DB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en el archivo .env}
+      JWT_SECRET: ${JWT_SECRET:?Define JWT_SECRET en el archivo .env}
       CORS_ORIGINS: http://localhost:8080
     depends_on:
       db:

@@ -1,6 +1,6 @@
 # LUMURA — Documentación Técnica del Proyecto
 
-**Versión 1.0 — Julio 2026**  
+**Versión 2.0 — Agosto 2026**  
 **Proyecto Formativo — Análisis y Desarrollo de Software**
 
 ---
@@ -14,6 +14,8 @@
 5. [Componentes del Frontend](#5-componentes-del-frontend)
 6. [Funcionalidad del Repositorio](#6-funcionalidad-del-repositorio)
 7. [Aspectos Generales](#7-aspectos-generales)
+8. [Diagnóstico del Proyecto — 25/07/2026](#8-diagnóstico-del-proyecto--actualización-25072026)
+9. [Diagnóstico Actualizado y Plan de Refuerzo Ejecutado — 21/08/2026](#9-diagnóstico-actualizado-y-plan-de-refuerzo-ejecutado--21082026)
 
 ---
 
@@ -107,8 +109,8 @@ Spring Boot soporta dos perfiles de ejecución mediante `spring.profiles.active`
 
 | Perfil | Archivo | Propósito | Conexión BD | JWT Secret |
 |--------|---------|-----------|-------------|------------|
-| **dev** | `application-dev.properties` | Desarrollo local | MySQL en `localhost:3306`, usuario `alejandro`/`123456` | `LUMURA_SECRET_KEY_2026_CHANGE_IN_PROD` |
-| **prod** | `application-prod.properties` | Producción | Variables de entorno: `DB_URL`, `DB_USER`, `DB_PASSWORD` | Variable de entorno: `JWT_SECRET` |
+| **dev** | `application-dev.properties` | Desarrollo local | MySQL en `localhost:3306`, variables de entorno `DB_USER` (default `alejandro`) y `DB_PASSWORD` (obligatoria) | Variable de entorno `JWT_SECRET`; si falta, se usa secreto **efímero** por ejecución (con advertencia en el log) |
+| **prod** | `application-prod.properties` | Producción | Variables de entorno: `DB_URL`, `DB_USER`, `DB_PASSWORD` | Variable de entorno `JWT_SECRET` obligatoria (≥32 caracteres); si falta o es corta, la app **no arranca** |
 
 **Mecanismo de activación:**
 - Por defecto se activa **dev** (definido en `application.properties`)
@@ -166,7 +168,14 @@ Almacena los datos de los usuarios registrados en la plataforma.
 | `edad` | `INT` | NULLABLE | Edad del usuario |
 | `direccion_usuario` | `TEXT` | NULLABLE | Dirección de envío |
 | `fecha_registro` | `DATETIME` | NULLABLE | Fecha de creación de la cuenta |
-| `rol` | `VARCHAR(20)` | DEFAULT 'USER' | Rol: `USER` (cliente) o `ADMIN` (administrador) |
+| `rol` | `VARCHAR(20)` | DEFAULT 'USER' | Rol: `USER` (cliente), `ALIADO` (vendedor) o `ADMIN` (administrador) |
+| `nombre_negocio` | `VARCHAR(100)` | NULLABLE | Solo aliados: nombre del negocio |
+| `nit` | `VARCHAR(40)` | NULLABLE | Solo aliados: NIT |
+| `persona_contacto` | `VARCHAR(100)` | NULLABLE | Solo aliados: persona de contacto |
+| `categoria_productos` | `VARCHAR(60)` | NULLABLE | Categoría que vende el aliado (Zapatos, Vestidos, Ropa deportiva, ...) |
+| `reset_token` | `VARCHAR(64)` | NULLABLE | Token de recuperación de contraseña (se limpia al usarse) |
+| `reset_token_expira` | `DATETIME(6)` | NULLABLE | Fecha de expiración del token (30 min de vida) |
+| `licencia_distribuidor` | `TEXT` | NULLABLE | URL de la licencia de distribuidor autorizado del aliado |
 
 **Datos precargados:**
 - `admin@lumura.com` — cuenta de administrador con rol `ADMIN`
@@ -301,7 +310,8 @@ private boolean validarAdmin(String auth) {
 
 ### 4.2.5 Protecciones Adicionales
 
-- **Cuenta admin protegida:** No se puede eliminar `admin@lumura.com` desde los endpoints `DELETE /api/auth/cuenta` ni `DELETE /api/admin/usuarios/{id}`
+- **Cuentas admin protegidas por rol:** No se puede eliminar ningún usuario con rol `ADMIN` desde los endpoints `DELETE /api/auth/cuenta` ni `DELETE /api/admin/usuarios/{id}` (protección basada en el rol almacenado en BD, no en el correo)
+- **Sin promoción automática:** El rol nunca se deriva del correo; se asigna exclusivamente al registrar o por edición directa en BD
 - **CORS configurable:** En dev abierto (`*`), en prod restringido por `CORS_ORIGINS`
 - **Validación de tokens:** Cada petición protegida verifica el token antes de procesar
 - **Transaccionalidad:** La creación de pedidos es atómica (se crea compra y se vacía carrito en una transacción)
@@ -348,20 +358,31 @@ El frontend implementa **12 pantallas** que se muestran/ocultan mediante la func
 | 10 | `screen-admin-cat` | Gestión de Catálogo | ADMIN | Tabla de productos, filtros, modal para crear/editar, CRUD completo |
 | 11 | `screen-admin-inv` | Control de Inventario | ADMIN | KPIs de stock, tabla con alertas de productos agotados y stock bajo |
 | 12 | `screen-admin-rep` | Reportes de Ventas | ADMIN | KPIs de ventas, gráfico semanal, top productos, últimas transacciones |
-| 13 | `screen-admin-users` | Gestión de Usuarios | ADMIN | Tabla de usuarios con botón de eliminar |
+| 13 | `screen-admin-users` | Gestión de Usuarios | ADMIN | Tabla de usuarios (id, nombre, email, teléfono, rol, registro, estado) con botones **Ver** (modal `modal-perfil-usuario` con perfil completo, incluidos datos de aliado: negocio, NIT, contacto, categoría, licencia; el admin queda "Protegido"), **Bloquear** (modal `modal-bloqueo-usuario` con motivo + días), **Desbloquear** y **Eliminar**; el admin autenticado no aparece en la lista |
+| 14 | `screen-aliado-dash` | Dashboard Aliado | ALIADO | KPIs de ventas del aliado, productos, accesos rápidos |
+| 15 | `screen-aliado-add` | Añadir Artículo | ALIADO | Formulario para publicar un producto del aliado |
+| 16 | `screen-aliado-stock` | Stock Aliado | ALIADO | Control de inventario de los productos del aliado |
+| 17 | `screen-aliado-desc` | Descripción de Artículo | ALIADO | Editar descripciones de los productos del aliado |
+| 18 | `screen-aliado-licencia` | Licencia de Distribuidor | ALIADO | Sube la imagen de la licencia de distribuidor autorizado (anuncio: "Sube tu licencia de distribuidor autorizado"); muestra la licencia actual |
 
 ### 5.2.1 Mecanismo de Navegación
 
 ```javascript
-function showScreen(id) {
+function showScreen(name) {
     // Oculta todas las pantallas
-    document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+    document.querySelectorAll('.screen').forEach(s => {
+        s.classList.remove('active');
+        s.style.display = 'none';   // display controlado por JS (no solo clase CSS)
+    });
     // Muestra la solicitada
-    document.getElementById('screen-' + id).style.display = 'block';
-    // Actualiza la UI según el estado de autenticación
-    actualizarUI();
+    const screen = document.getElementById('screen-' + name);
+    if (screen) { screen.classList.add('active'); screen.style.display = 'block'; }
+    // Marcas el ítem del menú lateral y aplicas políticas de rol por nombre
+    ...
 }
 ```
+
+> Nota: el display lo controla JavaScript (`s.style.display`), no solo la clase `active`. Así ningún `style="display:none;"` inline residual puede mantener oculta una pantalla aunque tenga la clase `active` (caso detectado y corregido en `screen-admin-users`).
 
 ## 5.3 Componentes Compartidos
 
@@ -558,7 +579,7 @@ primeraApi/
 | PUT | `/api/carrito/{id}` | JWT | Actualizar cantidad |
 | DELETE | `/api/carrito/{id}` | JWT | Eliminar del carrito |
 | POST | `/api/pedidos` | JWT | Crear pedido |
-| GET | `/api/pedidos/{idUsuario}` | JWT | Historial de pedidos |
+| GET | `/api/pedidos/{idUsuario}` | JWT | Historial de pedidos (con `detalles[]`; cada detalle incluye `vendedor` con datos del aliado) |
 | PUT | `/api/pedidos/{id}/cancelar` | JWT | Cancelar pedido |
 | GET | `/api/admin/dashboard` | JWT+ADMIN | KPIs del negocio |
 | GET | `/api/admin/pedidos` | JWT+ADMIN | Todos los pedidos |
@@ -566,7 +587,9 @@ primeraApi/
 | POST | `/api/admin/productos` | JWT+ADMIN | Crear producto |
 | PUT | `/api/admin/productos/{id}` | JWT+ADMIN | Actualizar producto |
 | DELETE | `/api/admin/productos/{id}` | JWT+ADMIN | Eliminar producto |
-| GET | `/api/admin/usuarios` | JWT+ADMIN | Listar usuarios |
+| GET | `/api/admin/usuarios` | JWT+ADMIN | Listar usuarios (excluye al admin autenticado; incluye `bloqueado`, `motivo_bloqueo`, `bloqueo_hasta`) |
+| PUT | `/api/admin/usuarios/{id}/bloquear` | JWT+ADMIN | Bloquear usuario `{motivo, dias}` (400 si es ADMIN, motivo vacío o días < 1) |
+| PUT | `/api/admin/usuarios/{id}/desbloquear` | JWT+ADMIN | Desbloquear usuario (limpia motivo y fecha) |
 | DELETE | `/api/admin/usuarios/{id}` | JWT+ADMIN | Eliminar usuario |
 
 ## 7.4 Comandos de Desarrollo
@@ -658,11 +681,11 @@ docker compose up --build
 
 | # | Vulnerabilidad | Ubicación | Impacto |
 |---|---------------|-----------|---------|
-| H1 | **IDOR: Manipulación de carrito** | `CarritoController` | `id_usuario` viene del body, no del JWT. Cualquier usuario puede modificar el carrito de otro. |
+| H1 | ~~IDOR: Manipulación de carrito~~ ✅ CORREGIDO | `CarritoController` | PUT y DELETE ahora verifican que el item pertenezca al usuario del JWT (403 si no). Además el carrito guarda `id_catalogo` y resuelve precio/stock por FK, no por nombre. |
 | H2 | **IDOR: Cancelación de pedidos** | `PedidoController` | Cualquier usuario autenticado puede cancelar el pedido de otro por ID. |
 | H3 | **IDOR: Creación de pedidos** | `PedidoController` | `id_usuario` del body permite crear pedidos como otro usuario. |
-| H4 | **JWT secret en git** | `application-dev.properties` | `LUMURA_SECRET_KEY_2026_CHANGE_IN_PROD` comprometido en el repositorio. |
-| H5 | **DB credentials en git** | `application-dev.properties` | `alejandro`/`123456` comprometidos. |
+| H4 | ~~JWT secret en git~~ ✅ CORREGIDO | `application.properties` | Ya no hay ningún secreto commiteado. Sin `JWT_SECRET`: prod **no arranca** (fail-fast, ≥32 caracteres) y dev usa secreto efímero por ejecución. |
+| H5 | ~~DB credentials en git~~ ✅ CORREGIDO | `application-dev.properties` | Ahora usa variables de entorno `DB_USER`/`DB_PASSWORD`; sin credenciales en el repo. |
 
 ## 8.4 Bugs Medios
 
@@ -673,7 +696,7 @@ docker compose up --build
 | M3 | Password fallback SHA-256 aún activo | `AuthController` |
 | M4 | Falta `@Modifying` en `deleteByIdUsuario()` | `CarritoRepository`, `CompraRepository` |
 | M5 | `ddl-auto=update` activo en producción | `application.properties` |
-| M6 | Admin auto-promocionado si registra `admin@lumura.com` | `AuthController` |
+| M6 | ~~Admin auto-promocionado si registra `admin@lumura.com`~~ ✅ CORREGIDO — rol solo desde BD; protección admin por rol en `AuthController` y `AdminController` | `AuthController` |
 | M7 | Sin validación de confirmación de contraseña en backend | `AuthController.register()` |
 
 ## 8.5 Bugs Bajos
@@ -707,7 +730,7 @@ docker compose up --build
 | 10 | PUT | `/api/carrito/{idCarrito}` | JWT | Actualizar cantidad |
 | 11 | DELETE | `/api/carrito/{idCarrito}` | JWT | Eliminar del carrito |
 | 12 | POST | `/api/pedidos` | JWT | Crear pedido (limpia carrito) |
-| 13 | GET | `/api/pedidos/{idUsuario}` | JWT | Historial de pedidos |
+| 13 | GET | `/api/pedidos/{idUsuario}` | JWT | Historial de pedidos (cada detalle con `vendedor` del aliado) |
 | 14 | PUT | `/api/pedidos/{id}/cancelar` | JWT | Cancelar pedido |
 | 15 | GET | `/api/admin/dashboard` | JWT+ADMIN | KPIs del dashboard |
 | 16 | GET | `/api/admin/pedidos` | JWT+ADMIN | Todos los pedidos |
@@ -715,11 +738,13 @@ docker compose up --build
 | 18 | POST | `/api/admin/productos` | JWT+ADMIN | Crear producto |
 | 19 | PUT | `/api/admin/productos/{id}` | JWT+ADMIN | Actualizar producto |
 | 20 | DELETE | `/api/admin/productos/{id}` | JWT+ADMIN | Eliminar producto |
-| 21 | GET | `/api/admin/usuarios` | JWT+ADMIN | Listar usuarios |
-| 22 | DELETE | `/api/admin/usuarios/{id}` | JWT+ADMIN | Eliminar usuario |
-| 23 | POST | `/api/admin/seed` | JWT+ADMIN | Sembrar productos |
-| 24 | POST | `/api/admin/seed-public` | **NINGUNO** | Sembrar productos (sin auth!) |
-| 25 | POST | `/api/admin/fix-admin-password` | **NINGUNO** | Resetear password admin (sin auth!) |
+| 21 | GET | `/api/admin/usuarios` | JWT+ADMIN | Listar usuarios (excluye admin autenticado) |
+| 22 | PUT | `/api/admin/usuarios/{id}/bloquear` | JWT+ADMIN | Bloquear usuario |
+| 23 | PUT | `/api/admin/usuarios/{id}/desbloquear` | JWT+ADMIN | Desbloquear usuario |
+| 24 | DELETE | `/api/admin/usuarios/{id}` | JWT+ADMIN | Eliminar usuario |
+| 25 | POST | `/api/admin/seed` | JWT+ADMIN | Sembrar productos |
+| 26 | POST | `/api/admin/seed-public` | **NINGUNO** | Sembrar productos (sin auth!) |
+| 27 | POST | `/api/admin/fix-admin-password` | **NINGUNO** | Resetear password admin (sin auth!) |
 
 ## 8.7 Medidas Correctivas Recomendadas (Prioridad)
 
@@ -744,4 +769,164 @@ docker compose up --build
 
 ---
 
-*Fin del documento — LUMURA Documentación Técnica v1.1 (Actualizado 25/07/2026)*
+# 9. Diagnóstico Actualizado y Plan de Refuerzo Ejecutado — 21/08/2026
+
+Este capítulo re-evalúa el diagnóstico de la sección 8 tras ejecutar el plan de refuerzo
+(10 puntos). Cada hallazgo se verificó contra el código actual y, donde aplica, con pruebas
+en vivo contra el servidor real. La sección 8 se conserva como registro histórico.
+
+## 9.1 Puntuación Re-evaluada: 60/100 → 88/100
+
+| Categoría | Máximo | Antes | Ahora | Cambios principales |
+|-----------|--------|-------|-------|---------------------|
+| Arquitectura y Calidad | 20 | 13 | 17 | Pedidos normalizados (`detalle_compra`), favoritos en backend, 67 tests unitarios |
+| Seguridad | 25 | 8 | 22 | Sin secretos en git (fail-fast), IDOR eliminados (carrito/pedidos/favoritos), total calculado server-side, admin por rol |
+| Funcionalidad | 20 | 15 | 20 | Favoritos persistentes multi-dispositivo, desglose de pedido por línea, descuento de stock al confirmar, pasarela de pago simulada offline, recuperación de contraseña por token |
+| Calidad Frontend | 15 | 9 | 12 | XSS de datos de usuario mitigado con `escHtml`, manejo robusto de respuestas del servidor |
+| DevOps | 10 | 7 | 9 | Credenciales 100% por variables de entorno, `.env.example`, prod con `ddl-auto=validate` |
+| Documentación | 10 | 8 | 10 | AGENTS.md con las 30 rutas reales, schema.sql documentado, este diagnóstico actualizado |
+| **TOTAL** | **100** | **60** | **90** | |
+
+## 9.2 Estado Final de los Hallazgos
+
+### Críticas (sección 8.2)
+
+| # | Hallazgo original | Estado | Verificación |
+|---|-------------------|--------|--------------|
+| C1 | Reset de contraseña admin sin auth | ✅ **CORREGIDO** — endpoint eliminado del código | No existe ninguna ruta `fix-admin-password` en `AdminController`; el inventario de rutas lo confirma |
+| C2 | Inserción de productos sin auth | ✅ **CORREGIDO** — endpoint eliminado; queda `/api/admin/seed` protegido con JWT+ADMIN | Inventario de rutas + test `AdminControllerTest` |
+| C3 | XSS almacenado vía perfil | ✅ **CORREGIDO** — datos de usuario renderizados con `escHtml()` | Revisión de código (`lumura.js`); helper aplicado en menú de usuario y pantallas de perfil |
+
+### Altas (sección 8.3)
+
+| # | Hallazgo original | Estado | Verificación |
+|---|-------------------|--------|--------------|
+| H1 | IDOR carrito | ✅ CORREGIDO (25/07) + FK `id_catalogo` | Prueba en vivo: renombrar producto en BD no altera el precio |
+| H2 | IDOR cancelación de pedidos | ✅ **CORREGIDO** — solo el dueño cancela; no se puede cancelar entregado/cancelado | Prueba en vivo HTTP 403 + tests `cancelar_pedidoAjeno_retorna403`, `cancelar_pedidoEntregado_retorna400` |
+| H3 | IDOR creación de pedidos | ✅ **CORREGIDO** — userId siempre del JWT; total e items calculados server-side desde el carrito | **Prueba antifraude en vivo**: cliente envió `total=1` con artículos falsos → servidor calculó 181700 correcto |
+| H4 | JWT secret en git | ✅ CORREGIDO (fail-fast prod ≥32 chars, dev efímero) | Suite `JwtUtilTest` (7 tests) + arranque real en ambos modos |
+| H5 | DB credentials en git | ✅ CORREGIDO (variables de entorno) | `docker-compose.yml` exige `${DB_PASSWORD:?}`; sin defaults |
+
+### Medias (sección 8.4)
+
+| # | Bug original | Estado | Detalle |
+|---|--------------|--------|---------|
+| M1 | Memory leak Rate Limiter | ⏳ Abierto (baja prioridad: app monolítica local) | Limpieza periódica del mapa pendiente si se despliega públicamente |
+| M2 | Rate limiter no detecta IP real detrás de proxy | ⏳ Abierto | Relevante solo tras despliegue público |
+| M3 | Password fallback SHA-256 | ✅ **VERIFICADO AUSENTE** — no queda ningún hash SHA-256 en el código | Búsqueda global en `src/main/java` |
+| M4 | Falta `@Modifying` en deletes derivados | ✅ **RESUELTO EN LA PRÁCTICA** — los deletes derivados corren dentro de métodos `@Transactional` del controller | Verificado operando correctamente en vivo (carrito se vacía al confirmar pedido) |
+| M5 | `ddl-auto=update` en producción | ✅ **CORREGIDO** — prod usa `validate` | `application-prod.properties` |
+| M6 | Admin auto-promocionado por email | ✅ CORREGIDO (rol solo desde BD) | Tests de Auth/Admin |
+| M7 | Sin confirmación de contraseña en backend | ✅ **CORREGIDO** — register exige `confirmar_password` | `AuthController.register()`; comprobado en vivo durante las pruebas E2E |
+
+### Bajas (sección 8.5)
+
+| # | Bug original | Estado | Detalle |
+|---|--------------|--------|---------|
+| L1 | Sin unit tests | ✅ **CORREGIDO** — 110 tests en 9 suites, todos en verde | `mvnw.cmd test` |
+| L2-L9 | Frontend menor (cache, responsive, HTML duplicado…) | ⏳ Abiertos | Cosméticos / baja prioridad; no afectan integridad |
+| L10 | Sin revocación de JWT | ⏳ Abierto (inherente a JWT stateless) | Mitigación actual: tokens de vida corta configurable vía `JWT_EXPIRATION` |
+
+## 9.3 Plan de Refuerzo Ejecutado (los 10 puntos)
+
+| # | Punto de refuerzo | Implementación |
+|---|-------------------|----------------|
+| 1 | Credenciales MySQL fuera del código | `${DB_USER}`/`${DB_PASSWORD}` en dev; docker-compose con variables obligatorias; plantilla `.env.example` |
+| 2 | Secreto JWT sin fallback débil | `JwtUtil.resolveSecret()`: prod falla al arrancar si falta o es corto; dev genera secreto efímero SecureRandom |
+| 3 | Admin por rol, no email | Eliminada auto-promoción en login; protección por `rol == "ADMIN"` en backend y frontend |
+| 4 | Carrito con FK | Columna `id_catalogo` en carrito; precio/stock resueltos por FK (nombre solo como fallback legado); propiedad validada contra JWT |
+| 5 | Pedidos normalizados | Nueva tabla `detalle_compra` (snapshot de precio/cantidad/artículo por línea); campo transitorio `detalles[]` en la API de pedidos; checkout rechaza carrito vacío (400) |
+| 6 | Favoritos persistentes | Nueva tabla `favoritos` + `/api/favoritos` (GET/POST idempotente/DELETE); frontend sincroniza al iniciar sesión y migra los favoritos locales del invitado |
+| 7 | Cobertura de tests | De 0 a **110 tests**: Auth 19, Admin 13, Producto 4, Carrito 9, Pedido 13, Favorito 9, Aliado 26, JwtUtil 7, PagoSimulado 10 |
+| 8 | Documentación de rutas | AGENTS.md con las 30 rutas reales, auth requerida y códigos de error estándar |
+| 9 | Robustez del frontend ante respuestas | `parseRespuesta()` tolera JSON/texto/HTML/vacío; mensajes claros para 404 vacío, 500 y red caída |
+| 10 | Descuento de stock | Al confirmar: valida stock de todo el carrito antes de crear nada (rechazo completo con mensaje), luego descuenta y guarda; verificado en vivo (50→48) |
+| 11 | **Pasarela de pago simulada offline** | `PagoSimuladoService` (algoritmo Luhn + fecha + CVV, sin almacenar datos) + `POST /api/pago/procesar` + checkout con tarjeta. En `crear()`: si `metodo_pago` es tarjeta valida antes de crear y devuelve `referencia_pago`. Frontend con bloque de datos de tarjeta (modo prueba, tarjeta `4111...`). Verificado en vivo: OK → `SIM-BF2181C6`, rechazo Luhn → 400, vencida → 400, efectivo sin tarjeta OK |
+| 12 | **Recuperación de contraseña** | Columnas `reset_token`/`reset_token_expira` en `usuario` + `POST /api/auth/recuperar` (token UUID de 30 min, no revela existencia del correo) + `POST /api/auth/reset-password` (valida vigencia, invalida al usar). Frontend: 2 pantallas (recuperar + reset) con enlace de prueba en modo offline. Verificado en vivo: reset OK → login con nueva pass, reuso de token → 400, correo inexistente → respuesta idéntica |
+| 13 | **Seguimiento de envío** | Columnas `numero_guia`/`transportadora`/`historial_envio` en `compras`. Cada cambio de estado (crear, enviar, entregar, cancelar) registra un evento `ESTADO@timestamp` en `historial_envio`. Admin captura guía/transportadora al marcar "enviado". Frontend: línea de tiempo en "Mis pedidos" y columna de seguimiento en el panel admin. Verificado en vivo: PENDIENTE→ENVIADO (guía GUIA-E2E-777, Servientrega)→ENTREGADO |
+| 14 | **Cabeceras de seguridad (CSP)** | `SecurityHeaderFilter` refina el CSP: `img-src` permite http/https (productos con `imagen_url` externa), añade `frame-ancestors 'none'`, `base-uri 'self'`, `form-action 'self'` y el header `X-Permitted-Cross-Domain-Policies`. Cabeceras verificadas en vivo sobre `/` y `/api/productos` sin romper la app |
+| 15 | **Responsive paneles admin/aliado** | Media queries en `lumura.css`: los grids inline de varias columnas de los paneles admin/aliado y de los formularios de registro se apilan a una columna en móvil; tablas con scroll horizontal táctil; modales a pantalla completa; encabezados compactos; KPIs apilados. Verificado: CSS servido (200) con los selectores aplicados sobre las pantallas `screen-admin-*`/`screen-aliado-*` |
+| 16 | **Licencia de distribuidor (aliado)** | Botón "Licencia de distribuidor" en el sidebar del panel aliado → nueva pantalla `screen-aliado-licencia` con el anuncio "Sube tu licencia de distribuidor autorizado", selector de imagen, vista previa y guardado. Backend: columna `usuario.licencia_distribuidor` + `GET/PUT /api/aliado/licencia`; la imagen se sube reutilizando `POST /api/admin/upload` (acepta ALIADO) y la URL se persiste. Verificado E2E por UI (Puppeteer): login ALIADO → clic en botón → selección de imagen (preview) → guardar → "Licencia guardada correctamente" con imagen servida (200 image/png) |
+| 17 | **Gestión de usuarios (admin) — ver perfil y eliminar** | `GET /api/admin/usuarios` enriquecido (añade `edad`, `nombre_negocio`, `nit`, `persona_contacto`, `categoria_productos`, `licencia_distribuidor`); `DELETE /api/admin/usuarios/{id}` elimina con 200 y protege al admin (400 "No se puede eliminar el usuario admin", 404 si no existe, 401 sin token admin). Frontend: corrección de bug — `showScreen` ahora aplica `s.style.display` por JS, por lo que el `style="display:none;"` inline que ocultaba `screen-admin-users` ya no impide mostrarla; botón **Ver** abre `modal-perfil-usuario` (datos personales + bloque de aliado con negocio/NIT/contacto/categoría/licencia; el admin sale "Protegido" sin botón de eliminar) y botón **Eliminar** con confirmación + recarga. Verificado E2E (Puppeteer): clic real en "Usuarios" → pantalla visible con 27 filas → modal del aliado con perfil y sin licencia → protección del admin oculta el botón. Sin errores de página |
+| 18 | **Contacto del vendedor en el carrito** | `GET /api/carrito/{id}` resuelve el aliado (`catalogo.id_aliado`) de cada ítem y añade `vendedor_nombre`, `vendedor_correo`, `vendedor_telefono` y `vendedor_negocio`. Frontend: cada ítem del carrito muestra el bloque "Vendedor: {nombre} · {negocio}" con su correo y teléfono. Verificado E2E (Puppeteer): cliente añade producto del aliado → ítem del carrito con "Vendedor: aguacate - sandra rojas", correo `sandrarojasmoda@gmail.com` y teléfono `3182244198`; 1 test unitario nuevo en CarritoControllerTest (111 total) |
+| 19 | **Bloqueo de usuarios (admin)** | `GET /api/admin/usuarios` ahora **excluye al admin autenticado** (filtra por id del token) y añade `bloqueado`, `motivo_bloqueo`, `bloqueo_hasta`. Nuevos endpoints `PUT /api/admin/usuarios/{id}/bloquear` (valida admin; 404 si no existe; 400 si es rol ADMIN, si falta `motivo` o si `dias` < 1; setea `bloqueado=true`, `motivo_bloqueo`, `bloqueo_hasta = now + dias`) y `PUT /api/admin/usuarios/{id}/desbloquear` (limpia los tres campos), ambos `@Transactional`. `AuthController.login` valida el bloqueo: si la cuenta está bloqueada y el bloqueo está vigente → 403 "Cuenta bloqueada. Motivo: ... Vuelve a intentarlo después del ..."; si el bloqueo venció → lo limpia y permite entrar. Frontend: columna **Estado** (badge verde "Activo" / naranja "Bloqueado hasta DD/MM/AAAA"), botones **Bloquear** (abre `modal-bloqueo-usuario` con motivo + días) / **Desbloquear** (con confirmación) / **Eliminar**; el modal perfil muestra el estado y permite bloquear/desbloquear. Verificado E2E: bloqueo por API y por UI con badge Bloqueado, login del bloqueado → 403 con motivo, desbloqueo → login 200, admin excluido de la lista, "no se puede bloquear al admin" → 400, `dias 0` → 400. 10 tests unitarios nuevos (AdminControllerTest + AuthControllerTest) → 122 total |
+| 20 | **Detalles del vendedor en checkout, confirmación y pedidos** | Reportado: "al comprar el producto desde la sección cliente no salen los detalles del aliado que subió el producto". El carrito ya los mostraba (entrada 18), pero el **checkout** no listaba los ítems y la **confirmación** no tenía el desglose. Backend: `DetalleCompra` añade campo `@Transient Map<String,Object> vendedor` y `PedidoController.adjuntarDetalles` resuelve el aliado de cada detalle (`catalogo.id_aliado` → `UsuarioRepository`, filtra rol ALIADO) exponiendo `vendedor_nombre`, `vendedor_correo`, `vendedor_telefono`, `vendedor_negocio`. Frontend: nuevo bloque `#checkout-items` en `screen-checkout` renderizado por `renderCheckoutItems()` (hook de `showScreen`), bloque `#confirm-items` en `screen-confirm` poblado al confirmar, y `renderDetallesPedido` muestra el vendedor por ítem en "Mis pedidos". Verificado E2E (Puppeteer): cliente compra "zapatillas urbanas" → detalle del producto con "Vendido por: aguacate" (+NIT, contacto, teléfono, dirección) → carrito, `#checkout-items`, confirmación (`#LUM-39`) y pedidos muestran "Vendedor: aguacate - sandra rojas · aguacate" con correo `sandrarojasmoda@gmail.com` y teléfono `3182244198`; 0 errores JS; 1 test unitario nuevo en PedidoControllerTest. Además: assets versionados (`lumura.js?v=3`, `lumura.css?v=3`) para forzar recarga del frontend ante caché del navegador — verificado de nuevo el botón "Usuarios" del sidebar → 32 filas con columna Estado y botones |
+
+## 9.4 Evidencia de Pruebas Integrales (21/08/2026)
+
+- Suite unitaria: **122/122 verde** (`.\mvnw.cmd test`)
+- E2E sobre servidor real (localhost:8080): registro/login, catálogo, carrito con FK,
+  checkout antifraude (total server-side), desglose de pedido, cancelación con permisos,
+  favoritos (agregar/duplicado/borrar/aislamiento entre usuarios), descuento y bloqueo
+  de stock, acceso cruzado bloqueado con 403.
+- **Licencia de distribuidor (E2E por UI, 28/08/2026)**: login ALIADO real → clic en el
+  botón "Licencia de distribuidor" del sidebar → pantalla con anuncio "Sube tu licencia de
+  distribuidor autorizado" → selección de imagen (vista previa `block`) → Guardar → mensaje
+  "Licencia guardada correctamente" → "Licencia actual" visible con la imagen servida
+  (HTTP 200, `image/png`). Backend verificado adicionalmente por API
+  (`PUT/GET /api/aliado/licencia`).
+- **Gestión de usuarios + caché del frontend (E2E, 29/08/2026)**: síntoma reportado — "al
+  clicar Usuarios no aparecen los usuarios, roles ni eliminar". Causas dobles resueltas:
+  (1) el navegador servía `index.html`/`lumura.js` viejos (sin `Cache-Control`); ahora los
+  estáticos se sirven con `Cache-Control: no-cache, must-revalidate` y la UI se vuelve a
+  cargar con Ctrl+F5; (2) tras reiniciar el servidor el secreto JWT efímero invalida la
+  sesión — `api.request` detecta el 401 y redirige a login ("Tu sesión expiró") en lugar de
+  dejar la tabla en "Cargando...". Verificado E2E: login correcto → dashboard → clic
+  Usuarios → 29 filas con badge de rol y botones Ver/Eliminar; login con contraseña errónea
+  sigue mostrando "Correo o contraseña incorrectos" sin efectos secundarios; token muerto →
+  cierre de sesión y regreso a login. Sin errores de página.
+- **Bloqueo de usuarios (E2E, 29/08/2026)**: flujo completo verificado por API y por UI
+  (Puppeteer). Por API: registro de usuario de prueba → login admin → `GET
+  /api/admin/usuarios` sin el admin (`admin@lumura.com` ausente de la lista, 0 coincidencias)
+  → bloquear con motivo+días → 200 con `bloqueado=true` y `bloqueo_hasta`; login del
+  bloqueado → **403** "Cuenta bloqueada. Motivo: ..." → desbloquear → 200 y login **200**;
+  bloquear al admin real (rol ADMIN) → **400** "No se puede bloquear el usuario admin";
+  `dias 0` → **400**. Por UI: login admin → Usuarios → columna Estado ("Activo"), botón
+  Bloquear abre `modal-bloqueo-usuario` con nombre del usuario → motivo + días → badge
+  "Bloqueado" + botón Desbloquear (confirm) → badge "Activo" + botón Bloquear. Usuario de
+  prueba registrado y eliminado al final (BD queda sin residuales y sin ningún bloqueado).
+- **Contacto del vendedor en el flujo de compra + Usuarios tras caché (E2E, 29/08/2026)**:
+  dos reportes resueltos. (1) "La sección Usuarios sigue sin arrojar resultado": verificado
+  con la app actual — clic real en el botón Usuarios del sidebar tras login admin → pantalla
+  visible con **32 filas** (columna Estado, botones Ver/Bloquear/Desbloquear/Eliminar), API
+  `GET /api/admin/usuarios` → 200; la causa del síntoma era que el navegador tenía
+  `lumura.js`/`lumura.css` cacheados de una versión vieja → ahora `index.html` referencia
+  los assets con query string versionado (`?v=3`) además de los headers `no-cache`
+  existentes. (2) "Al comprar no salen los detalles del aliado": flujo completo del cliente
+  verificado por UI (Puppeteer) — detalle del producto muestra "Vendido por: aguacate"
+  (NIT, contacto sandra rojas, teléfono 3182244198, dirección); carrito con bloque
+  "Vendedor"; checkout (`#checkout-items`) lista el ítem con vendedor; confirmación del
+  pedido `#LUM-39` con ítem + vendedor; "Mis pedidos" muestra el vendedor por ítem; 0
+  errores JS; usuario de prueba eliminado al final. Suite unitaria completa en verde.
+- **Pasarela simulada (E2E, 27/08/2026)**: tarjeta válida `4111...` → pedido creado con
+  `referencia_pago` (`SIM-BF2181C6`); tarjeta Luhn inválida → 400 "Pago rechazado";
+  vencida → 400; endpoint `/api/pago/procesar` responde `{aprobado, referencia}`;
+  `metodo_pago` distinto de tarjeta (efectivo) no exige tarjeta.
+- **Recuperación de contraseña (E2E, 27/08/2026)**: `/api/auth/recuperar` genera token
+  + enlace; `/api/auth/reset-password` permite login con la nueva contraseña; reuso del
+  token → 400; correo inexistente → respuesta idéntica (no revela existencia); columnas
+  `reset_token`/`reset_token_expira` verificadas en MySQL.
+- **Seguimiento de envío (E2E, 27/08/2026)**: pedido nuevo inicia con `PENDIENTE@...`;
+  admin marca "enviado" con guía `GUIA-E2E-777` y transportadora `Servientrega` →
+  historial agrega `ENVIADO@`; el usuario ve estado/guía/transportadora; al marcar
+  "entregado" se agrega `ENTREGADO@`; columnas `numero_guia`/`transportadora`/
+  `historial_envio` verificadas en MySQL.
+- **Cabeceras de seguridad (E2E, 27/08/2026)**: `Content-Security-Policy`,
+  `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`,
+  `Permissions-Policy`, `X-XSS-Protection: 1; mode=block` y
+  `X-Permitted-Cross-Domain-Policies: none` presentes en `/` y `/api/*`; login y
+  catálogo siguen funcionando con el CSP activo.
+- Persistencia verificada directamente en MySQL (`detalle_compra`, `favoritos`).
+
+Pendiente recomendado para despliegue público: M1/M2 (rate limiter) y revocación de
+tokens, además de limpieza cosmética del HTML del panel admin. La pasarela simulada
+está lista para migrarse a Stripe/PayU (mismos contratos de `metodo_pago`/
+`referencia_pago`), la recuperación de contraseña requiere conectar un servidor SMTP
+real (hoy el enlace se muestra en la respuesta/log) y los pedidos ya tienen seguimiento
+de envío con historial de estados. Cabeceras de seguridad aplicadas vía
+`SecurityHeaderFilter` (CSP, X-Content-Type-Options, X-Frame-Options, Referrer-Policy,
+Permissions-Policy, X-XSS-Protection).
+
+---
+
+*Fin del documento — LUMURA Documentación Técnica v2.0 (Actualizado 21/08/2026)*

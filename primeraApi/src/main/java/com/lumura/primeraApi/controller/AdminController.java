@@ -80,10 +80,25 @@ public class AdminController {
 
         return compraRepository.findById(id)
                 .map(compra -> {
+                    // Al marcar como enviado se puede registrar guía y transportadora
+                    if ("enviado".equals(estado)) {
+                        if (body.containsKey("numero_guia")) compra.setNumeroGuia(body.get("numero_guia"));
+                        if (body.containsKey("transportadora")) compra.setTransportadora(body.get("transportadora"));
+                    }
                     compra.setEstadoPedido(estado);
+
+                    // Registra el evento en el historial de seguimiento
+                    String nuevoEvento = estado.toUpperCase() + "@" + LocalDateTime.now();
+                    String historial = compra.getHistorialEnvio();
+                    compra.setHistorialEnvio(historial == null || historial.isBlank()
+                            ? nuevoEvento : historial + "|" + nuevoEvento);
+
                     compraRepository.save(compra);
-                    log.info("Pedido #{} actualizado a estado: {}", id, estado);
-                    return ResponseEntity.ok(Map.of("mensaje", "Estado actualizado"));
+                    log.info("Pedido #{} actualizado a estado: {} (historial: {})", id, estado, compra.getHistorialEnvio());
+                    return ResponseEntity.ok(Map.of("mensaje", "Estado actualizado",
+                            "historial", compra.getHistorialEnvio(),
+                            "numero_guia", compra.getNumeroGuia() == null ? "" : compra.getNumeroGuia(),
+                            "transportadora", compra.getTransportadora() == null ? "" : compra.getTransportadora()));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -170,15 +185,27 @@ public class AdminController {
     public ResponseEntity<?> listarUsuarios(@RequestHeader(value = "Authorization", required = false) String auth) {
         if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
 
-        List<Map<String, Object>> usuarios = usuarioRepository.findAll().stream().map(u -> {
+        Integer adminId = jwtUtil.getUserIdFromToken(auth.substring(7));
+        List<Map<String, Object>> usuarios = usuarioRepository.findAll().stream()
+                .filter(u -> !Integer.valueOf(adminId).equals(u.getIdUsuario()))
+                .map(u -> {
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("id_usuario", u.getIdUsuario());
             m.put("nombre_usuario", u.getNombreUsuario());
             m.put("correo_usuario", u.getCorreoUsuario());
             m.put("telefono", u.getTelefono());
+            m.put("edad", u.getEdad());
             m.put("direccion_usuario", u.getDireccionUsuario());
             m.put("rol", u.getRol());
             m.put("fecha_registro", u.getFechaRegistro());
+            m.put("nombre_negocio", u.getNombreNegocio());
+            m.put("nit", u.getNit());
+            m.put("persona_contacto", u.getPersonaContacto());
+            m.put("categoria_productos", u.getCategoriaProductos());
+            m.put("licencia_distribuidor", u.getLicenciaDistribuidor());
+            m.put("bloqueado", Boolean.TRUE.equals(u.getBloqueado()));
+            m.put("motivo_bloqueo", u.getMotivoBloqueo());
+            m.put("bloqueo_hasta", u.getBloqueoHasta());
             return m;
         }).collect(Collectors.toList());
 
@@ -194,13 +221,76 @@ public class AdminController {
         Optional<Usuario> usuario = usuarioRepository.findById(id);
         if (usuario.isEmpty()) return ResponseEntity.notFound().build();
 
-        if ("admin@lumura.com".equals(usuario.get().getCorreoUsuario())) {
+        if ("ADMIN".equals(usuario.get().getRol())) {
             return ResponseEntity.badRequest().body(Map.of("error", "No se puede eliminar el usuario admin"));
         }
 
         usuarioRepository.deleteById(id);
         log.info("Usuario eliminado por admin: userId={}", id);
         return ResponseEntity.ok(Map.of("mensaje", "Usuario eliminado correctamente"));
+    }
+
+    @PutMapping("/usuarios/{id}/bloquear")
+    @Transactional
+    public ResponseEntity<?> bloquearUsuario(@RequestHeader(value = "Authorization", required = false) String auth,
+                                             @PathVariable Integer id,
+                                             @RequestBody Map<String, String> body) {
+        if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+
+        Optional<Usuario> usuario = usuarioRepository.findById(id);
+        if (usuario.isEmpty()) return ResponseEntity.notFound().build();
+
+        if ("ADMIN".equals(usuario.get().getRol())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "No se puede bloquear el usuario admin"));
+        }
+
+        String motivo = body.get("motivo");
+        if (motivo == null || motivo.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Debes indicar el motivo del bloqueo"));
+        }
+
+        int dias;
+        try {
+            dias = Integer.parseInt(body.getOrDefault("dias", "0"));
+        } catch (NumberFormatException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Cantidad de días inválida"));
+        }
+        if (dias < 1) {
+            return ResponseEntity.badRequest().body(Map.of("error", "La cantidad de días debe ser al menos 1"));
+        }
+
+        Usuario u = usuario.get();
+        u.setBloqueado(true);
+        u.setMotivoBloqueo(motivo.trim());
+        u.setBloqueoHasta(LocalDateTime.now().plusDays(dias));
+        usuarioRepository.save(u);
+
+        log.info("Usuario {} bloqueado por {} días (motivo: {})", id, dias, motivo.trim());
+        return ResponseEntity.ok(Map.of(
+                "mensaje", "Usuario bloqueado correctamente",
+                "bloqueado", true,
+                "motivo_bloqueo", u.getMotivoBloqueo(),
+                "bloqueo_hasta", u.getBloqueoHasta().toString()
+        ));
+    }
+
+    @PutMapping("/usuarios/{id}/desbloquear")
+    @Transactional
+    public ResponseEntity<?> desbloquearUsuario(@RequestHeader(value = "Authorization", required = false) String auth,
+                                                @PathVariable Integer id) {
+        if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+
+        Optional<Usuario> usuario = usuarioRepository.findById(id);
+        if (usuario.isEmpty()) return ResponseEntity.notFound().build();
+
+        Usuario u = usuario.get();
+        u.setBloqueado(false);
+        u.setMotivoBloqueo(null);
+        u.setBloqueoHasta(null);
+        usuarioRepository.save(u);
+
+        log.info("Usuario {} desbloqueado por admin", id);
+        return ResponseEntity.ok(Map.of("mensaje", "Usuario desbloqueado correctamente", "bloqueado", false));
     }
 
     @Value("${upload.dir:uploads}")

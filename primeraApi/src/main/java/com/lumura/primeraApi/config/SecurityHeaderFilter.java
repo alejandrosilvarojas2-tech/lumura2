@@ -20,14 +20,19 @@ public class SecurityHeaderFilter implements Filter {
         response.setHeader("X-Frame-Options", "DENY");
         response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
         response.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+        // img-src admite http/https porque el admin puede cargar productos con imagen_url externa.
         response.setHeader("Content-Security-Policy",
                 "default-src 'self'; " +
-                "img-src 'self' data:; " +
+                "img-src 'self' data: blob: https: http:; " +
                 "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
                 "font-src 'self' https://fonts.gstatic.com data:; " +
                 "script-src 'self' 'unsafe-inline'; " +
-                "connect-src 'self'");
+                "connect-src 'self'; " +
+                "frame-ancestors 'none'; " +
+                "base-uri 'self'; " +
+                "form-action 'self'");
         response.setHeader("X-XSS-Protection", "1; mode=block");
+        response.setHeader("X-Permitted-Cross-Domain-Policies", "none");
 
         chain.doFilter(req, res);
     }

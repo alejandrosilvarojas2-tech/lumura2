@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 @RestController
@@ -91,10 +92,18 @@ public class AuthController {
         String correo = body.get("correo_usuario");
         String password = body.get("password");
         String confirmarPassword = body.get("confirmar_password");
+        String direccionPuntoVenta = body.get("direccion");
+        String categoriaProductos = body.get("categoria_productos");
 
         if (nombreNegocio == null || nombreNegocio.isBlank() || nit == null || nit.isBlank()
                 || correo == null || password == null || contacto == null || contacto.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Faltan campos obligatorios"));
+        }
+        if (direccionPuntoVenta == null || direccionPuntoVenta.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "La dirección del punto de venta es obligatoria"));
+        }
+        if (categoriaProductos == null || categoriaProductos.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Debes indicar la categoría de productos a vender"));
         }
         if (!EMAIL_PATTERN.matcher(correo).matches()) {
             return ResponseEntity.badRequest().body(Map.of("error", "El correo no tiene un formato válido"));
@@ -114,15 +123,16 @@ public class AuthController {
         usuario.setCorreoUsuario(correo);
         usuario.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
         usuario.setTelefono(telefono);
-        usuario.setDireccionUsuario(body.get("direccion"));
+        usuario.setDireccionUsuario(direccionPuntoVenta);
         usuario.setFechaRegistro(LocalDateTime.now());
         usuario.setRol("ALIADO");
         usuario.setNombreNegocio(nombreNegocio);
         usuario.setNit(nit);
         usuario.setPersonaContacto(contacto);
+        usuario.setCategoriaProductos(categoriaProductos);
         usuarioRepository.save(usuario);
 
-        log.info("Nuevo aliado registrado: {} ({}, NIT: {})", nombreNegocio, correo, nit);
+        log.info("Nuevo aliado registrado: {} ({}, NIT: {}, categoría: {})", nombreNegocio, correo, nit, categoriaProductos);
         return ResponseEntity.ok(Map.of("mensaje", "Aliado registrado correctamente", "id", usuario.getIdUsuario()));
     }
 
@@ -152,9 +162,21 @@ public class AuthController {
             return ResponseEntity.status(401).body(Map.of("error", "Correo o contraseña incorrectos"));
         }
 
-        if ("admin@lumura.com".equals(usuario.getCorreoUsuario()) && !"ADMIN".equals(usuario.getRol())) {
-            usuario.setRol("ADMIN");
+        // Validación de bloqueo: si venció, se desbloquea automáticamente en el siguiente intento
+        if (Boolean.TRUE.equals(usuario.getBloqueado())) {
+            if (usuario.getBloqueoHasta() != null && usuario.getBloqueoHasta().isAfter(LocalDateTime.now())) {
+                log.warn("Login bloqueado - cuenta suspendida: {} (hasta {})", correo, usuario.getBloqueoHasta());
+                return ResponseEntity.status(403).body(Map.of(
+                        "error", "Cuenta bloqueada. Motivo: " + (usuario.getMotivoBloqueo() == null ? "No especificado" : usuario.getMotivoBloqueo())
+                                + ". Vuelve a intentarlo después del " + usuario.getBloqueoHasta()
+                ));
+            }
+            // bloqueo vencido → limpiar
+            usuario.setBloqueado(false);
+            usuario.setMotivoBloqueo(null);
+            usuario.setBloqueoHasta(null);
             usuarioRepository.save(usuario);
+            log.info("Bloqueo vencido, cuenta {} desbloqueada", correo);
         }
 
         log.info("Login exitoso: {} ({})", usuario.getNombreUsuario(), correo);
@@ -185,7 +207,7 @@ public class AuthController {
         Optional<Usuario> usuario = usuarioRepository.findById(userId);
         if (usuario.isEmpty()) return ResponseEntity.notFound().build();
 
-        if ("admin@lumura.com".equals(usuario.get().getCorreoUsuario())) {
+        if ("ADMIN".equals(usuario.get().getRol())) {
             return ResponseEntity.badRequest().body(Map.of("error", "No se puede eliminar la cuenta admin"));
         }
 
@@ -228,6 +250,74 @@ public class AuthController {
                 "direccion", usuario.getDireccionUsuario() != null ? usuario.getDireccionUsuario() : ""
             )
         ));
+    }
+
+    // Solicita un enlace de recuperación de contraseña.
+    // En modo offline (sin SMTP configurado) devuelve el enlace directamente en la
+    // respuesta para que el usuario pueda copiarlo; también se registra en el log.
+    @PostMapping("/recuperar")
+    @Transactional
+    public ResponseEntity<?> recuperar(@RequestBody Map<String, String> body) {
+        String correo = body.get("correo_usuario");
+        if (correo == null || correo.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Debes indicar el correo"));
+        }
+        if (!EMAIL_PATTERN.matcher(correo).matches()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "El correo no tiene un formato válido"));
+        }
+
+        Optional<Usuario> opt = usuarioRepository.findByCorreoUsuario(correo);
+        // No revelar si el correo existe o no (mitigación de enumeración de usuarios).
+        String token = UUID.randomUUID().toString().replace("-", "");
+        if (opt.isPresent()) {
+            Usuario usuario = opt.get();
+            usuario.setResetToken(token);
+            usuario.setResetTokenExpira(LocalDateTime.now().plusMinutes(30));
+            usuarioRepository.save(usuario);
+        }
+
+        log.info("Recuperación solicitada para {} (token: {}).", correo, token);
+        String enlace = "http://localhost:8080/reset-password?token=" + token;
+        return ResponseEntity.ok(Map.of(
+            "mensaje", "Si el correo está registrado, recibirás un enlace para restablecer la contraseña",
+            "enlace_demo", enlace
+        ));
+    }
+
+    // Confirma el restablecimiento con el token recibido por correo.
+    @PostMapping("/reset-password")
+    @Transactional
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> body) {
+        String token = body.get("token");
+        String nuevaPassword = body.get("nueva_password");
+        String confirmarPassword = body.get("confirmar_password");
+
+        if (token == null || token.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Token no válido"));
+        }
+        if (nuevaPassword == null || nuevaPassword.length() < 6) {
+            return ResponseEntity.badRequest().body(Map.of("error", "La contraseña debe tener al menos 6 caracteres"));
+        }
+        if (confirmarPassword == null || !nuevaPassword.equals(confirmarPassword)) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Las contraseñas no coinciden"));
+        }
+
+        Optional<Usuario> opt = usuarioRepository.findByResetToken(token);
+        if (opt.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Token no válido o ya utilizado"));
+        }
+        Usuario usuario = opt.get();
+        if (usuario.getResetTokenExpira() == null || usuario.getResetTokenExpira().isBefore(LocalDateTime.now())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "El enlace de recuperación ha expirado"));
+        }
+
+        usuario.setPasswordHash(BCrypt.hashpw(nuevaPassword, BCrypt.gensalt()));
+        usuario.setResetToken(null);
+        usuario.setResetTokenExpira(null);
+        usuarioRepository.save(usuario);
+
+        log.info("Contraseña restablecida: userId={}", usuario.getIdUsuario());
+        return ResponseEntity.ok(Map.of("mensaje", "Contraseña actualizada correctamente"));
     }
 
 }

@@ -121,6 +121,7 @@ class AuthControllerTest {
             "telefono", "3001234567",
             "persona_contacto", "Carlos",
             "correo_usuario", "aliado@negocio.com",
+            "categoria_productos", "Vestidos",
             "password", "secreto123",
             "confirmar_password", "secreto123",
             "direccion", "Calle 45 #12-34"
@@ -138,6 +139,56 @@ class AuthControllerTest {
         ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
         verify(usuarioRepository).save(captor.capture());
         assertEquals("ALIADO", captor.getValue().getRol());
+    }
+
+    @Test
+    void registerAliado_guardaCategoriaProductosYDireccionPuntoVenta() {
+        Map<String, String> body = Map.of(
+            "nombre_negocio", "Zapatos del Valle",
+            "nit", "890999111-2",
+            "telefono", "3115557788",
+            "persona_contacto", "Marcela",
+            "correo_usuario", "zapatos@valle.com",
+            "categoria_productos", "Zapatos",
+            "direccion", "Av Siempre Viva 123",
+            "password", "secreto123",
+            "confirmar_password", "secreto123"
+        );
+        when(usuarioRepository.findByCorreoUsuario("zapatos@valle.com")).thenReturn(Optional.empty());
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> {
+            Usuario u = inv.getArgument(0);
+            u.setIdUsuario(2);
+            return u;
+        });
+
+        ResponseEntity<?> res = authController.registerAliado(body);
+
+        assertEquals(200, res.getStatusCode().value());
+        ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
+        verify(usuarioRepository).save(captor.capture());
+        assertEquals("Zapatos", captor.getValue().getCategoriaProductos());
+        assertEquals("Av Siempre Viva 123", captor.getValue().getDireccionUsuario());
+    }
+
+    @Test
+    void registerAliado_sinCategoriaNiDireccion_retorna400() {
+        Map<String, String> base = new java.util.HashMap<>(Map.of(
+            "nombre_negocio", "Moda Express",
+            "nit", "900123456-7",
+            "persona_contacto", "Carlos",
+            "correo_usuario", "aliado2@negocio.com",
+            "password", "secreto123",
+            "confirmar_password", "secreto123"
+        ));
+
+        // Sin dirección y sin categoría
+        assertEquals(400, authController.registerAliado(base).getStatusCode().value());
+
+        // Con dirección pero sin categoría
+        base.put("direccion", "Calle 1");
+        assertEquals(400, authController.registerAliado(base).getStatusCode().value());
+
+        verify(usuarioRepository, never()).save(any());
     }
 
     @Test
@@ -186,9 +237,157 @@ class AuthControllerTest {
     }
 
     @Test
+    void login_cuentaBloqueada_retorna403ConMotivo() {
+        Usuario usuario = new Usuario();
+        usuario.setIdUsuario(1);
+        usuario.setNombreUsuario("Ana");
+        usuario.setCorreoUsuario("ana@correo.com");
+        usuario.setPasswordHash(BCrypt.hashpw("secreto123", BCrypt.gensalt()));
+        usuario.setRol("USER");
+        usuario.setBloqueado(true);
+        usuario.setMotivoBloqueo("Fraude");
+        usuario.setBloqueoHasta(java.time.LocalDateTime.now().plusDays(7));
+
+        when(usuarioRepository.findByCorreoUsuario("ana@correo.com")).thenReturn(Optional.of(usuario));
+
+        ResponseEntity<?> res = authController.login(Map.of("correo_usuario", "ana@correo.com", "password", "secreto123"));
+
+        assertEquals(403, res.getStatusCode().value());
+        Map<?, ?> body = (Map<?, ?>) res.getBody();
+        assertTrue(((String) body.get("error")).contains("Cuenta bloqueada"));
+        assertTrue(((String) body.get("error")).contains("Fraude"));
+        verify(jwtUtil, never()).generateToken(any(), anyString(), anyString());
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    void login_bloqueoVencido_desbloqueaYPermiteEntrar() {
+        Usuario usuario = new Usuario();
+        usuario.setIdUsuario(1);
+        usuario.setNombreUsuario("Ana");
+        usuario.setCorreoUsuario("ana@correo.com");
+        usuario.setPasswordHash(BCrypt.hashpw("secreto123", BCrypt.gensalt()));
+        usuario.setRol("USER");
+        usuario.setBloqueado(true);
+        usuario.setMotivoBloqueo("Fraude");
+        usuario.setBloqueoHasta(java.time.LocalDateTime.now().minusDays(1));
+
+        when(usuarioRepository.findByCorreoUsuario("ana@correo.com")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(jwtUtil.generateToken(1, "ana@correo.com", "USER")).thenReturn("token-jwt");
+
+        ResponseEntity<?> res = authController.login(Map.of("correo_usuario", "ana@correo.com", "password", "secreto123"));
+
+        assertEquals(200, res.getStatusCode().value());
+        assertFalse(usuario.getBloqueado());
+        assertNull(usuario.getMotivoBloqueo());
+        assertNull(usuario.getBloqueoHasta());
+        Map<?, ?> body = (Map<?, ?>) res.getBody();
+        assertEquals("token-jwt", body.get("token"));
+    }
+
+    @Test
     void login_correoInvalido_retorna400() {
         ResponseEntity<?> res = authController.login(Map.of("correo_usuario", "invalido", "password", "secreto123"));
 
         assertEquals(400, res.getStatusCode().value());
     }
+
+    @Test
+    void recuperar_usuarioExistente_generaTokenYEnlace() {
+        Usuario usuario = new Usuario();
+        usuario.setIdUsuario(1);
+        usuario.setCorreoUsuario("ana@correo.com");
+        when(usuarioRepository.findByCorreoUsuario("ana@correo.com")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ResponseEntity<?> res = authController.recuperar(Map.of("correo_usuario", "ana@correo.com"));
+
+        assertEquals(200, res.getStatusCode().value());
+        Map<?, ?> body = (Map<?, ?>) res.getBody();
+        String enlace = (String) body.get("enlace_demo");
+        assertNotNull(enlace);
+        assertTrue(enlace.startsWith("http://localhost:8080/reset-password?token="));
+        assertNotNull(usuario.getResetToken());
+        assertNotNull(usuario.getResetTokenExpira());
+    }
+
+    @Test
+    void recuperar_correoNoRegistrado_noFallaNiRevela() {
+        ResponseEntity<?> res = authController.recuperar(Map.of("correo_usuario", "nadie@correo.com"));
+
+        assertEquals(200, res.getStatusCode().value());
+        Map<?, ?> body = (Map<?, ?>) res.getBody();
+        assertTrue(((String) body.get("mensaje")).contains("Si el correo está registrado"));
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    void recuperar_correoInvalido_retorna400() {
+        ResponseEntity<?> res = authController.recuperar(Map.of("correo_usuario", "invalido"));
+        assertEquals(400, res.getStatusCode().value());
+    }
+
+    @Test
+    void resetPassword_tokenValido_cambiaPasswordYLimpiaToken() {
+        Usuario usuario = new Usuario();
+        usuario.setIdUsuario(1);
+        usuario.setCorreoUsuario("ana@correo.com");
+        usuario.setPasswordHash(BCrypt.hashpw("vieja123", BCrypt.gensalt()));
+        usuario.setResetToken("token123");
+        usuario.setResetTokenExpira(java.time.LocalDateTime.now().plusMinutes(10));
+        when(usuarioRepository.findByResetToken("token123")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ResponseEntity<?> res = authController.resetPassword(Map.of(
+                "token", "token123",
+                "nueva_password", "nuevaPass1",
+                "confirmar_password", "nuevaPass1"));
+
+        assertEquals(200, res.getStatusCode().value());
+        assertTrue(BCrypt.checkpw("nuevaPass1", usuario.getPasswordHash()));
+        assertNull(usuario.getResetToken());
+        assertNull(usuario.getResetTokenExpira());
+    }
+
+    @Test
+    void resetPassword_tokenExpirado_retorna400() {
+        Usuario usuario = new Usuario();
+        usuario.setIdUsuario(1);
+        usuario.setResetToken("token123");
+        usuario.setResetTokenExpira(java.time.LocalDateTime.now().minusMinutes(1));
+        when(usuarioRepository.findByResetToken("token123")).thenReturn(Optional.of(usuario));
+
+        ResponseEntity<?> res = authController.resetPassword(Map.of(
+                "token", "token123",
+                "nueva_password", "nuevaPass1",
+                "confirmar_password", "nuevaPass1"));
+
+        assertEquals(400, res.getStatusCode().value());
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    void resetPassword_tokenInexistente_retorna400() {
+        when(usuarioRepository.findByResetToken("no-existe")).thenReturn(Optional.empty());
+
+        ResponseEntity<?> res = authController.resetPassword(Map.of(
+                "token", "no-existe",
+                "nueva_password", "nuevaPass1",
+                "confirmar_password", "nuevaPass1"));
+
+        assertEquals(400, res.getStatusCode().value());
+    }
+
+    @Test
+    void resetPassword_confirmacionNoCoincide_retorna400() {
+        ResponseEntity<?> res = authController.resetPassword(Map.of(
+                "token", "token123",
+                "nueva_password", "nuevaPass1",
+                "confirmar_password", "otra"));
+
+        assertEquals(400, res.getStatusCode().value());
+        verify(usuarioRepository, never()).findByResetToken(anyString());
+    }
+
 }

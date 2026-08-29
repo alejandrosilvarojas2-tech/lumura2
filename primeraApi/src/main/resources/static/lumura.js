@@ -12,13 +12,38 @@ function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+async function parseRespuesta(res) {
+  const texto = await res.text();
+  if (!texto) return null;
+  try {
+    return JSON.parse(texto);
+  } catch {
+    return texto;
+  }
+}
+
 const api = {
   async request(method, path, body) {
-    const headers = { 'Content-Type': 'application/json' };
+    const headers = {};
+    if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (state.token) headers['Authorization'] = `Bearer ${state.token}`;
-    const res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Error del servidor');
+    let res;
+    try {
+      res = await fetch(path, { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined });
+    } catch {
+      throw new Error('No hay conexión con el servidor');
+    }
+    const data = await parseRespuesta(res);
+    if (res.status === 401 && state.token) {
+      cerrarSesion();
+      mostrarMensaje('Tu sesión expiró. Inicia sesión de nuevo', 'error');
+      throw new Error('Sesión expirada');
+    }
+    if (!res.ok) {
+      const msg = (data && typeof data === 'object' && (data.error || data.message))
+        || `Error del servidor (${res.status})`;
+      throw new Error(msg);
+    }
     return data;
   },
   get: (path) => api.request('GET', path),
@@ -51,12 +76,56 @@ async function handleLogin(e) {
     localStorage.setItem('lumura_token', data.token);
     localStorage.setItem('lumura_user', JSON.stringify(data.usuario));
     actualizarUI();
+    sincronizarFavoritos();
     mostrarMensaje('Bienvenido, ' + data.usuario.nombre, 'success');
     if (data.usuario.rol === 'ADMIN') {
       showScreen('admin-dash');
     } else {
       document.getElementById('modal-politicas').style.display = 'flex';
     }
+  } catch (err) {
+    mostrarMensaje(err.message, 'error');
+  }
+}
+
+async function solicitarRecuperacion() {
+  const correo = document.getElementById('recuperar-email').value.trim();
+  if (!correo) return mostrarMensaje('Ingresa tu correo', 'error');
+  try {
+    const data = await api.post('/api/auth/recuperar', { correo_usuario: correo });
+    mostrarMensaje(data.mensaje, 'success');
+    const enlaceEl = document.getElementById('recuperar-enlace');
+    if (enlaceEl && data.enlace_demo) {
+      enlaceEl.value = data.enlace_demo;
+      window._resetToken = data.enlace_demo.split('token=')[1];
+    }
+  } catch (err) {
+    mostrarMensaje(err.message, 'error');
+  }
+}
+
+function usarEnlaceRecuperacion() {
+  if (!window._resetToken) return mostrarMensaje('Primero solicita el enlace de recuperación', 'error');
+  showScreen('reset-password');
+}
+
+async function confirmarReset() {
+  const nueva = document.getElementById('reset-pass').value;
+  const confirmar = document.getElementById('reset-pass2').value;
+  if (!window._resetToken) return mostrarMensaje('Token no disponible', 'error');
+  if (!nueva || nueva.length < 6) return mostrarMensaje('La contraseña debe tener al menos 6 caracteres', 'error');
+  if (nueva !== confirmar) return mostrarMensaje('Las contraseñas no coinciden', 'error');
+  try {
+    const data = await api.post('/api/auth/reset-password', {
+      token: window._resetToken,
+      nueva_password: nueva,
+      confirmar_password: confirmar,
+    });
+    mostrarMensaje(data.mensaje, 'success');
+    window._resetToken = null;
+    document.getElementById('reset-pass').value = '';
+    document.getElementById('reset-pass2').value = '';
+    showScreen('login');
   } catch (err) {
     mostrarMensaje(err.message, 'error');
   }
@@ -73,13 +142,41 @@ function rechazarPoliticas() {
   mostrarMensaje('Debes aceptar las políticas para usar LUMURA', 'error');
 }
 
+function accederAliado() {
+  const correo = document.getElementById('aliado-login-email').value.trim();
+  const password = document.getElementById('aliado-login-pass').value;
+  if (!correo || !password) return mostrarMensaje('Ingresa tu correo y contraseña', 'error');
+  api.post('/api/auth/login', { correo_usuario: correo, password })
+    .then(function(data) {
+      const rol = data.usuario?.rol;
+      if (rol !== 'ALIADO') {
+        mostrarMensaje('No eres aliado', 'error');
+        return;
+      }
+      state.token = data.token;
+      state.user = data.usuario;
+      localStorage.setItem('lumura_token', data.token);
+      localStorage.setItem('lumura_user', JSON.stringify(data.usuario));
+      actualizarUI();
+      sincronizarFavoritos();
+      mostrarMensaje('Bienvenido, ' + data.usuario.nombre, 'success');
+      showScreen('aliado-add');
+    })
+    .catch(function(err) {
+      mostrarMensaje(err.message || 'Credenciales inválidas', 'error');
+    });
+}
+
+function abrirRegistroAliado() {
+  const emailInput = document.getElementById('aliado-email');
+  if (emailInput && state.user?.correo) emailInput.value = state.user.correo;
+  showScreen('register-aliado');
+  mostrarMensaje('Completa tu registro para vender como aliado', 'info');
+}
+
 function postLoginRedirect(tipo) {
   if (tipo === 'aliado') {
-    if (state.user?.rol === 'ALIADO') {
-      showScreen('aliado-dash');
-    } else {
-      mostrarMensaje('Tu cuenta no tiene acceso de aliado', 'error');
-    }
+    showScreen('aliado-login');
   } else {
     showScreen('home');
   }
@@ -118,12 +215,15 @@ async function handleRegisterAliado(e) {
   const tel = document.getElementById('aliado-tel').value.trim();
   const contacto = document.getElementById('aliado-contacto').value.trim();
   const email = document.getElementById('aliado-email').value.trim();
+  const categoria = document.getElementById('aliado-categoria').value;
   const dir = document.getElementById('aliado-direccion').value.trim();
   const pass = document.getElementById('aliado-pass').value;
   const pass2 = document.getElementById('aliado-pass2').value;
   if (!nombreNegocio || !nit || !contacto || !email || !pass) {
     return mostrarMensaje('Completa los campos obligatorios', 'error');
   }
+  if (!categoria) return mostrarMensaje('Selecciona la categoría de productos a vender', 'error');
+  if (!dir) return mostrarMensaje('Ingresa la dirección del punto de venta', 'error');
   if (pass !== pass2) return mostrarMensaje('Las contraseñas no coinciden', 'error');
   try {
     await api.post('/api/auth/register-aliado', {
@@ -133,6 +233,7 @@ async function handleRegisterAliado(e) {
       persona_contacto: contacto,
       correo_usuario: email,
       direccion: dir,
+      categoria_productos: categoria,
       password: pass,
       confirmar_password: pass2,
     });
@@ -186,13 +287,91 @@ async function subirImagenAliado() {
     headers: { 'Authorization': 'Bearer ' + state.token },
     body: formData,
   });
+  const data = await parseRespuesta(res);
   if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.error || 'Error al subir imagen');
+    throw new Error((data && typeof data === 'object' && data.error) || `Error al subir imagen (${res.status})`);
   }
-  const data = await res.json();
-  return data.url;
+  return data && data.url;
 }
+
+function handleLicenciaImgSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    mostrarMensaje('La imagen no puede superar 5MB', 'error');
+    input.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const prev = document.getElementById('aliado-licencia-img-preview');
+    prev.src = e.target.result;
+    document.getElementById('aliado-licencia-preview').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+  document.getElementById('aliado-licencia-msg').textContent = '';
+}
+
+async function cargarLicenciaAliado() {
+  const msg = document.getElementById('aliado-licencia-msg');
+  const actual = document.getElementById('aliado-licencia-actual');
+  const prevBlock = document.getElementById('aliado-licencia-preview');
+  const input = document.getElementById('aliado-licencia-img');
+  if (msg) msg.textContent = '';
+  if (prevBlock) prevBlock.style.display = 'none';
+  if (input) input.value = '';
+  try {
+    const res = await api.get('/api/aliado/licencia');
+    const licencia = res?.licencia || '';
+    if (licencia) {
+      document.getElementById('aliado-licencia-img-actual').src = licencia;
+      actual.style.display = 'block';
+    } else {
+      actual.style.display = 'none';
+    }
+  } catch (e) {
+    if (actual) actual.style.display = 'none';
+  }
+}
+
+async function guardarLicenciaAliado() {
+  const input = document.getElementById('aliado-licencia-img');
+  if (!input.files[0]) {
+    mostrarMensaje('Selecciona una imagen de tu licencia de distribuidor', 'error');
+    return;
+  }
+  let url;
+  try {
+    mostrarMensaje('Subiendo imagen...', 'info');
+    const formData = new FormData();
+    formData.append('file', input.files[0]);
+    const res = await fetch('/api/admin/upload', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + state.token },
+      body: formData,
+    });
+    const data = await parseRespuesta(res);
+    if (!res.ok) throw new Error((data && data.error) || `Error al subir imagen (${res.status})`);
+    url = data.url;
+  } catch (err) {
+    return mostrarMensaje(err.message, 'error');
+  }
+  try {
+    const res = await api.put('/api/aliado/licencia', { licencia: url });
+    mostrarMensaje('Licencia de distribuidor guardada correctamente', 'éxito');
+    document.getElementById('aliado-licencia-msg').textContent = 'Licencia guardada correctamente';
+    document.getElementById('aliado-licencia-img-actual').src = url;
+    document.getElementById('aliado-licencia-actual').style.display = 'block';
+    document.getElementById('aliado-licencia-preview').style.display = 'none';
+  } catch (err) {
+    mostrarMensaje(err.message || 'No se pudo guardar la licencia', 'error');
+  }
+}
+
+function volverPanelLicencia() {
+  showScreen('aliado-dash');
+}
+
 
 async function guardarArticuloAliado(e) {
   e.preventDefault();
@@ -224,7 +403,7 @@ async function publicarArticuloAliado() {
   const stock = parseInt(document.getElementById('aliado-art-stock').value) || 0;
 
   try {
-    const producto = await api.post('/api/admin/productos', {
+    const producto = await api.post('/api/aliado/productos', {
       articulo: nombre,
       precio: precio,
       categoria: document.getElementById('aliado-art-categoria').value.trim(),
@@ -275,13 +454,16 @@ function actualizarContadorArtDesc(textarea) {
   if (counter) counter.textContent = textarea.value.length;
 }
 
+let aliadoProductosCache = [];
+
 async function cargarAliadoStock() {
   try {
     const productos = await api.get('/api/aliado/productos');
+    aliadoProductosCache = productos;
     const tbody = document.getElementById('aliado-stock-body');
     if (!tbody) return;
     if (productos.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;">No hay productos</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;">No hay productos</td></tr>';
       return;
     }
     tbody.innerHTML = productos.map(p => {
@@ -298,6 +480,10 @@ async function cargarAliadoStock() {
         + '<button class="btn-sm" style="padding:4px 10px;font-size:12px;background:var(--accent);color:white;" onclick="agregarStockAliado(' + p.id_catalogo + ', ' + p.stock + ')">Agregar</button>'
         + '</td>'
         + '<td>' + estado + '</td>'
+        + '<td style="display:flex;gap:6px;">'
+        + '<button class="btn-sm" style="padding:4px 10px;font-size:12px;" onclick="abrirEditarProductoAliado(' + p.id_catalogo + ')">Editar</button>'
+        + '<button class="btn-sm" style="padding:4px 10px;font-size:12px;background:#dc3545;color:white;" onclick="confirmarEliminarProductoAliado(' + p.id_catalogo + ')">Eliminar</button>'
+        + '</td>'
         + '</tr>';
     }).join('');
   } catch (err) {
@@ -320,7 +506,7 @@ async function agregarStockAliado(id, stockActual) {
     return mostrarMensaje('El stock total no puede superar 10,000 unidades', 'error');
   }
   try {
-    await api.put('/api/admin/productos/' + id, { stock: nuevoStock });
+    await api.put('/api/aliado/productos/' + id, { stock: nuevoStock });
     mostrarMensaje('+' + cantidad + ' unidades agregadas. Stock total: ' + nuevoStock, 'success');
     input.value = 0;
     cargarAliadoStock();
@@ -367,8 +553,88 @@ async function guardarDescripcionAliado(id) {
     return mostrarMensaje('La descripción no puede superar 500 caracteres', 'error');
   }
   try {
-    await api.put('/api/admin/productos/' + id, { descripcion: texto });
+    await api.put('/api/aliado/productos/' + id, { descripcion: texto });
     mostrarMensaje('Descripción actualizada', 'success');
+  } catch (err) {
+    mostrarMensaje(err.message, 'error');
+  }
+}
+
+function confirmarEliminarProductoAliado(id) {
+  const p = aliadoProductosCache.find(x => x.id_catalogo === id);
+  const nombre = p ? escHtml(p.articulo) : '#' + id;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = '<div class="modal-content" style="max-width:380px;text-align:center;">'
+    + '<h3 style="margin-bottom:8px;">Eliminar producto</h3>'
+    + '<p style="color:var(--gray);margin-bottom:20px;">¿Eliminar <strong>' + nombre + '</strong>? Esta acción no se puede deshacer.</p>'
+    + '<div style="display:flex;gap:10px;justify-content:center;">'
+    + '<button class="btn-primary" style="width:auto;padding:10px 28px;background:#dc3545;" onclick="eliminarProductoAliado(' + id + ')">Sí, eliminar</button>'
+    + '<button class="btn-secondary" style="width:auto;padding:10px 28px;" onclick="this.closest(\'.modal-overlay\').remove()">Cancelar</button>'
+    + '</div></div>';
+  document.body.appendChild(overlay);
+}
+
+async function eliminarProductoAliado(id) {
+  document.querySelector('.modal-overlay')?.remove();
+  try {
+    await api.delete('/api/aliado/productos/' + id);
+    mostrarMensaje('Producto eliminado correctamente', 'success');
+    cargarAliadoStock();
+  } catch (err) {
+    mostrarMensaje(err.message, 'error');
+  }
+}
+
+function abrirEditarProductoAliado(id) {
+  const p = aliadoProductosCache.find(x => x.id_catalogo === id);
+  if (!p) return mostrarMensaje('No se encontró el producto', 'error');
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.style.overflowY = 'auto';
+  overlay.innerHTML = '<div class="modal-content" style="max-width:480px;margin:40px auto;">'
+    + '<h3 style="margin-bottom:16px;">Editar producto</h3>'
+    + '<div class="form-group"><label>Nombre</label><input id="edit-art-nombre" value="' + escHtml(p.articulo) + '" maxlength="150" style="width:100%;padding:10px;border:1.5px solid var(--light);border-radius:8px;"></div>'
+    + '<div style="display:flex;gap:12px;">'
+    + '<div class="form-group" style="flex:1;"><label>Precio (COP)</label><input type="number" id="edit-art-precio" min="0" value="' + Number(p.precio) + '" style="width:100%;padding:10px;border:1.5px solid var(--light);border-radius:8px;"></div>'
+    + '<div class="form-group" style="flex:1;"><label>Precio con descuento (opcional)</label><input type="number" id="edit-art-descuento" min="0" value="' + (p.precio_descuento != null ? Number(p.precio_descuento) : '') + '" placeholder="Sin descuento" style="width:100%;padding:10px;border:1.5px solid var(--light);border-radius:8px;"></div>'
+    + '</div>'
+    + '<div style="display:flex;gap:12px;">'
+    + '<div class="form-group" style="flex:1;"><label>Categoría</label><input id="edit-art-categoria" value="' + escHtml(p.categoria || '') + '" style="width:100%;padding:10px;border:1.5px solid var(--light);border-radius:8px;"></div>'
+    + '<div class="form-group" style="flex:1;"><label>Talla</label><input id="edit-art-talla" value="' + escHtml(p.talla || '') + '" style="width:100%;padding:10px;border:1.5px solid var(--light);border-radius:8px;"></div>'
+    + '<div class="form-group" style="flex:1;"><label>Color</label><input id="edit-art-color" value="' + escHtml(p.color || '') + '" style="width:100%;padding:10px;border:1.5px solid var(--light);border-radius:8px;"></div>'
+    + '</div>'
+    + '<div class="form-group"><label>Stock (0 - 10.000)</label><input type="number" id="edit-art-stock" min="0" max="10000" value="' + (p.stock || 0) + '" style="width:100%;padding:10px;border:1.5px solid var(--light);border-radius:8px;"></div>'
+    + '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">'
+    + '<button class="btn-secondary" style="width:auto;padding:10px 24px;" onclick="this.closest(\'.modal-overlay\').remove()">Cancelar</button>'
+    + '<button class="btn-primary" style="width:auto;padding:10px 24px;" onclick="guardarEdicionProductoAliado(' + id + ')">Guardar cambios</button>'
+    + '</div></div>';
+  document.body.appendChild(overlay);
+}
+
+async function guardarEdicionProductoAliado(id) {
+  const nombre = document.getElementById('edit-art-nombre').value.trim();
+  const precio = parseFloat(document.getElementById('edit-art-precio').value);
+  const descuento = document.getElementById('edit-art-descuento').value;
+  if (!nombre) return mostrarMensaje('El nombre es obligatorio', 'error');
+  if (isNaN(precio) || precio <= 0) return mostrarMensaje('Ingresa un precio válido', 'error');
+  if (descuento !== '' && (isNaN(parseFloat(descuento)) || parseFloat(descuento) <= 0)) {
+    return mostrarMensaje('Descuento inválido', 'error');
+  }
+  const body = {
+    articulo: nombre,
+    precio: precio,
+    categoria: document.getElementById('edit-art-categoria').value.trim(),
+    talla: document.getElementById('edit-art-talla').value.trim(),
+    color: document.getElementById('edit-art-color').value.trim(),
+    stock: parseInt(document.getElementById('edit-art-stock').value) || 0,
+  };
+  if (descuento !== '') body.precio_descuento = descuento;
+  try {
+    await api.put('/api/aliado/productos/' + id, body);
+    document.querySelector('.modal-overlay')?.remove();
+    mostrarMensaje('Producto actualizado correctamente', 'success');
+    cargarAliadoStock();
   } catch (err) {
     mostrarMensaje(err.message, 'error');
   }
@@ -377,8 +643,10 @@ async function guardarDescripcionAliado(id) {
 function cerrarSesion() {
   state.token = null;
   state.user = null;
+  state.favoritos = [];
   localStorage.removeItem('lumura_token');
   localStorage.removeItem('lumura_user');
+  localStorage.removeItem('lumura_favs');
   actualizarUI();
   mostrarMensaje('Sesión cerrada', 'info');
   showScreen('login');
@@ -564,7 +832,8 @@ function toggleFavorito() {
   const prod = state.productoActual;
   if (!prod) return mostrarMensaje('Selecciona un producto primero', 'error');
   const idx = state.favoritos.indexOf(prod.id_catalogo);
-  if (idx === -1) {
+  const agregando = idx === -1;
+  if (agregando) {
     state.favoritos.push(prod.id_catalogo);
     mostrarMensaje(prod.articulo + ' agregado a favoritos <img src="images/heart.svg" class="icon" alt="" style="vertical-align:middle">', 'success');
   } else {
@@ -572,8 +841,33 @@ function toggleFavorito() {
     mostrarMensaje(prod.articulo + ' eliminado de favoritos', 'info');
   }
   localStorage.setItem('lumura_favs', JSON.stringify(state.favoritos));
+  // Con sesión activa el favorito vive en el servidor; localStorage queda como respaldo para invitados
+  if (state.token) {
+    const idCat = prod.id_catalogo;
+    const llamada = agregando
+      ? api.post('/api/favoritos', { id_catalogo: idCat })
+      : api.delete('/api/favoritos/' + idCat);
+    llamada.catch(() => mostrarMensaje('No se pudo sincronizar tu favorito con el servidor', 'error'));
+  }
   const el = document.getElementById('prod-detail-fav');
-  if (el) el.innerHTML = idx === -1 ? '<img src="images/heart.svg" class="icon" alt="" style="vertical-align:middle">' : '<img src="images/heart-outline.svg" class="icon" alt="" style="vertical-align:middle">';
+  if (el) el.innerHTML = agregando ? '<img src="images/heart.svg" class="icon" alt="" style="vertical-align:middle">' : '<img src="images/heart-outline.svg" class="icon" alt="" style="vertical-align:middle">';
+}
+
+// Al iniciar sesión: sube favoritos guardados como invitado y trae la lista del servidor
+async function sincronizarFavoritos() {
+  if (!state.token) return;
+  try {
+    let remotos = await api.get('/api/favoritos');
+    if (!Array.isArray(remotos)) remotos = [];
+    const locales = JSON.parse(localStorage.getItem('lumura_favs') || '[]')
+      .filter(id => !remotos.includes(id));
+    for (const id of locales) {
+      try { await api.post('/api/favoritos', { id_catalogo: id }); } catch (e) { /* producto pudo dejar de existir */ }
+    }
+    if (locales.length) remotos = await api.get('/api/favoritos');
+    state.favoritos = remotos;
+    localStorage.setItem('lumura_favs', JSON.stringify(state.favoritos));
+  } catch (err) { /* sin conexión: se conservan los locales */ }
 }
 
 async function agregarAlCarrito(idProducto) {
@@ -581,6 +875,7 @@ async function agregarAlCarrito(idProducto) {
   const prod = state.productos.find(p => p.id_catalogo === idProducto) || await api.get('/api/productos/' + idProducto);
   try {
     await api.post('/api/carrito', {
+      id_catalogo: prod.id_catalogo,
       articulo: prod.articulo,
       talla: prod.talla || 'Única',
       color: prod.color || 'Único',
@@ -623,13 +918,23 @@ function renderCarrito() {
     const cant = Number(item.cantidad) || 1;
     const subtotal = precio * cant;
     total += subtotal;
-    const prod = state.productos && state.productos.find(p => p.articulo === item.articulo);
+    const prod = state.productos && item.id_catalogo != null
+      ? state.productos.find(p => p.id_catalogo === item.id_catalogo)
+      : state.productos && state.productos.find(p => p.articulo === item.articulo);
     const imgSrc = prod ? (prod.imagen_url || imagenesProducto[prod.id_catalogo] || 'images/tshirt.svg') : 'images/tshirt.svg';
+    const vendedorHtml = item.vendedor_nombre ? (
+      '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #e5e7eb;display:flex;flex-direction:column;gap:3px;">' +
+        '<div class="sub" style="font-weight:700;color:#c73652;">Vendedor: ' + escHtml(item.vendedor_nombre) + (item.vendedor_negocio && item.vendedor_negocio !== item.vendedor_nombre ? ' · ' + escHtml(item.vendedor_negocio) : '') + '</div>' +
+        '<div class="sub">Correo: ' + escHtml(item.vendedor_correo || '-') + '</div>' +
+        '<div class="sub">Teléfono: ' + escHtml(item.vendedor_telefono || '-') + '</div>' +
+      '</div>'
+    ) : '';
     return '<div class="cart-item">' +
       '<div class="icon-box" style="background:linear-gradient(135deg,#fce4ec,#f8bbd9);"><img src="' + imgSrc + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:8px;"></div>' +
       '<div class="detail">' +
       '<div class="name">' + escHtml(item.articulo) + '</div>' +
       '<div class="sub">Talla: ' + escHtml(item.talla || 'Única') + ' · Color: ' + escHtml(item.color || 'Único') + '</div>' +
+      vendedorHtml +
       '<div class="qty-ctrl"><button onclick="cambiarCantidad(' + item.id_carrito + ',-1)">−</button>' +
       '<span style="font-size:14px;font-weight:600;">' + cant + '</span>' +
       '<button onclick="cambiarCantidad(' + item.id_carrito + ',1)">+</button></div>' +
@@ -659,14 +964,20 @@ async function cambiarCantidad(idCarrito, delta) {
 async function cargarUsuariosAdmin() {
   try {
     const usuarios = await api.get('/api/admin/usuarios');
+    window.__usuariosAdmin = usuarios;
     const tbody = document.getElementById('admin-users-body');
     if (!tbody) return;
     if (usuarios.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;">No hay usuarios</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;">No hay usuarios</td></tr>';
       return;
     }
     tbody.innerHTML = usuarios.map(u => {
-      const isAdmin = u.correo_usuario === 'admin@lumura.com';
+      const isAdmin = u.rol === 'ADMIN';
+      const bloqueado = !!u.bloqueado;
+      const estadoHasta = u.bloqueo_hasta ? ' hasta ' + new Date(u.bloqueo_hasta).toLocaleDateString('es-CO') : '';
+      const estadoHtml = bloqueado
+        ? '<span class="badge badge-orange">Bloqueado' + estadoHasta + '</span>'
+        : '<span class="badge badge-green">Activo</span>';
       return '<tr>'
         + '<td>' + u.id_usuario + '</td>'
         + '<td style="font-weight:600;">' + escHtml(u.nombre_usuario) + '</td>'
@@ -674,15 +985,163 @@ async function cargarUsuariosAdmin() {
         + '<td>' + escHtml(u.telefono || '-') + '</td>'
         + '<td><span class="badge ' + (isAdmin ? 'badge-green' : 'badge-blue') + '">' + u.rol + '</span></td>'
         + '<td>' + (u.fecha_registro ? new Date(u.fecha_registro).toLocaleDateString('es-CO') : '-') + '</td>'
-        + '<td>' + (isAdmin
+        + '<td>' + estadoHtml + '</td>'
+        + '<td style="white-space:nowrap;"><button class="btn-secondary-sm" onclick="verPerfilUsuario(' + u.id_usuario + ')">Ver</button> '
+        + (isAdmin
             ? '<span style="color:var(--gray);font-size:12px;">Protegido</span>'
-            : '<button class="btn-danger-sm" onclick="eliminarUsuarioAdmin(' + u.id_usuario + ')">Eliminar</button>')
+            : (bloqueado
+                ? '<button class="btn-secondary-sm" onclick="desbloquearUsuario(' + u.id_usuario + ')">Desbloquear</button> '
+                : '<button class="btn-block-sm" onclick="abrirModalBloqueo(' + u.id_usuario + ')">Bloquear</button> ')
+                + '<button class="btn-danger-sm" onclick="eliminarUsuarioAdmin(' + u.id_usuario + ')">Eliminar</button>')
         + '</td>'
         + '</tr>';
     }).join('');
   } catch (err) {
     mostrarMensaje('Error al cargar usuarios', 'error');
   }
+}
+
+let bloqueoUsuarioActual = null;
+
+function abrirModalBloqueo(id) {
+  const usuarios = window.__usuariosAdmin || [];
+  const u = usuarios.find(x => x.id_usuario === id);
+  if (!u) return;
+  bloqueoUsuarioActual = u;
+  document.getElementById('bloqueo-usuario-id').value = u.id_usuario;
+  document.getElementById('bloqueo-usuario-nombre').textContent = u.nombre_usuario + ' (' + u.correo_usuario + ')';
+  document.getElementById('bloqueo-motivo').value = '';
+  document.getElementById('bloqueo-dias').value = '';
+  document.getElementById('modal-bloqueo-usuario').style.display = 'flex';
+}
+
+function cerrarModalBloqueo() {
+  document.getElementById('modal-bloqueo-usuario').style.display = 'none';
+  bloqueoUsuarioActual = null;
+}
+
+function abrirModalBloqueoDesdePerfil(id) {
+  cerrarModalPerfil();
+  abrirModalBloqueo(id);
+}
+
+async function desbloquearYcerrarPerfil(id) {
+  try {
+    const res = await api.put('/api/admin/usuarios/' + id + '/desbloquear');
+    cerrarModalPerfil();
+    mostrarMensaje(res.mensaje || 'Usuario desbloqueado correctamente', 'success');
+    cargarUsuariosAdmin();
+  } catch (err) {
+    mostrarMensaje(err.message, 'error');
+  }
+}
+
+async function confirmarBloqueo() {
+  if (!bloqueoUsuarioActual) return;
+  const motivo = document.getElementById('bloqueo-motivo').value.trim();
+  const dias = document.getElementById('bloqueo-dias').value;
+  if (!motivo) return mostrarMensaje('Indica el motivo del bloqueo', 'error');
+  if (!dias || parseInt(dias, 10) < 1) return mostrarMensaje('Indica una cantidad válida de días (mínimo 1)', 'error');
+  try {
+    const res = await api.put('/api/admin/usuarios/' + bloqueoUsuarioActual.id_usuario + '/bloquear', {
+      motivo: motivo,
+      dias: dias
+    });
+    cerrarModalBloqueo();
+    mostrarMensaje(res.mensaje || 'Usuario bloqueado correctamente', 'success');
+    cargarUsuariosAdmin();
+  } catch (err) {
+    mostrarMensaje(err.message, 'error');
+  }
+}
+
+async function desbloquearUsuario(id) {
+  if (!confirm('¿Desbloquear este usuario?')) return;
+  try {
+    const res = await api.put('/api/admin/usuarios/' + id + '/desbloquear');
+    mostrarMensaje(res.mensaje || 'Usuario desbloqueado correctamente', 'success');
+    cargarUsuariosAdmin();
+  } catch (err) {
+    mostrarMensaje(err.message, 'error');
+  }
+}
+
+let perfilUsuarioActual = null;
+
+function verPerfilUsuario(id) {
+  const usuarios = window.__usuariosAdmin || [];
+  const u = usuarios.find(x => x.id_usuario === id);
+  if (!u) return;
+  perfilUsuarioActual = u;
+  document.getElementById('perfil-inicial').textContent = (u.nombre_usuario || '?').charAt(0).toUpperCase();
+  document.getElementById('perfil-nombre').textContent = u.nombre_usuario || '-';
+  document.getElementById('perfil-correo').textContent = u.correo_usuario || '-';
+  document.getElementById('perfil-id').value = u.id_usuario ?? '';
+  document.getElementById('perfil-rol').value = u.rol || '-';
+  document.getElementById('perfil-telefono').value = u.telefono || '-';
+  document.getElementById('perfil-edad').value = (u.edad != null && u.edad !== '') ? u.edad : '-';
+  document.getElementById('perfil-direccion').value = u.direccion_usuario || '-';
+  document.getElementById('perfil-fecha').value = u.fecha_registro ? new Date(u.fecha_registro).toLocaleString('es-CO') : '-';
+  const bloqueAliado = document.getElementById('perfil-bloque-aliado');
+  const esAliado = u.rol === 'ALIADO';
+  bloqueAliado.style.display = esAliado ? 'block' : 'none';
+  if (esAliado) {
+    document.getElementById('perfil-negocio').value = u.nombre_negocio || '-';
+    document.getElementById('perfil-nit').value = u.nit || '-';
+    document.getElementById('perfil-contacto').value = u.persona_contacto || '-';
+    document.getElementById('perfil-categoria').value = u.categoria_productos || '-';
+    const lic = u.licencia_distribuidor;
+    document.getElementById('perfil-licencia').innerHTML = (lic && lic.trim())
+      ? '<a href="' + escHtml(lic) + '" target="_blank" rel="noopener">Ver licencia</a>'
+      : '<span style="color:var(--gray);">Sin licencia</span>';
+  }
+  const estadoBloqueo = document.getElementById('perfil-estado');
+  if (estadoBloqueo) {
+    if (u.bloqueado) {
+      const hasta = u.bloqueo_hasta ? ' · Hasta ' + new Date(u.bloqueo_hasta).toLocaleDateString('es-CO') : '';
+      estadoBloqueo.value = 'BLOQUEADO' + hasta + (u.motivo_bloqueo ? ' · Motivo: ' + u.motivo_bloqueo : '');
+    } else {
+      estadoBloqueo.value = 'ACTIVO';
+    }
+  }
+  const elimBtn = document.getElementById('perfil-eliminar-btn');
+  if (u.rol === 'ADMIN') {
+    elimBtn.style.display = 'none';
+  } else {
+    elimBtn.style.display = 'block';
+  }
+  const blockBtn = document.getElementById('perfil-bloquear-btn');
+  if (blockBtn) {
+    if (u.rol === 'ADMIN') {
+      blockBtn.style.display = 'none';
+    } else {
+      blockBtn.textContent = u.bloqueado ? 'Desbloquear' : 'Bloquear';
+      blockBtn.onclick = u.bloqueado ? () => desbloquearYcerrarPerfil(u.id_usuario) : () => abrirModalBloqueoDesdePerfil(u.id_usuario);
+      blockBtn.style.display = 'block';
+    }
+  }
+  document.getElementById('modal-perfil-usuario').style.display = 'flex';
+}
+
+function cerrarModalPerfil() {
+  document.getElementById('modal-perfil-usuario').style.display = 'none';
+}
+
+function eliminarDesdePerfil() {
+  if (!perfilUsuarioActual) return;
+  const id = perfilUsuarioActual.id_usuario;
+  if (!confirm('¿Eliminar a ' + (perfilUsuarioActual.nombre_usuario || 'este usuario') + '? Los datos asociados también se eliminarán.')) return;
+  (async () => {
+    try {
+      await api.delete('/api/admin/usuarios/' + id);
+      perfilUsuarioActual = null;
+      cerrarModalPerfil();
+      mostrarMensaje('Usuario eliminado correctamente', 'success');
+      cargarUsuariosAdmin();
+    } catch (err) {
+      mostrarMensaje(err.message, 'error');
+    }
+  })();
 }
 
 async function eliminarUsuarioAdmin(id) {
@@ -706,26 +1165,82 @@ async function eliminarDelCarrito(idCarrito) {
   }
 }
 
+function toggleDatosTarjeta() {
+  const metodo = document.getElementById('checkout-pago')?.value || '';
+  const el = document.getElementById('datos-tarjeta');
+  if (el) el.style.display = metodo.toLowerCase().includes('tarjeta') ? 'block' : 'none';
+}
+
+function renderCheckoutItems() {
+  const cont = document.getElementById('checkout-items');
+  if (!cont) return;
+  if (!state.carrito || state.carrito.length === 0) {
+    cont.innerHTML = '<div style="font-size:13px;color:var(--gray);padding:6px 0;">Tu carrito está vacío</div>';
+    return;
+  }
+  cont.innerHTML = state.carrito.map(item => {
+    const vendedorHtml = item.vendedor_nombre
+      ? '<div class="sub" style="font-weight:700;font-size:12px;color:#c73652;margin-top:2px;">Vendedor: ' + escHtml(item.vendedor_nombre)
+        + (item.vendedor_negocio && item.vendedor_negocio !== item.vendedor_nombre ? ' · ' + escHtml(item.vendedor_negocio) : '') + '</div>'
+        + (item.vendedor_correo || item.vendedor_telefono
+          ? '<div class="sub" style="font-size:11px;color:var(--gray);">'
+            + (item.vendedor_correo ? 'Correo: ' + escHtml(item.vendedor_correo) + (item.vendedor_telefono ? ' · ' : '') : '')
+            + (item.vendedor_telefono ? 'Tel: ' + escHtml(item.vendedor_telefono) : '') + '</div>'
+          : '')
+      : '';
+    return '<div style="border-bottom:1px dashed var(--light);padding:8px 0;">'
+      + '<div style="display:flex;justify-content:space-between;gap:10px;">'
+      + '<div style="font-size:13px;font-weight:600;">' + escHtml(item.articulo) + (item.talla ? ' · Talla ' + escHtml(item.talla) : '') + ' <span style="color:var(--gray);font-weight:400;">x' + item.cantidad + '</span></div>'
+      + '<div style="font-size:13px;font-weight:700;white-space:nowrap;">$' + (Number(item.precio) * Number(item.cantidad)).toLocaleString('es-CO') + '</div>'
+      + '</div>' + vendedorHtml + '</div>';
+  }).join('');
+}
+
 async function handleCheckout() {
   if (!state.token) return mostrarMensaje('Debes iniciar sesión', 'error');
   if (state.carrito.length === 0) return mostrarMensaje('El carrito está vacío', 'error');
+  // El servidor calcula el total y los items desde el carrito; aquí solo se envían datos de pago/entrega.
   const total = state.carrito.reduce((s, i) => s + Number(i.precio) * Number(i.cantidad), 0);
-  const articulos = state.carrito.map(i => i.articulo).join(', ');
-  const cantTotal = state.carrito.reduce((s, i) => s + Number(i.cantidad), 0);
   const metodoPago = document.getElementById('checkout-pago')?.value || 'Tarjeta';
   const direccion = document.getElementById('checkout-dir')?.value.trim() || 'Por definir';
+  const body = {
+    metodo_pago: metodoPago,
+    direccion_entrega: direccion,
+  };
+  if (metodoPago.toLowerCase().includes('tarjeta')) {
+    // Se envía la tarjeta a la pasarela simulada (el backend valida, no la guarda)
+    body.numero_tarjeta = document.getElementById('checkout-tarjeta')?.value.trim() || '';
+    body.mes_expiracion = document.getElementById('checkout-mes')?.value.trim() || '';
+    body.anio_expiracion = document.getElementById('checkout-anio')?.value.trim() || '';
+    body.cvv = document.getElementById('checkout-cvv')?.value.trim() || '';
+  }
   try {
-    const res = await api.post('/api/pedidos', {
-      articulo: articulos,
-      cantidad_objetos: cantTotal,
-      metodo_pago: metodoPago,
-      total: total,
-      direccion_entrega: direccion,
-    });
+    const res = await api.post('/api/pedidos', body);
     document.getElementById('confirm-numero').textContent = '#LUM-' + res.id;
     const fecha = new Date().toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
     document.getElementById('confirm-fecha').textContent = fecha;
     document.getElementById('confirm-total').textContent = '$' + total.toLocaleString('es-CO');
+    const contItems = document.getElementById('confirm-items');
+    if (contItems) {
+      contItems.innerHTML = state.carrito.map(item => {
+        const vendedorHtml = item.vendedor_nombre
+          ? '<div class="sub" style="font-weight:600;font-size:12px;color:#c73652;">Vendedor: ' + escHtml(item.vendedor_nombre)
+            + (item.vendedor_negocio && item.vendedor_negocio !== item.vendedor_nombre ? ' · ' + escHtml(item.vendedor_negocio) : '') + '</div>'
+            + (item.vendedor_correo ? '<div class="sub" style="font-size:11px;color:var(--gray);">Correo: ' + escHtml(item.vendedor_correo) + '</div>' : '')
+          : '';
+        return '<div style="padding:6px 0;border-bottom:1px dashed var(--light);">'
+          + '<div style="display:flex;justify-content:space-between;gap:10px;">'
+          + '<span style="font-size:13px;font-weight:600;">' + escHtml(item.articulo) + ' <span style="color:var(--gray);font-weight:400;">x' + item.cantidad + '</span></span>'
+          + '<span style="font-size:13px;font-weight:700;">$' + (Number(item.precio) * Number(item.cantidad)).toLocaleString('es-CO') + '</span>'
+          + '</div>' + vendedorHtml + '</div>';
+      }).join('');
+    }
+    if (res.referencia_pago) {
+      document.getElementById('confirm-ref-row').style.display = 'flex';
+      document.getElementById('confirm-ref').textContent = res.referencia_pago;
+    } else {
+      document.getElementById('confirm-ref-row').style.display = 'none';
+    }
     showScreen('confirm');
     state.carrito = [];
     renderCarrito();
@@ -755,17 +1270,65 @@ async function cargarPedidos() {
       return '<div style="background:#f8f8fc;border-radius:10px;padding:12px;margin-bottom:10px;">' +
         '<div style="display:flex;justify-content:space-between;margin-bottom:6px;">' +
         '<span style="font-weight:700;">#LUM-' + p.id_compra + '</span>' +
-        '<span class="badge ' + badge + '">' + est + '</span></div>' +
+        '<span class="badge ' + badge + '">' + est.toUpperCase() + '</span></div>' +
         '<div style="font-size:13px;color:var(--gray);">' + escHtml(p.articulo || '') + '</div>' +
+        renderDetallesPedido(p) +
         '<div style="display:flex;justify-content:space-between;margin-top:6px;font-size:13px;align-items:center;">' +
         '<span>' + new Date(p.fecha_pedido).toLocaleDateString('es-CO') + '</span>' +
         '<span style="font-weight:700;color:var(--accent);">$' + Number(p.total).toLocaleString('es-CO') + '</span>' +
         (puedeCancelar ? '<button class="btn-danger-sm" onclick="confirmarCancelar(' + p.id_compra + ')">Cancelar pedido</button>' : '') +
-        '</div></div>';
+        '</div>' +
+        (renderSeguimiento(p) ? '<div style="margin-top:10px;border-top:1px dashed var(--light);padding-top:10px;">' + renderSeguimiento(p) + '</div>' : '') +
+        '</div>';
     }).join('');
   } catch (err) {
     mostrarMensaje('Error al cargar pedidos', 'error');
   }
+}
+
+function renderDetallesPedido(p) {
+  const detalles = p.detalles || [];
+  if (detalles.length === 0) return '';
+  return '<div style="margin-top:8px;border-top:1px dashed var(--light);padding-top:8px;">' + detalles.map(d => {
+    const v = d.vendedor || null;
+    const vendedorHtml = v
+      ? '<div style="font-size:11px;font-weight:600;color:#c73652;">Vendedor: ' + escHtml(v.vendedor_nombre || '')
+        + (v.vendedor_negocio && v.vendedor_negocio !== v.vendedor_nombre ? ' · ' + escHtml(v.vendedor_negocio) : '') + '</div>'
+        + '<div style="font-size:11px;color:var(--gray);">' + (v.vendedor_correo ? 'Correo: ' + escHtml(v.vendedor_correo) : '') + (v.vendedor_telefono ? (v.vendedor_correo ? ' · ' : '') + 'Tel: ' + escHtml(v.vendedor_telefono) : '') + '</div>'
+      : '';
+    return '<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;">'
+      + '<span>' + escHtml(d.articulo || '') + ' <span style="color:var(--gray);">x' + d.cantidad + '</span></span>'
+      + '<span>$' + Number(d.precio_unitario * d.cantidad).toLocaleString('es-CO') + '</span></div>' + vendedorHtml;
+  }).join('') + '</div>';
+}
+
+function renderSeguimiento(p) {
+  if (!p.historial_envio) {
+    return p.estado_pedido && p.estado_pedido !== 'cancelado'
+      ? '<div style="font-size:12px;color:var(--gray);">Sin seguimiento de envío aún</div>'
+      : '';
+  }
+  // historial_envio viene como "ESTADO@yyyy-MM-ddTHH:mm:ss|ESTADO@..."
+  const eventos = String(p.historial_envio).split('|').filter(Boolean).map(function (h) {
+    const partes = h.split('@');
+    const estado = (partes[0] || '').toLowerCase();
+    const fecha = partes[1] ? new Date(partes[1]).toLocaleString('es-CO') : '';
+    const icono = estado === 'entregado' ? '✅' : estado === 'enviado' ? '📦' : estado === 'cancelado' ? '❌' : '🕐';
+    const actual = (p.estado_pedido || '').toLowerCase() === estado;
+    return '<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:6px;">' +
+      '<span>' + icono + '</span>' +
+      '<div style="font-size:12px;' + (actual ? 'font-weight:700;' : 'color:var(--gray);') + '">' +
+      (estado.charAt(0).toUpperCase() + estado.slice(1)) + (fecha ? ' — ' + fecha : '') +
+      '</div></div>';
+  }).join('');
+  let guia = '';
+  if (p.numero_guia || p.transportadora) {
+    guia = '<div style="font-size:12px;color:var(--gray);margin-top:6px;padding-top:6px;border-top:1px solid var(--light);">' +
+      '📦 Envío: <strong>' + escHtml(p.transportadora || '-') + '</strong>' +
+      (p.numero_guia ? ' — Guía: <strong>' + escHtml(p.numero_guia) + '</strong>' : '') +
+      '</div>';
+  }
+  return eventos + guia;
 }
 
 function confirmarCancelar(idPedido) {
@@ -801,13 +1364,16 @@ async function cargarPedidosAdmin() {
     const tbody = document.getElementById('admin-orders-body');
     if (!tbody) return;
     if (filtrados.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;">No hay pedidos</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;">No hay pedidos</td></tr>';
       return;
     }
     tbody.innerHTML = filtrados.map(p => {
       const badge = p.estado_pedido === 'entregado' ? 'badge-green'
         : p.estado_pedido === 'enviado' ? 'badge-blue'
         : p.estado_pedido === 'cancelado' ? 'badge-red' : 'badge-red';
+      const seguimiento = (p.numero_guia || p.transportadora)
+        ? escHtml((p.transportadora || '') + (p.numero_guia ? ' / ' + p.numero_guia : ''))
+        : (p.estado_pedido === 'enviado' ? p.historial_envio || '-' : '-');
       return '<tr>'
         + '<td>#LUM-' + p.id_compra + '</td>'
         + '<td>' + (p.id_usuario || '-') + '</td>'
@@ -815,6 +1381,7 @@ async function cargarPedidosAdmin() {
         + '<td style="font-weight:700;">$' + Number(p.total).toLocaleString('es-CO') + '</td>'
         + '<td>' + new Date(p.fecha_pedido).toLocaleDateString('es-CO') + '</td>'
         + '<td><span class="badge ' + badge + '">' + (p.estado_pedido || 'pendiente') + '</span></td>'
+        + '<td style="font-size:12px;color:var(--gray);max-width:140px;">' + seguimiento + '</td>'
         + '<td><select onchange="actualizarEstadoPedido(' + p.id_compra + ', this.value)" style="padding:4px 8px;border:1px solid var(--light);border-radius:6px;font-size:12px;outline:none;">'
         + '<option value="">Cambiar a...</option>'
         + '<option value="pendiente">Pendiente</option>'
@@ -831,8 +1398,16 @@ async function cargarPedidosAdmin() {
 
 async function actualizarEstadoPedido(id, estado) {
   if (!estado) return;
+  const body = { estado_pedido: estado };
+  if (estado === 'enviado') {
+    const numeroGuia = (prompt('Número de guía de envío:') || '').trim();
+    if (!numeroGuia) { mostrarMensaje('Debes indicar el número de guía para marcar como enviado', 'error'); cargarPedidosAdmin(); return; }
+    const transportadora = (prompt('Transportadora (ej. Interrapidisimo, Servientrega):') || '').trim();
+    body.numero_guia = numeroGuia;
+    body.transportadora = transportadora;
+  }
   try {
-    await api.put('/api/admin/pedidos/' + id, { estado_pedido: estado });
+    const res = await api.put('/api/admin/pedidos/' + id, body);
     mostrarMensaje('Pedido #LUM-' + id + ' actualizado a ' + estado, 'success');
     cargarPedidosAdmin();
   } catch (err) {
@@ -1109,7 +1684,28 @@ async function cargarAliadoDashboard() {
     if (el3) el3.textContent = '$' + Number(d.valor_inventario).toLocaleString('es-CO');
   } catch (err) {
     mostrarMensaje('Error al cargar las métricas', 'error');
+    return;
   }
+  try {
+    const v = await api.get('/api/aliado/ventas');
+    const elU = document.getElementById('aliado-metric-vendidas');
+    if (elU) elU.textContent = v.unidades_vendidas;
+    const elI = document.getElementById('aliado-metric-ingresos');
+    if (elI) elI.textContent = '$' + Number(v.ingresos_totales).toLocaleString('es-CO');
+    const tbody = document.getElementById('aliado-ventas-body');
+    if (tbody) {
+      if (!v.ultimas_ventas || v.ultimas_ventas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:16px;color:var(--gray);">Aún no tienes ventas registradas</td></tr>';
+      } else {
+        tbody.innerHTML = v.ultimas_ventas.map(x => '<tr>'
+          + '<td>Pedido #' + x.id_compra + '</td>'
+          + '<td>' + escHtml(x.articulo) + '</td>'
+          + '<td style="text-align:center;">' + x.cantidad + '</td>'
+          + '<td style="font-weight:700;">$' + Number(x.precio_unitario).toLocaleString('es-CO') + '</td>'
+          + '</tr>').join('');
+      }
+    }
+  } catch (err) { /* ventas es complementario: no bloquea el panel */ }
 }
 
 function showScreen(name) {
@@ -1117,13 +1713,19 @@ function showScreen(name) {
     mostrarMensaje('Acceso denegado — Solo administradores', 'error');
     return;
   }
-  if (name.startsWith('aliado-') && (!state.token || state.user?.rol !== 'ALIADO')) {
+  if (name.startsWith('aliado-') && name !== 'aliado-login' && (!state.token || (state.user?.rol !== 'ALIADO' && state.user?.rol !== 'ADMIN'))) {
     mostrarMensaje('Acceso denegado — Solo aliados', 'error');
     return;
   }
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+    s.style.display = 'none';
+  });
   const screen = document.getElementById('screen-' + name);
-  if (screen) screen.classList.add('active');
+  if (screen) {
+    screen.classList.add('active');
+    screen.style.display = 'block';
+  }
   const btn = document.getElementById('btn-' + name);
   if (btn) btn.classList.add('active');
   window.scrollTo(0, 0);
@@ -1134,6 +1736,7 @@ function showScreen(name) {
     const cant = state.carrito.reduce((s, i) => s + Number(i.cantidad), 0);
     document.getElementById('checkout-count').textContent = cant + ' productos - $' + total.toLocaleString('es-CO');
     document.getElementById('checkout-total').textContent = '$' + total.toLocaleString('es-CO');
+    renderCheckoutItems();
     const dirEl = document.getElementById('checkout-dir');
     if (dirEl) dirEl.value = state.user?.direccion || '';
   }
@@ -1147,6 +1750,7 @@ function showScreen(name) {
   if (name === 'aliado-dash') cargarAliadoDashboard();
   if (name === 'aliado-stock') cargarAliadoStock();
   if (name === 'aliado-desc') cargarAliadoDesc();
+  if (name === 'aliado-licencia') cargarLicenciaAliado();
   if (name === 'orders' && state.token) cargarPedidos();
 }
 
@@ -1159,6 +1763,8 @@ document.addEventListener('DOMContentLoaded', function () {
   if (aliadoForm) aliadoForm.addEventListener('submit', handleRegisterAliado);
   const aliadoAddForm = document.getElementById('aliado-add-form');
   if (aliadoAddForm) aliadoAddForm.addEventListener('submit', guardarArticuloAliado);
+  const licenciaImg = document.getElementById('aliado-licencia-img');
+  if (licenciaImg) licenciaImg.addEventListener('change', function() { handleLicenciaImgSelect(this); });
   document.querySelectorAll('.logout-btn').forEach(b => b.addEventListener('click', cerrarSesion));
   document.querySelectorAll('.tag').forEach(t => {
     t.addEventListener('click', function () {
@@ -1166,5 +1772,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
   actualizarUI();
-  if (state.token) cargarProductos();
+  if (state.token) {
+    cargarProductos();
+    sincronizarFavoritos();
+  }
 });

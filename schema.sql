@@ -21,7 +21,18 @@ CREATE TABLE IF NOT EXISTS usuario (
   telefono VARCHAR(20),
   edad INT,
   direccion_usuario TEXT,
-  fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  rol VARCHAR(20) DEFAULT 'USER',          -- USER | ALIADO | ADMIN
+  nombre_negocio VARCHAR(100),             -- solo aliados
+  nit VARCHAR(40),                         -- solo aliados
+  persona_contacto VARCHAR(100),           -- solo aliados
+  categoria_productos VARCHAR(60),          -- categoría que vende el aliado (Zapatos, Vestidos, Ropa deportiva, ...)
+  reset_token VARCHAR(64),                  -- token de recuperación de contraseña (se limpia al usarse)
+  reset_token_expira DATETIME(6),           -- fecha de expiración del token (30 min de vida)
+  licencia_distribuidor TEXT,               -- URL de la licencia de distribuidor autorizado del aliado
+  bloqueado BOOLEAN DEFAULT FALSE,          -- true = perfil bloqueado por el admin
+  motivo_bloqueo TEXT,                       -- motivo del bloqueo registrado por el admin
+  bloqueo_hasta DATETIME(6)                  -- fecha de fin del bloqueo (NULL = indefinido)
 );
 
 -- Catálogo de productos
@@ -44,6 +55,7 @@ CREATE TABLE IF NOT EXISTS catalogo (
 CREATE TABLE IF NOT EXISTS carrito (
   id_carrito INT AUTO_INCREMENT PRIMARY KEY,
   id_usuario INT NOT NULL,
+  id_catalogo INT NULL,  -- FK lógica a catalogo; NULL solo en filas creadas antes de esta columna
   articulo VARCHAR(150) NOT NULL,
   talla VARCHAR(50),
   color VARCHAR(50),
@@ -55,13 +67,37 @@ CREATE TABLE IF NOT EXISTS carrito (
 CREATE TABLE IF NOT EXISTS compras (
   id_compra INT AUTO_INCREMENT PRIMARY KEY,
   id_usuario INT NOT NULL,
-  articulo TEXT,
+  articulo TEXT,               -- resumen legible; el desglose real vive en detalle_compra
   cantidad_objetos INT,
   metodo_pago VARCHAR(50),
-  total DECIMAL(10,2),
+  total DECIMAL(10,2),         -- calculado por el servidor desde el carrito
   direccion_entrega TEXT,
   estado_pedido VARCHAR(50) DEFAULT 'pendiente',
   fecha_pedido TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  numero_guia VARCHAR(60),               -- guía de envío (se llena al marcar como enviado)
+  transportadora VARCHAR(60),            -- transportadora de envío
+  historial_envio TEXT,                  -- "ESTADO@timestamp|ESTADO@timestamp" (seguimiento)
+  FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario) ON DELETE CASCADE
+);
+
+-- Desglose normalizado de cada pedido (fuente de verdad para estadísticas)
+CREATE TABLE IF NOT EXISTS detalle_compra (
+  id_detalle INT AUTO_INCREMENT PRIMARY KEY,
+  id_compra INT NOT NULL,
+  id_catalogo INT NULL,        -- FK lógica a catalogo; NULL solo en datos creados antes de esta columna
+  articulo VARCHAR(150) NOT NULL,  -- snapshot del nombre al momento de la venta
+  cantidad INT NOT NULL,
+  precio_unitario DECIMAL(10,2) NOT NULL,  -- snapshot del precio al momento de la venta
+  FOREIGN KEY (id_compra) REFERENCES compras(id_compra) ON DELETE CASCADE
+);
+
+-- Favoritos por usuario (sincronizados entre dispositivos; reemplaza localStorage)
+CREATE TABLE IF NOT EXISTS favoritos (
+  id_favorito INT AUTO_INCREMENT PRIMARY KEY,
+  id_usuario INT NOT NULL,
+  id_catalogo INT NOT NULL,
+  fecha_agregado TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_favorito (id_usuario, id_catalogo),
   FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario) ON DELETE CASCADE
 );
 

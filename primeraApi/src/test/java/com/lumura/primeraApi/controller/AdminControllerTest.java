@@ -1,6 +1,7 @@
 package com.lumura.primeraApi.controller;
 
 import com.lumura.primeraApi.entity.Catalogo;
+import com.lumura.primeraApi.entity.Compra;
 import com.lumura.primeraApi.entity.Usuario;
 import com.lumura.primeraApi.repository.CatalogoRepository;
 import com.lumura.primeraApi.repository.CompraRepository;
@@ -14,6 +15,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -161,11 +164,172 @@ class AdminControllerTest {
         Usuario admin = new Usuario();
         admin.setIdUsuario(1);
         admin.setCorreoUsuario("admin@lumura.com");
+        admin.setRol("ADMIN");
         when(usuarioRepository.findById(1)).thenReturn(Optional.of(admin));
 
         ResponseEntity<?> res = adminController.eliminarUsuario(TOKEN_ADMIN, 1);
 
         assertEquals(400, res.getStatusCode().value());
         verify(usuarioRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void actualizarPedido_aEnviado_guardaGuiaTransportadoraYAgregaHistorial() {
+        mockToken(TOKEN_ADMIN, "ADMIN");
+        Compra compra = new Compra();
+        compra.setIdCompra(5);
+        compra.setEstadoPedido("pendiente");
+        compra.setHistorialEnvio("PENDIENTE@2026-08-27T10:00:00");
+        when(compraRepository.findById(5)).thenReturn(Optional.of(compra));
+        when(compraRepository.save(any(Compra.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ResponseEntity<?> res = adminController.actualizarPedido(TOKEN_ADMIN, 5,
+                Map.of("estado_pedido", "enviado", "numero_guia", "GUIA-123", "transportadora", "Interrapidisimo"));
+
+        assertEquals(200, res.getStatusCode().value());
+        assertEquals("enviado", compra.getEstadoPedido());
+        assertEquals("GUIA-123", compra.getNumeroGuia());
+        assertEquals("Interrapidisimo", compra.getTransportadora());
+        assertTrue(compra.getHistorialEnvio().contains("PENDIENTE@"));
+        assertTrue(compra.getHistorialEnvio().contains("ENVIADO@"));
+        Map<?, ?> body = (Map<?, ?>) res.getBody();
+        assertEquals("GUIA-123", body.get("numero_guia"));
+        assertEquals("Interrapidisimo", body.get("transportadora"));
+    }
+
+    @Test
+    void actualizarPedido_estadoInvalido_retorna400() {
+        mockToken(TOKEN_ADMIN, "ADMIN");
+        ResponseEntity<?> res = adminController.actualizarPedido(TOKEN_ADMIN, 5, Map.of("estado_pedido", "perdido"));
+        assertEquals(400, res.getStatusCode().value());
+        verify(compraRepository, never()).save(any());
+    }
+
+    @Test
+    void listarUsuarios_excluyeAdminAutenticado() {
+        mockToken(TOKEN_ADMIN, "ADMIN");
+        when(jwtUtil.getUserIdFromToken("token-admin")).thenReturn(1);
+
+        Usuario admin = new Usuario();
+        admin.setIdUsuario(1);
+        admin.setRol("ADMIN");
+        admin.setCorreoUsuario("admin@lumura.com");
+        Usuario cliente = new Usuario();
+        cliente.setIdUsuario(2);
+        cliente.setRol("USER");
+        cliente.setCorreoUsuario("cliente@lumura.com");
+        when(usuarioRepository.findAll()).thenReturn(List.of(admin, cliente));
+
+        ResponseEntity<?> res = adminController.listarUsuarios(TOKEN_ADMIN);
+
+        assertEquals(200, res.getStatusCode().value());
+        List<?> body = (List<?>) res.getBody();
+        assertEquals(1, body.size());
+        Map<?, ?> unico = (Map<?, ?>) body.get(0);
+        assertEquals(2, unico.get("id_usuario"));
+        assertEquals("cliente@lumura.com", unico.get("correo_usuario"));
+    }
+
+    @Test
+    void bloquearUsuario_valido_retorna200() {
+        mockToken(TOKEN_ADMIN, "ADMIN");
+        Usuario cliente = new Usuario();
+        cliente.setIdUsuario(2);
+        cliente.setRol("USER");
+        when(usuarioRepository.findById(2)).thenReturn(Optional.of(cliente));
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ResponseEntity<?> res = adminController.bloquearUsuario(TOKEN_ADMIN, 2, Map.of("motivo", "Fraude", "dias", "7"));
+
+        assertEquals(200, res.getStatusCode().value());
+        Map<?, ?> body = (Map<?, ?>) res.getBody();
+        assertEquals(true, body.get("bloqueado"));
+        assertEquals("Fraude", body.get("motivo_bloqueo"));
+        assertTrue(cliente.getBloqueado());
+        assertEquals("Fraude", cliente.getMotivoBloqueo());
+        assertNotNull(cliente.getBloqueoHasta());
+        assertTrue(cliente.getBloqueoHasta().isAfter(LocalDateTime.now()));
+    }
+
+    @Test
+    void bloquearUsuario_esAdmin_retorna400() {
+        mockToken(TOKEN_ADMIN, "ADMIN");
+        Usuario otroAdmin = new Usuario();
+        otroAdmin.setIdUsuario(1);
+        otroAdmin.setRol("ADMIN");
+        when(usuarioRepository.findById(1)).thenReturn(Optional.of(otroAdmin));
+
+        ResponseEntity<?> res = adminController.bloquearUsuario(TOKEN_ADMIN, 1, Map.of("motivo", "X", "dias", "3"));
+
+        assertEquals(400, res.getStatusCode().value());
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    void bloquearUsuario_sinMotivo_retorna400() {
+        mockToken(TOKEN_ADMIN, "ADMIN");
+        Usuario cliente = new Usuario();
+        cliente.setIdUsuario(2);
+        cliente.setRol("USER");
+        when(usuarioRepository.findById(2)).thenReturn(Optional.of(cliente));
+
+        ResponseEntity<?> res = adminController.bloquearUsuario(TOKEN_ADMIN, 2, Map.of("dias", "3"));
+
+        assertEquals(400, res.getStatusCode().value());
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    void bloquearUsuario_diasInvalido_retorna400() {
+        mockToken(TOKEN_ADMIN, "ADMIN");
+        Usuario cliente = new Usuario();
+        cliente.setIdUsuario(2);
+        cliente.setRol("USER");
+        when(usuarioRepository.findById(2)).thenReturn(Optional.of(cliente));
+
+        ResponseEntity<?> res = adminController.bloquearUsuario(TOKEN_ADMIN, 2, Map.of("motivo", "X", "dias", "0"));
+
+        assertEquals(400, res.getStatusCode().value());
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    void bloquearUsuario_inexistente_retorna404() {
+        mockToken(TOKEN_ADMIN, "ADMIN");
+        when(usuarioRepository.findById(99)).thenReturn(Optional.empty());
+
+        ResponseEntity<?> res = adminController.bloquearUsuario(TOKEN_ADMIN, 99, Map.of("motivo", "X", "dias", "3"));
+
+        assertEquals(404, res.getStatusCode().value());
+    }
+
+    @Test
+    void desbloquearUsuario_retorna200() {
+        mockToken(TOKEN_ADMIN, "ADMIN");
+        Usuario cliente = new Usuario();
+        cliente.setIdUsuario(2);
+        cliente.setRol("USER");
+        cliente.setBloqueado(true);
+        cliente.setMotivoBloqueo("Fraude");
+        cliente.setBloqueoHasta(LocalDateTime.now().plusDays(7));
+        when(usuarioRepository.findById(2)).thenReturn(Optional.of(cliente));
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ResponseEntity<?> res = adminController.desbloquearUsuario(TOKEN_ADMIN, 2);
+
+        assertEquals(200, res.getStatusCode().value());
+        assertFalse(cliente.getBloqueado());
+        assertNull(cliente.getMotivoBloqueo());
+        assertNull(cliente.getBloqueoHasta());
+    }
+
+    @Test
+    void desbloquearUsuario_inexistente_retorna404() {
+        mockToken(TOKEN_ADMIN, "ADMIN");
+        when(usuarioRepository.findById(99)).thenReturn(Optional.empty());
+
+        ResponseEntity<?> res = adminController.desbloquearUsuario(TOKEN_ADMIN, 99);
+
+        assertEquals(404, res.getStatusCode().value());
     }
 }
