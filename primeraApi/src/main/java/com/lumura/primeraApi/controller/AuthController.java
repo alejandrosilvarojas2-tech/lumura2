@@ -5,6 +5,7 @@ import com.lumura.primeraApi.entity.Usuario;
 import com.lumura.primeraApi.repository.CarritoRepository;
 import com.lumura.primeraApi.repository.CompraRepository;
 import com.lumura.primeraApi.repository.UsuarioRepository;
+import com.lumura.primeraApi.service.EmailService;
 import com.lumura.primeraApi.util.JwtUtil;
 import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
@@ -30,15 +31,18 @@ public class AuthController {
     private final CarritoRepository carritoRepository;
     private final CompraRepository compraRepository;
     private final JwtUtil jwtUtil;
+    private final EmailService emailService;
 
     public AuthController(UsuarioRepository usuarioRepository,
                           CarritoRepository carritoRepository,
                           CompraRepository compraRepository,
-                          JwtUtil jwtUtil) {
+                          JwtUtil jwtUtil,
+                          EmailService emailService) {
         this.usuarioRepository = usuarioRepository;
         this.carritoRepository = carritoRepository;
         this.compraRepository = compraRepository;
         this.jwtUtil = jwtUtil;
+        this.emailService = emailService;
     }
 
     @PostMapping("/register")
@@ -80,6 +84,14 @@ public class AuthController {
         usuarioRepository.save(usuario);
 
         log.info("Nuevo usuario registrado: {} ({})", nombre, correo);
+        emailService.enviar(correo,
+                "Bienvenido a LUMURA",
+                EmailService.plantilla("¡Bienvenido, " + nombre + "!",
+                        "<p>Tu cuenta fue creada correctamente. Ya puedes explorar el catálogo y realizar compras.</p>"
+                        + "<p><b>Nombre:</b> " + nombre + "<br>"
+                        + "<b>Correo:</b> " + correo + "<br>"
+                        + "<b>Rol:</b> Cliente</p>"
+                        + "<p>Si tienes alguna duda, contacta a nuestro soporte.</p>"));
         return ResponseEntity.ok(Map.of("mensaje", "Usuario registrado correctamente", "id", usuario.getIdUsuario()));
     }
 
@@ -133,6 +145,15 @@ public class AuthController {
         usuarioRepository.save(usuario);
 
         log.info("Nuevo aliado registrado: {} ({}, NIT: {}, categoría: {})", nombreNegocio, correo, nit, categoriaProductos);
+        emailService.enviar(correo,
+                "Bienvenido a LUMURA — " + nombreNegocio,
+                EmailService.plantilla("¡Bienvenido, " + contacto + "!",
+                        "<p>Tu negocio <b>" + nombreNegocio + "</b> fue registrado exitosamente como aliado distribuidor.</p>"
+                        + "<p><b>NIT:</b> " + nit + "<br>"
+                        + "<b>Contacto:</b> " + contacto + "<br>"
+                        + "<b>Categoría:</b> " + categoriaProductos + "<br>"
+                        + "<b>Dirección:</b> " + direccionPuntoVenta + "</p>"
+                        + "<p>Para que tu negocio aparezca en la tienda, necesitas publicar al menos un producto y activar tu membresía de distribuidor.</p>"));
         return ResponseEntity.ok(Map.of("mensaje", "Aliado registrado correctamente", "id", usuario.getIdUsuario()));
     }
 
@@ -250,6 +271,13 @@ public class AuthController {
             return ResponseEntity.badRequest().body(Map.of("error", "No se puede eliminar la cuenta admin"));
         }
 
+        emailService.enviar(usuario.get().getCorreoUsuario(),
+                "Tu cuenta en LUMURA fue eliminada",
+                EmailService.plantilla("¡Hasta pronto, " + usuario.get().getNombreUsuario() + "!",
+                        "<p>Tu cuenta en LUMURA fue <b>eliminada correctamente</b>.</p>"
+                        + "<p>Todos tus datos, pedidos y carrito han sido borrados de forma permanente.</p>"
+                        + "<p>Si cambias de opinión, puedes volver a registrarte en cualquier momento.</p>"));
+
         carritoRepository.deleteByIdUsuario(userId);
         compraRepository.deleteByIdUsuario(userId);
         usuarioRepository.deleteById(userId);
@@ -279,6 +307,15 @@ public class AuthController {
         usuarioRepository.save(usuario);
 
         log.info("Datos actualizados: userId={}", userId);
+        emailService.enviar(usuario.getCorreoUsuario(),
+                "Tus datos en LUMURA fueron actualizados",
+                EmailService.plantilla("Datos actualizados, " + usuario.getNombreUsuario(),
+                        "<p>Tus datos en LUMURA fueron <b>actualizados correctamente</b>.</p>"
+                        + "<p><b>Nombre:</b> " + usuario.getNombreUsuario() + "<br>"
+                        + "<b>Correo:</b> " + usuario.getCorreoUsuario() + "<br>"
+                        + "<b>Teléfono:</b> " + (usuario.getTelefono() != null ? usuario.getTelefono() : "No registrado") + "<br>"
+                        + "<b>Dirección:</b> " + (usuario.getDireccionUsuario() != null ? usuario.getDireccionUsuario() : "No registrada") + "</p>"
+                        + "<p>Si no realizaste este cambio, contacta con el soporte de LUMURA.</p>"));
         return ResponseEntity.ok(Map.of(
             "mensaje", "Datos actualizados correctamente",
             "usuario", Map.of(

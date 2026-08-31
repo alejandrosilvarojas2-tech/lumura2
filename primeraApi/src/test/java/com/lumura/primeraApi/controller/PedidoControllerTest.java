@@ -403,4 +403,24 @@ class PedidoControllerTest {
         verify(emailService).enviar(eq("cliente@lumura.com"), contains("#55"), anyString());
         verify(emailService).enviar(eq("ana@lumura.com"), contains("Vendiste"), contains("Jeans Slim Fit"));
     }
+
+    @Test
+    void cancelar_enviaCorreoDeCancelacionAlCliente() {
+        mockToken(TOKEN_USER, 1);
+        when(compraRepository.findById(5)).thenReturn(Optional.of(compraDe(5, 1, "pendiente")));
+        when(compraRepository.save(any(Compra.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Usuario cliente = new Usuario();
+        cliente.setIdUsuario(1);
+        cliente.setNombreUsuario("Cliente");
+        cliente.setCorreoUsuario("cliente@lumura.com");
+        cliente.setRol("USER");
+        when(usuarioRepository.findById(1)).thenReturn(Optional.of(cliente));
+
+        ResponseEntity<?> res = pedidoController.cancelar(TOKEN_USER, 5);
+
+        assertEquals(200, res.getStatusCode().value());
+        verify(emailService).enviar(eq("cliente@lumura.com"), contains("cancelado"),
+                contains("#5"));
+    }
 }

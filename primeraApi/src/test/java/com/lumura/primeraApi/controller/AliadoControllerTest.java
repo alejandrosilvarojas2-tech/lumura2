@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -555,6 +556,75 @@ class AliadoControllerTest {
         when(jwtUtil.getRolFromToken(token)).thenReturn("USER");
 
         ResponseEntity<?> res = aliadoController.obtenerMembresia(TOKEN_CLIENTE);
+
+        assertEquals(401, res.getStatusCode().value());
+        verifyNoInteractions(usuarioRepository);
+    }
+
+    @Test
+    void crearProducto_enviaCorreoDeConfirmacionAlAliado() {
+        mockToken(TOKEN_ALIADO, 7, "ALIADO");
+        when(catalogoRepository.save(any(Catalogo.class))).thenAnswer(inv -> {
+            Catalogo c = inv.getArgument(0);
+            c.setIdCatalogo(50);
+            return c;
+        });
+        Usuario aliado = usuarioAliado(7);
+        aliado.setNombreUsuario("Ana");
+        aliado.setCorreoUsuario("ana@lumura.com");
+        when(usuarioRepository.findById(7)).thenReturn(Optional.of(aliado));
+
+        ResponseEntity<?> res = aliadoController.crearProducto(TOKEN_ALIADO,
+                body("articulo", "Tenis Urbanos", "precio", "159900", "stock", "20"));
+
+        assertEquals(200, res.getStatusCode().value());
+        verify(emailService).enviar(eq("ana@lumura.com"), contains("publicado"),
+                contains("Tenis Urbanos"));
+    }
+
+    @Test
+    void cancelarMembresia_limpiaDatosYEnviaCorreo() {
+        mockToken(TOKEN_ALIADO, 7, "ALIADO");
+        Usuario u = usuarioAliado(7);
+        u.setNombreUsuario("Ana");
+        u.setCorreoUsuario("ana@lumura.com");
+        u.setMembresiaCodigo("MEM-7-BASICO-20260101-AAAA");
+        u.setMembresiaPlan("basico");
+        u.setMembresiaActivadaEn(java.time.LocalDateTime.now().minusDays(1));
+        u.setMembresiaVence(java.time.LocalDateTime.now().plusDays(30));
+        when(usuarioRepository.findById(7)).thenReturn(Optional.of(u));
+        when(usuarioRepository.save(u)).thenReturn(u);
+
+        ResponseEntity<?> res = aliadoController.cancelarMembresia(TOKEN_ALIADO);
+
+        assertEquals(200, res.getStatusCode().value());
+        assertNull(u.getMembresiaCodigo());
+        assertNull(u.getMembresiaPlan());
+        assertNull(u.getMembresiaActivadaEn());
+        assertNull(u.getMembresiaVence());
+        verify(usuarioRepository).save(u);
+        verify(emailService).enviar(eq("ana@lumura.com"), contains("cancelada"), contains("Básico"));
+    }
+
+    @Test
+    void cancelarMembresia_sinMembresia_retorna400() {
+        mockToken(TOKEN_ALIADO, 7, "ALIADO");
+        when(usuarioRepository.findById(7)).thenReturn(Optional.of(usuarioAliado(7)));
+
+        ResponseEntity<?> res = aliadoController.cancelarMembresia(TOKEN_ALIADO);
+
+        assertEquals(400, res.getStatusCode().value());
+        verify(usuarioRepository, never()).save(any());
+        verify(emailService, never()).enviar(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void cancelarMembresia_cliente_retorna401() {
+        String token = TOKEN_CLIENTE.substring(7);
+        when(jwtUtil.validateToken(token)).thenReturn(true);
+        when(jwtUtil.getRolFromToken(token)).thenReturn("USER");
+
+        ResponseEntity<?> res = aliadoController.cancelarMembresia(TOKEN_CLIENTE);
 
         assertEquals(401, res.getStatusCode().value());
         verifyNoInteractions(usuarioRepository);

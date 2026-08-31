@@ -413,4 +413,47 @@ class AdminControllerTest {
         adminController.desbloquearUsuario(TOKEN_ADMIN, 5);
         verify(emailService).enviar(eq("pedro@lumura.com"), contains("reactivada"), anyString());
     }
+
+    @Test
+    void eliminarProducto_notificaAlAliadoDuenoYNoAlAdmin() {
+        mockToken(TOKEN_ADMIN, "ADMIN");
+        Catalogo producto = new Catalogo();
+        producto.setIdCatalogo(1);
+        producto.setArticulo("Camiseta");
+        producto.setPrecio(new BigDecimal("29900"));
+        producto.setCodigo("LUM-000001");
+        producto.setIdAliado(7);
+        when(catalogoRepository.existsById(1)).thenReturn(true);
+        when(catalogoRepository.findById(1)).thenReturn(Optional.of(producto));
+
+        Usuario aliado = new Usuario();
+        aliado.setIdUsuario(7);
+        aliado.setRol("ALIADO");
+        aliado.setNombreUsuario("Ana");
+        aliado.setCorreoUsuario("ana@lumura.com");
+        when(usuarioRepository.findById(7)).thenReturn(Optional.of(aliado));
+
+        ResponseEntity<?> res = adminController.eliminarProducto(TOKEN_ADMIN, 1);
+
+        assertEquals(200, res.getStatusCode().value());
+        verify(catalogoRepository).deleteById(1);
+        verify(emailService).enviar(eq("ana@lumura.com"), contains("eliminado"), contains("Camiseta"));
+        verify(emailService, never()).enviar(eq("admin@lumura.com"), anyString(), anyString());
+    }
+
+    @Test
+    void eliminarProducto_productoSinAliado_noEnviaCorreo() {
+        mockToken(TOKEN_ADMIN, "ADMIN");
+        Catalogo producto = new Catalogo();
+        producto.setIdCatalogo(2);
+        producto.setArticulo("Camiseta Admin");
+        when(catalogoRepository.existsById(2)).thenReturn(true);
+        when(catalogoRepository.findById(2)).thenReturn(Optional.of(producto));
+
+        ResponseEntity<?> res = adminController.eliminarProducto(TOKEN_ADMIN, 2);
+
+        assertEquals(200, res.getStatusCode().value());
+        verify(catalogoRepository).deleteById(2);
+        verify(emailService, never()).enviar(anyString(), anyString(), anyString());
+    }
 }

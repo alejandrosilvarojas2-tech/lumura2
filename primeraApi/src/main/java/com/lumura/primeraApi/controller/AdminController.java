@@ -178,6 +178,20 @@ public class AdminController {
         if (!validarAdmin(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
 
         if (catalogoRepository.existsById(id)) {
+            catalogoRepository.findById(id).ifPresent(producto -> {
+                if (producto.getIdAliado() != null) {
+                    usuarioRepository.findById(producto.getIdAliado())
+                            .filter(u -> "ALIADO".equals(u.getRol()))
+                            .ifPresent(aliado ->
+                                    emailService.enviar(aliado.getCorreoUsuario(),
+                                            "Tu producto fue eliminado de LUMURA",
+                                            EmailService.plantilla("Producto eliminado, " + aliado.getNombreUsuario(),
+                                                    "<p>El producto <b>" + producto.getArticulo() + "</b> fue eliminado del catálogo por un administrador.</p>"
+                                                    + "<p><b>Código:</b> " + producto.getCodigo() + "<br>"
+                                                    + "<b>Precio:</b> $" + producto.getPrecio() + "</p>"
+                                                    + "<p>Si tienes preguntas sobre esta decisión, contacta con el soporte de LUMURA.</p>")));
+                }
+            });
             catalogoRepository.deleteById(id);
             log.info("Producto eliminado: id={}", id);
             return ResponseEntity.ok(Map.of("mensaje", "Producto eliminado"));

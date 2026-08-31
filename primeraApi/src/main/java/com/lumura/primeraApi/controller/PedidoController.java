@@ -250,6 +250,15 @@ public class PedidoController {
                     compra.setHistorialEnvio(historial == null || historial.isBlank() ? evento : historial + "|" + evento);
                     compraRepository.save(compra);
                     log.info("Pedido #{} cancelado", id);
+
+                    usuarioRepository.findById(compra.getIdUsuario()).ifPresent(cliente ->
+                            emailService.enviar(cliente.getCorreoUsuario(),
+                                    "Pedido #" + id + " cancelado — LUMURA",
+                                    EmailService.plantilla("Pedido cancelado, " + cliente.getNombreUsuario(),
+                                            "<p>Tu pedido <b>#" + id + "</b> fue <b>cancelado correctamente</b>.</p>"
+                                            + "<p>Si realizaste algún pago, este será procesado para el reembolso según corresponda.</p>"
+                                            + "<p>Puedes volver a realizar un pedido cuando lo desees.</p>")));
+
                     return ResponseEntity.ok(Map.of("mensaje", "Pedido cancelado correctamente"));
                 })
                 .orElse(ResponseEntity.notFound().build());

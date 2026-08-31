@@ -103,6 +103,17 @@ public class AliadoController {
 
         catalogoRepository.save(p);
         log.info("Producto {} creado por aliado {}", p.getArticulo(), userId);
+
+        usuarioRepository.findById(userId).ifPresent(aliado ->
+                emailService.enviar(aliado.getCorreoUsuario(),
+                        "Tu producto fue publicado en LUMURA",
+                        EmailService.plantilla("Producto publicado, " + aliado.getNombreUsuario(),
+                                "<p>Tu producto <b>" + p.getArticulo() + "</b> fue publicado correctamente en LUMURA.</p>"
+                                + "<p><b>Precio:</b> $" + p.getPrecio() + "<br>"
+                                + "<b>Stock:</b> " + p.getStock() + " unidades<br>"
+                                + "<b>Código:</b> " + p.getCodigo() + "</p>"
+                                + "<p>Ya está visible para los clientes en la tienda.</p>")));
+
         return ResponseEntity.ok(p);
     }
 
@@ -341,6 +352,37 @@ public class AliadoController {
                         + "<b>Vence el:</b> " + vence.toLocalDate() + " (incluye 1 día de gracia)</p>"
                         + "<p>Tu negocio ya puede operar normalmente en LUMURA.</p>"));
         return ResponseEntity.ok(toMembresiaMap(u));
+    }
+
+    // Cancela la membresía de distribuidor del aliado: limpia los datos y notifica por correo.
+    @DeleteMapping("/membresia")
+    public ResponseEntity<?> cancelarMembresia(@RequestHeader(value = "Authorization", required = false) String auth) {
+        Integer userId = extraerAliadoId(auth);
+        if (userId == null) return ResponseEntity.status(401).body(Map.of("error", "Token requerido o no eres aliado"));
+
+        return usuarioRepository.findById(userId)
+                .map(u -> {
+                    if (u.getMembresiaCodigo() == null) {
+                        return ResponseEntity.badRequest().body(Map.of("error", "No tienes una membresía activa"));
+                    }
+                    String plan = u.getMembresiaPlan() == null ? "distribuidor" : nombrePlan(u.getMembresiaPlan());
+                    u.setMembresiaCodigo(null);
+                    u.setMembresiaPlan(null);
+                    u.setMembresiaActivadaEn(null);
+                    u.setMembresiaVence(null);
+                    usuarioRepository.save(u);
+                    log.info("Membresía cancelada para aliado {}", userId);
+
+                    emailService.enviar(u.getCorreoUsuario(),
+                            "Tu membresía fue cancelada",
+                            EmailService.plantilla("Membresía cancelada, " + u.getNombreUsuario(),
+                                    "<p>Tu membresía <b>" + plan + "</b> de distribuidor LUMURA fue <b>cancelada</b>.</p>"
+                                    + "<p>Lee recuerda que si deseas seguir operando en la tienda como aliado, "
+                                    + "puedes activar nuevamente una membresía en cualquier momento.</p>"));
+
+                    return ResponseEntity.ok(Map.of("mensaje", "Membresía cancelada correctamente", "membresia", toMembresiaMap(u)));
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 
     private String nombrePlan(String plan) {

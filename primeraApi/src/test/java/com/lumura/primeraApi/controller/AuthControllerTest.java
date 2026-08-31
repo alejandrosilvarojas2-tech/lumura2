@@ -4,6 +4,7 @@ import com.lumura.primeraApi.entity.Usuario;
 import com.lumura.primeraApi.repository.CarritoRepository;
 import com.lumura.primeraApi.repository.CompraRepository;
 import com.lumura.primeraApi.repository.UsuarioRepository;
+import com.lumura.primeraApi.service.EmailService;
 import com.lumura.primeraApi.util.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,8 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,6 +37,8 @@ class AuthControllerTest {
     private CompraRepository compraRepository;
     @Mock
     private JwtUtil jwtUtil;
+    @Mock
+    private EmailService emailService;
 
     @InjectMocks
     private AuthController authController;
@@ -532,6 +537,88 @@ class AuthControllerTest {
 
         assertEquals(400, res.getStatusCode().value());
         verify(usuarioRepository, never()).findByResetToken(anyString());
+    }
+
+    @Test
+    void register_enviaCorreoDeBienvenidaAlNuevoUsuario() {
+        when(usuarioRepository.findByCorreoUsuario("ana@correo.com")).thenReturn(Optional.empty());
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> {
+            Usuario u = inv.getArgument(0);
+            u.setIdUsuario(1);
+            return u;
+        });
+
+        ResponseEntity<?> res = authController.register(bodyValido);
+
+        assertEquals(200, res.getStatusCode().value());
+        verify(emailService).enviar(eq("ana@correo.com"), contains("Bienvenido"),
+                contains("ana@correo.com"));
+    }
+
+    @Test
+    void registerAliado_enviaCorreoDeBienvenidaAlNuevoAliado() {
+        Map<String, String> body = Map.of(
+            "nombre_negocio", "Moda Express",
+            "nit", "900123456-7",
+            "persona_contacto", "Carlos",
+            "correo_usuario", "aliado@negocio.com",
+            "categoria_productos", "Vestidos",
+            "direccion", "Calle 45 #12-34",
+            "password", "secreto123",
+            "confirmar_password", "secreto123"
+        );
+        when(usuarioRepository.findByCorreoUsuario("aliado@negocio.com")).thenReturn(Optional.empty());
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> {
+            Usuario u = inv.getArgument(0);
+            u.setIdUsuario(1);
+            return u;
+        });
+
+        ResponseEntity<?> res = authController.registerAliado(body);
+
+        assertEquals(200, res.getStatusCode().value());
+        verify(emailService).enviar(eq("aliado@negocio.com"), contains("Bienvenido"),
+                contains("Moda Express"));
+    }
+
+    @Test
+    void eliminarCuenta_enviaCorreoDeDespedidaAntesDeBorrar() {
+        when(jwtUtil.validateToken("del-token")).thenReturn(true);
+        when(jwtUtil.getUserIdFromToken("del-token")).thenReturn(3);
+        Usuario u = new Usuario();
+        u.setIdUsuario(3);
+        u.setNombreUsuario("Ana");
+        u.setCorreoUsuario("ana@correo.com");
+        u.setRol("USER");
+        when(usuarioRepository.findById(3)).thenReturn(Optional.of(u));
+
+        ResponseEntity<?> res = authController.eliminarCuenta("Bearer del-token");
+
+        assertEquals(200, res.getStatusCode().value());
+        verify(emailService).enviar(eq("ana@correo.com"), contains("eliminada"), anyString());
+        verify(usuarioRepository).deleteById(3);
+        verify(carritoRepository).deleteByIdUsuario(3);
+        verify(compraRepository).deleteByIdUsuario(3);
+    }
+
+    @Test
+    void actualizarCuenta_enviaCorreoDeConfirmacionDeCambios() {
+        when(jwtUtil.validateToken("upd-token")).thenReturn(true);
+        when(jwtUtil.getUserIdFromToken("upd-token")).thenReturn(3);
+        Usuario u = new Usuario();
+        u.setIdUsuario(3);
+        u.setNombreUsuario("Ana");
+        u.setCorreoUsuario("ana@correo.com");
+        u.setRol("USER");
+        when(usuarioRepository.findById(3)).thenReturn(Optional.of(u));
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ResponseEntity<?> res = authController.actualizarCuenta("Bearer upd-token",
+                Map.of("telefono", "3001234567"));
+
+        assertEquals(200, res.getStatusCode().value());
+        verify(emailService).enviar(eq("ana@correo.com"), contains("actualizados"), anyString());
+        assertEquals("3001234567", u.getTelefono());
     }
 
 }
