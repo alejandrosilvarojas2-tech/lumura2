@@ -869,14 +869,20 @@ function normalizarCategoria(v) {
 function renderCategoriasTags() {
   const cont = document.getElementById('tag-filter');
   if (!cont) return;
-  const activa = (cont.querySelector('.tag.active')?.dataset.cat) || '';
-  const cats = CATEGORIAS.slice();
+  const orden = CATEGORIAS.slice();
+  const presentes = [];
   (state.productos || []).forEach(p => {
     const n = normalizarCategoria(p.categoria || '');
-    if (n && !cats.includes(n)) cats.push(n);
+    if (n && !presentes.includes(n)) presentes.push(n);
   });
+  presentes.sort((a, b) => {
+    const ia = orden.indexOf(a);
+    const ib = orden.indexOf(b);
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+  });
+  const activa = (cont.querySelector('.tag.active')?.dataset.cat) || '';
   cont.innerHTML = '<span class="tag' + (activa === '' ? ' active' : '') + '" data-cat="">Todo</span>'
-    + cats.map(c => '<span class="tag' + (activa === c ? ' active' : '') + '" data-cat="' + escHtml(c) + '">' + escHtml(c) + '</span>').join('');
+    + presentes.map(c => '<span class="tag' + (activa === c ? ' active' : '') + '" data-cat="' + escHtml(c) + '">' + escHtml(c) + '</span>').join('');
 }
 
 function cargarOpcionesCategorias() {

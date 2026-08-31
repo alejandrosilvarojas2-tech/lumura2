@@ -987,6 +987,20 @@ verde.
   del artículo 47 y de la nota legal → "Volver a los planes" regresa a membresías → nueva
   elección → "Acepto y continuar" → confirmación de pago con resumen → Confirmar → Stock.
 Suite unitaria 135/135 en verde.
+- **Panel de categorías limpio en el home del cliente (E2E, 30/08/2026)**: se **eliminó el
+  banner** del home (badge "OFERTA ESPECIAL" y botón "Ver colección →") y las **etiquetas fijas**
+  del HTML del `#tag-filter` ("Camisetas, Pantalones, Chaquetas, Vestidos, Accesorios").
+  `renderCategoriasTags()` ahora genera únicamente **"Todo" + las categorías normalizadas que
+  existen en el catálogo** (`state.productos`; orden canónico `CATEGORIAS`; sin categorías
+  vacías), por lo que el botón de una categoría aparece cuando un aliado publica un artículo de
+  esa categoría (p. ej. "Blusas" si publica blusas). Los clics siguen con delegación de eventos
+  y el filtro normalizado de `normalizarCategoria()`. El filtro del admin (`#admin-cat-filter`)
+  y los `<select>` de formularios conservan la lista canónica completa. Verificado E2E
+  (Puppeteer): sin "OFERTA ESPECIAL"/"Ver colección"; panel = Todo + exactamente las categorías
+  del catálogo (todas presentes, ninguna ajena, sin etiquetas fijas sin productos); aliado publica
+  camiseta con "Camisetas" → cliente ve el botón y al hacer clic ve la camiseta nueva + la legacy
+  en minúscula; búsqueda "camiset" la encuentra; catálogo admin filtrado sigue mostrando la
+  prenda. Assets versionados a `?v=9` (CSS sin cambios). Suite unitaria 135/135 en verde.
 - **Categorías unificadas y filtrables por rol (E2E, 30/08/2026)**: se unificó el sistema de
   categorías en **una lista canónica `CATEGORIAS`** de 23 valores (Camisetas, Camisas, Blusas,
   Pantalones, Jeans, Faldas, Vestidos, Chaquetas, Abrigos, Sueter, Chalecos, Trajes, Ropa
