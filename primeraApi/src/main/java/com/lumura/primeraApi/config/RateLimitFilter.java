@@ -21,8 +21,10 @@ public class RateLimitFilter implements Filter {
     private static final int MAX_ADMIN = 60;
     private static final int MAX_GENERAL = 120;
 
-    // estado por IP: [contador, inicioDeVentanaMs]
-    private final ConcurrentHashMap<String, long[]> requests = new ConcurrentHashMap<>();
+    // estado por IP por clase de ruta: [contador, inicioDeVentanaMs]
+    private final ConcurrentHashMap<String, long[]> loginRequests = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, long[]> adminRequests = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, long[]> generalRequests = new ConcurrentHashMap<>();
     private final LongSupplier clock;
 
     public RateLimitFilter() {
@@ -40,7 +42,8 @@ public class RateLimitFilter implements Filter {
         String uri = httpReq.getRequestURI();
         long now = clock.getAsLong();
 
-        long[] estado = requests.compute(httpReq.getRemoteAddr(), (ip, val) -> {
+        ConcurrentHashMap<String, long[]> bucket = bucketDe(uri);
+        long[] estado = bucket.compute(httpReq.getRemoteAddr(), (ip, val) -> {
             if (val == null || now - val[1] >= WINDOW_MS) {
                 return new long[]{1, now};
             }
@@ -62,7 +65,7 @@ public class RateLimitFilter implements Filter {
     }
 
     private int maxRequestsFor(String uri) {
-        if (uri.startsWith("/api/auth/login") || uri.startsWith("/api/auth/register")) {
+        if (esLogin(uri)) {
             return MAX_LOGIN;
         }
         if (uri.startsWith("/api/admin")) {
@@ -71,12 +74,42 @@ public class RateLimitFilter implements Filter {
         return MAX_GENERAL;
     }
 
+    private ConcurrentHashMap<String, long[]> bucketDe(String uri) {
+        if (esLogin(uri)) {
+            return loginRequests;
+        }
+        if (uri.startsWith("/api/admin")) {
+            return adminRequests;
+        }
+        return generalRequests;
+    }
+
+    private boolean esLogin(String uri) {
+        return uri.startsWith("/api/auth/login") || uri.startsWith("/api/auth/register");
+    }
+
     private void limpiarSiEsNecesario(long now) {
-        if (requests.size() <= MAX_ENTRIES) return;
+        if (obsoletos(loginRequests, now) + obsoletos(adminRequests, now) + obsoletos(generalRequests, now) <= MAX_ENTRIES) {
+            return;
+        }
+        purgar(loginRequests, now);
+        purgar(adminRequests, now);
+        purgar(generalRequests, now);
+    }
+
+    private int obsoletos(ConcurrentHashMap<String, long[]> mapa, long now) {
+        int n = 0;
+        for (long[] val : mapa.values()) {
+            if (now - val[1] >= WINDOW_MS) n++;
+        }
+        return n;
+    }
+
+    private void purgar(ConcurrentHashMap<String, long[]> mapa, long now) {
         List<String> expirados = new ArrayList<>();
-        requests.forEach((ip, val) -> {
+        mapa.forEach((ip, val) -> {
             if (now - val[1] >= WINDOW_MS) expirados.add(ip);
         });
-        expirados.forEach(requests::remove);
+        expirados.forEach(mapa::remove);
     }
 }

@@ -98,13 +98,13 @@ Errores estándar: 401 sin token, 403 si el recurso es de otro usuario o falta r
 - Jackson snake_case para serialización JSON
 - CORS abierto para desarrollo
 - Cabeceras de seguridad en `SecurityHeaderFilter`: CSP estricto (img-src permite http/https para `imagen_url` externa), X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy, X-XSS-Protection
-- Rate limit por IP (`RateLimitFilter`): ventana fija de 60s — login/registro 10 req/min, `/api/admin` 60, resto 120. Excede → 429 `{error}`
+- Rate limit por IP (`RateLimitFilter`): ventana fija de 60s — login/registro 10 req/min, `/api/admin` 60, resto 120. Excede → 429 `{error}`. Los buckets son **por clase de ruta** (login/registro, admin y general tienen contador independiente por IP), para que la carga normal del SPA (assets estáticos + APIs) no agote el límite del login ni de `/api/admin`
 - Admin detectado por campo `rol` (`ADMIN`) en BD y JWT — sin lógica basada en email
 - Recursos estáticos se sirven con `Cache-Control: no-cache, must-revalidate` (config en `application.properties`) para que el navegador siempre revalide y no queden versiones viejas de `index.html`/`lumura.js`/`lumura.css`. Los assets se referencian además con query string versionado (`lumura.js?v=3`, `lumura.css?v=3`) que hay que incrementar al cambiar su contenido si un usuario sigue viendo pantallas antiguas (recargar con Ctrl+F5)
 - El contacto del vendedor del producto se muestra en todas las etapas del flujo de compra: tarjeta del carrito (`vendedor_nombre/vendedor_correo/vendedor_telefono/vendedor_negocio` de `GET /api/carrito/:id`), lista de ítems del checkout (`#checkout-items`, función `renderCheckoutItems`), confirmación del pedido (`#confirm-items`) y desglose de "Mis pedidos" (`renderDetallesPedido`, servido por `DetalleCompra.vendedor` en `GET /api/pedidos/:id_usuario`)
 - `api.request` (lumura.js) detecta 401 con token vigente → cierra sesión y redirige a login ("Tu sesión expiró"). Clave en dev: al reiniciar el servidor el secreto JWT cambia y los tokens viejos mueren, por lo que hay que volver a iniciar sesión
 - Acceso aliado: pantalla `screen-aliado-login` (botón "Soy aliado" en `choose-role`) pide correo+contraseña; valida con `POST /api/auth/login`; si el rol es `ALIADO` va a `aliado-add` (subir artículo); si no, muestra "No eres aliado". Ofrece enlace "Regístrate como aliado" (`screen-register-aliado`). La pantalla `aliado-login` está exenta del bloqueo por rol en `showScreen`
-- Suite de tests: 134 tests unitarios (JUnit 5 + Mockito) — `.\mvnw.cmd test`
+- Suite de tests: 135 tests unitarios (JUnit 5 + Mockito) — `.\mvnw.cmd test`
 - Git remote: `git@github.com:alejandrosilvarojas2-tech/lumura2.git`
 
 ## Archivos relevantes

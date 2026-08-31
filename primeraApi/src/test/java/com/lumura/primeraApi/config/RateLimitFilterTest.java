@@ -101,6 +101,22 @@ class RateLimitFilterTest {
     }
 
     @Test
+    void traficoGeneral_noAgotaElBucketDeLogin() throws Exception {
+        HttpServletResponse response = res();
+        FilterChain chain = mock(FilterChain.class);
+
+        // Una carga normal del SPA genera muchos requests estáticos en el mismo minuto...
+        for (int i = 0; i < 30; i++) {
+            filtro.doFilter(req("/", "10.0.0.7"), response, chain);
+        }
+        // ...pero el login (límite 10) tiene su propio bucket y debe pasar
+        filtro.doFilter(req("/api/auth/login", "10.0.0.7"), response, chain);
+
+        verify(chain, times(31)).doFilter(any(), any());
+        verify(response, never()).setStatus(429);
+    }
+
+    @Test
     void rutaAdmin_limite60() throws Exception {
         HttpServletResponse response = res();
         FilterChain chain = mock(FilterChain.class);
