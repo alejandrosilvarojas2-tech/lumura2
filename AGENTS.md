@@ -5,7 +5,7 @@ Backend Spring Boot + MySQL, frontend HTML/CSS/JS single-page.
 ## Stack
 
 - **Backend**: Spring Boot 3.2.5, Java 17+, JPA/Hibernate, MySQL, JWT (jjwt)
-- **Frontend**: HTML/CSS/JS vanilla, single-page (11 pantallas)
+- **Frontend**: HTML/CSS/JS vanilla, single-page (14 pantallas: login, recuperar, reset-password, aliado-login, register, register-aliado, home, product, cart, checkout, confirm, orders + 1 panel admin + 1 panel aliado)
 - **Node.js Express**: Eliminado — reemplazado por Spring Boot
 
 ## Comandos
@@ -100,10 +100,14 @@ Errores estándar: 401 sin token, 403 si el recurso es de otro usuario o falta r
 - Cabeceras de seguridad en `SecurityHeaderFilter`: CSP estricto (img-src permite http/https para `imagen_url` externa), X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy, X-XSS-Protection
 - Rate limit por IP (`RateLimitFilter`): ventana fija de 60s — login/registro 10 req/min, `/api/admin` 60, resto 120. Excede → 429 `{error}`. Los buckets son **por clase de ruta** (login/registro, admin y general tienen contador independiente por IP), para que la carga normal del SPA (assets estáticos + APIs) no agote el límite del login ni de `/api/admin`
 - Admin detectado por campo `rol` (`ADMIN`) en BD y JWT — sin lógica basada en email
-- Recursos estáticos se sirven con `Cache-Control: no-cache, must-revalidate` (config en `application.properties`) para que el navegador siempre revalide y no queden versiones viejas de `index.html`/`lumura.js`/`lumura.css`. Los assets se referencian además con query string versionado (`lumura.js?v=3`, `lumura.css?v=3`) que hay que incrementar al cambiar su contenido si un usuario sigue viendo pantallas antiguas (recargar con Ctrl+F5)
+- Recursos estáticos se sirven con `Cache-Control: no-cache, must-revalidate` (config en `application.properties`) para que el navegador siempre revalide y no queden versiones viejas de `index.html`/`lumura.js`/`lumura.css`. Los assets se referencian además con query string versionado (`lumura.js?v=4`, `lumura.css?v=4`) que hay que incrementar al cambiar su contenido si un usuario sigue viendo pantallas antiguas (recargar con Ctrl+F5)
 - El contacto del vendedor del producto se muestra en todas las etapas del flujo de compra: tarjeta del carrito (`vendedor_nombre/vendedor_correo/vendedor_telefono/vendedor_negocio` de `GET /api/carrito/:id`), lista de ítems del checkout (`#checkout-items`, función `renderCheckoutItems`), confirmación del pedido (`#confirm-items`) y desglose de "Mis pedidos" (`renderDetallesPedido`, servido por `DetalleCompra.vendedor` en `GET /api/pedidos/:id_usuario`)
 - `api.request` (lumura.js) detecta 401 con token vigente → cierra sesión y redirige a login ("Tu sesión expiró"). Clave en dev: al reiniciar el servidor el secreto JWT cambia y los tokens viejos mueren, por lo que hay que volver a iniciar sesión
-- Acceso aliado: pantalla `screen-aliado-login` (botón "Soy aliado" en `choose-role`) pide correo+contraseña; valida con `POST /api/auth/login`; si el rol es `ALIADO` va a `aliado-add` (subir artículo); si no, muestra "No eres aliado". Ofrece enlace "Regístrate como aliado" (`screen-register-aliado`). La pantalla `aliado-login` está exenta del bloqueo por rol en `showScreen`
+- **Separación de interfaces por rol** (`index.html`/`lumura.js`/`lumura.css`):
+  - Cada rol tiene **una sola pantalla de panel**: `#screen-admin` (admin: Dashboard/Catálogo/Inventario/Reportes/Usuarios/Pedidos) y `#screen-aliado` (aliado: Panel/Añadir artículo/Stock/Descripción/Licencia). Ambos usan layout `.admin-layout`+`.admin-sidebar`+`.admin-main` y alternan `.admin-panel`/`.aliado-panel` con `mostrarMenuAdmin(panel)`/`mostrarMenuAliado(panel)` (más la variante de render hook de `showScreen`). `Configuración` muestra "Próximamente"; avatar del header (Actualizar datos/Cerrar sesión/Eliminar cuenta) con `toggleUserMenu`
+  - Cliente (rol `USER`): tienda normal (home/product/cart/checkout/confirm/orders). Al hacer login ve `modal-politicas` y al aceptar → `home`
+  - **Aislamiento 100%**: logueado como ADMIN o ALIADO el `.app-header` se oculta (`body.rol-admin`/`body.rol-aliado`), la tienda queda inaccesible y `showScreen` redirige al propio panel (whitelist de pantallas por rol: ADMIN→solo `admin`, ALIADO→solo `aliado`); hay que cerrar sesión para comprar. Invitado/`USER` no pueden abrir `admin`/`aliado` ("Acceso denegado")
+  - Acceso aliado desde invitado: enlace **"Soy aliado — Acceder a mi panel"** dentro de `#screen-login` → `screen-aliado-login` (`accederAliado` valida con login; rol `ALIADO` → entra a `aliado`, si no "No eres aliado"). Se eliminó la pantalla intermedia `choose-role`
 - Suite de tests: 135 tests unitarios (JUnit 5 + Mockito) — `.\mvnw.cmd test`
 - Git remote: `git@github.com:alejandrosilvarojas2-tech/lumura2.git`
 
@@ -125,5 +129,5 @@ Errores estándar: 401 sin token, 403 si el recurso es de otro usuario o falta r
 - `DELETE /api/admin/usuarios/{id}` elimina usuario (400 si es rol ADMIN, 404 si no existe, 401 si no es admin)
 - `AuthController.login` valida el bloqueo: cuenta bloqueada con fecha vigente → 403 "Cuenta bloqueada. Motivo: ... Vuelve a intentarlo después del ..."; si el bloqueo venció lo limpia y permite entrar
 - Columna `bloqueado` (BOOLEAN default false), `motivo_bloqueo` (TEXT), `bloqueo_hasta` (DATETIME) en `usuario` (documentadas en `schema.sql`)
-- Pantalla `screen-admin-users` (botón "Usuarios" en el sidebar) muestra la tabla con columna **Estado** (badge Activo/Bloqueado), botones "Ver" (abre `modal-perfil-usuario` con perfil completo + datos de aliado si aplica), "Bloquear" (abre `modal-bloqueo-usuario` con motivo + días), "Desbloquear" (con confirmación) y "Eliminar" (admin queda "Protegido", sin botón)
+- Panel `admin-panel-users` (menú "Usuarios" en `#screen-admin`) muestra la tabla con columna **Estado** (badge Activo/Bloqueado), botones "Ver" (abre `modal-perfil-usuario` con perfil completo + datos de aliado si aplica), "Bloquear" (abre `modal-bloqueo-usuario` con motivo + días), "Desbloquear" (con confirmación) y "Eliminar" (admin queda "Protegido", sin botón)
 - `showScreen` ahora controla el `display` por JS (`s.style.display='none'` para las demás y `screen.style.display='block'` para la activa) y no depende de la clase CSS; esto evita que un `style="display:none;"` inline residual oculte una pantalla aunque tenga la clase `active`

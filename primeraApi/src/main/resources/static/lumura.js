@@ -79,7 +79,9 @@ async function handleLogin(e) {
     sincronizarFavoritos();
     mostrarMensaje('Bienvenido, ' + data.usuario.nombre, 'success');
     if (data.usuario.rol === 'ADMIN') {
-      showScreen('admin-dash');
+      showScreen('admin');
+    } else if (data.usuario.rol === 'ALIADO') {
+      showScreen('aliado');
     } else {
       document.getElementById('modal-politicas').style.display = 'flex';
     }
@@ -133,7 +135,7 @@ async function confirmarReset() {
 
 function aceptarPoliticas() {
   document.getElementById('modal-politicas').style.display = 'none';
-  showScreen('choose-role');
+  irInicioPorRol();
 }
 
 function rechazarPoliticas() {
@@ -160,7 +162,7 @@ function accederAliado() {
       actualizarUI();
       sincronizarFavoritos();
       mostrarMensaje('Bienvenido, ' + data.usuario.nombre, 'success');
-      showScreen('aliado-add');
+      showScreen('aliado');
     })
     .catch(function(err) {
       mostrarMensaje(err.message || 'Credenciales inválidas', 'error');
@@ -369,7 +371,7 @@ async function guardarLicenciaAliado() {
 }
 
 function volverPanelLicencia() {
-  showScreen('aliado-dash');
+  mostrarMenuAliado('dash');
 }
 
 
@@ -417,7 +419,7 @@ async function publicarArticuloAliado() {
     document.getElementById('aliado-add-form').reset();
     resetAliadoFormulario();
     await cargarProductos();
-    showScreen('aliado-stock');
+    mostrarMenuAliado('stock');
   } catch (err) {
     mostrarMensaje(err.message, 'error');
   }
@@ -726,7 +728,7 @@ async function cargarProductos() {
     state.productos = await api.get('/api/productos');
     renderProductos();
     renderAdminCatalogo();
-    if (document.getElementById('screen-admin-inv')?.classList.contains('active')) cargarInventario();
+    if (document.getElementById('admin-panel-inv')?.classList.contains('active')) cargarInventario();
   } catch (err) {
     mostrarMensaje('Error al cargar productos: ' + err.message, 'error');
   }
@@ -1632,6 +1634,16 @@ async function cargarReportes() {
 
 function actualizarUI() {
   const estaLogueado = !!state.token;
+  document.body.classList.remove('rol-admin', 'rol-aliado', 'rol-user');
+  if (estaLogueado && state.user) {
+    document.body.classList.add(state.user.rol === 'ADMIN' ? 'rol-admin' : (state.user.rol === 'ALIADO' ? 'rol-aliado' : 'rol-user'));
+  }
+  const adminAvatar = document.getElementById('admin-avatar');
+  if (adminAvatar) adminAvatar.textContent = (state.user?.nombre || 'A').charAt(0).toUpperCase();
+  const aliadoAvatar = document.getElementById('aliado-avatar');
+  if (aliadoAvatar) aliadoAvatar.textContent = (state.user?.nombre || 'A').charAt(0).toUpperCase();
+  const aliadoSaludo = document.getElementById('aliado-saludo');
+  if (aliadoSaludo) aliadoSaludo.textContent = state.user?.nombre || 'Aliado';
   document.querySelectorAll('.auth-only').forEach(el => el.style.display = estaLogueado ? '' : 'none');
   document.querySelectorAll('.no-auth').forEach(el => el.style.display = estaLogueado ? 'none' : '');
   const userLink = document.getElementById('header-user-link');
@@ -1643,10 +1655,6 @@ function actualizarUI() {
       userLink.innerHTML = '<img src="images/user.svg" class="icon" alt="" style="width:16px;height:16px;vertical-align:middle"> Iniciar sesión';
       userLink.onclick = function() { showScreen('login'); };
     }
-  }
-  const adminLink = document.getElementById('header-admin-link');
-  if (adminLink) {
-    adminLink.style.display = (estaLogueado && state.user?.rol === 'ADMIN') ? 'flex' : 'none';
   }
 }
 
@@ -1716,13 +1724,69 @@ async function cargarAliadoDashboard() {
   } catch (err) { /* ventas es complementario: no bloquea el panel */ }
 }
 
+function irInicioPorRol() {
+  const rol = state.user?.rol;
+  if (rol === 'ADMIN') return showScreen('admin');
+  if (rol === 'ALIADO') return showScreen('aliado');
+  return showScreen('home');
+}
+
+function mostrarMenuAdmin(panel) {
+  const nombre = panel || 'dash';
+  document.querySelectorAll('#screen-admin .admin-sidebar .menu-item[data-panel]').forEach(function (el) {
+    el.classList.toggle('active', el.dataset.panel === nombre);
+  });
+  document.querySelectorAll('#screen-admin .admin-panel').forEach(function (el) {
+    const activo = el.id === 'admin-panel-' + nombre;
+    el.classList.toggle('active', activo);
+    el.style.display = activo ? 'block' : 'none';
+  });
+  const titulos = { dash: 'Dashboard', cat: 'Catálogo', inv: 'Inventario', rep: 'Reportes', users: 'Usuarios', orders: 'Pedidos' };
+  const titleEl = document.getElementById('admin-title');
+  if (titleEl) titleEl.textContent = titulos[nombre] || 'Dashboard';
+  if (nombre === 'dash') cargarDashboard();
+  if (nombre === 'cat') cargarProductos();
+  if (nombre === 'inv') { cargarProductos(); cargarInventario(); }
+  if (nombre === 'rep') { cargarProductos(); cargarReportes(); }
+  if (nombre === 'users') cargarUsuariosAdmin();
+  if (nombre === 'orders') cargarPedidosAdmin();
+}
+
+function mostrarMenuAliado(panel) {
+  const nombre = panel || 'dash';
+  document.querySelectorAll('#screen-aliado .admin-sidebar .menu-item[data-panel]').forEach(function (el) {
+    el.classList.toggle('active', el.dataset.panel === nombre);
+  });
+  document.querySelectorAll('#screen-aliado .aliado-panel').forEach(function (el) {
+    const activo = el.id === 'aliado-panel-' + nombre;
+    el.classList.toggle('active', activo);
+    el.style.display = activo ? 'block' : 'none';
+  });
+  if (nombre === 'dash') cargarAliadoDashboard();
+  if (nombre === 'stock') cargarAliadoStock();
+  if (nombre === 'desc') cargarAliadoDesc();
+  if (nombre === 'licencia') cargarLicenciaAliado();
+}
+
 function showScreen(name) {
-  if (name.startsWith('admin-') && (!state.token || state.user?.rol !== 'ADMIN')) {
+  const rol = state.user?.rol || null;
+  if (name === 'admin' && rol !== 'ADMIN') {
     mostrarMensaje('Acceso denegado — Solo administradores', 'error');
     return;
   }
-  if (name.startsWith('aliado-') && name !== 'aliado-login' && (!state.token || (state.user?.rol !== 'ALIADO' && state.user?.rol !== 'ADMIN'))) {
+  if (name === 'aliado' && rol !== 'ALIADO' && rol !== 'ADMIN') {
     mostrarMensaje('Acceso denegado — Solo aliados', 'error');
+    return;
+  }
+  if (name === 'aliado-login' && estalogueadoLocal()) {
+    mostrarMensaje('Ya tienes una sesión de rol activa', 'info');
+    irInicioPorRol();
+    return;
+  }
+  const tienda = ['home', 'product', 'cart', 'checkout', 'confirm', 'orders'];
+  if (tienda.indexOf(name) !== -1 && (rol === 'ADMIN' || rol === 'ALIADO')) {
+    mostrarMensaje('Sesión de rol activa — cierra sesión para acceder a la tienda', 'info');
+    irInicioPorRol();
     return;
   }
   document.querySelectorAll('.screen').forEach(s => {
@@ -1748,18 +1812,13 @@ function showScreen(name) {
     const dirEl = document.getElementById('checkout-dir');
     if (dirEl) dirEl.value = state.user?.direccion || '';
   }
-  if (name === 'admin-dash') { cargarDashboard(); cargarProductos(); }
-  if (name === 'admin-cat') cargarProductos();
-  if (name === 'admin-inv') cargarProductos();
-  if (name === 'admin-rep') { cargarProductos(); cargarReportes(); }
-  if (name === 'admin-orders') cargarPedidosAdmin();
-  if (name === 'admin-users') cargarUsuariosAdmin();
-  if (name === 'aliado-add') {}
-  if (name === 'aliado-dash') cargarAliadoDashboard();
-  if (name === 'aliado-stock') cargarAliadoStock();
-  if (name === 'aliado-desc') cargarAliadoDesc();
-  if (name === 'aliado-licencia') cargarLicenciaAliado();
   if (name === 'orders' && state.token) cargarPedidos();
+  if (name === 'admin') mostrarMenuAdmin('dash');
+  if (name === 'aliado') mostrarMenuAliado('dash');
+}
+
+function estalogueadoLocal() {
+  return !!state.token;
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -1779,9 +1838,14 @@ document.addEventListener('DOMContentLoaded', function () {
       filtrarCategoria(this.dataset.cat);
     });
   });
+  const adminAvatar = document.getElementById('admin-avatar');
+  if (adminAvatar) adminAvatar.addEventListener('click', toggleUserMenu);
+  const aliadoAvatar = document.getElementById('aliado-avatar');
+  if (aliadoAvatar) aliadoAvatar.addEventListener('click', toggleUserMenu);
   actualizarUI();
   if (state.token) {
     cargarProductos();
     sincronizarFavoritos();
+    irInicioPorRol();
   }
 });

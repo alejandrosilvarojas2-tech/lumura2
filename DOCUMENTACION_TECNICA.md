@@ -922,6 +922,27 @@ en vivo contra el servidor real. La sección 8 se conserva como registro histór
   `X-Permitted-Cross-Domain-Policies: none` presentes en `/` y `/api/*`; login y
   catálogo siguen funcionando con el CSP activo.
 - Persistencia verificada directamente en MySQL (`detalle_compra`, `favoritos`).
+- **Separación de interfaces por rol (E2E, 30/08/2026)**: admin y aliado tienen ahora
+  **una sola pantalla de panel** cada uno (`#screen-admin` y `#screen-aliado`), con sidebar
+  `.admin-sidebar` e idéntica agrupación funcional: admin → Dashboard/Catálogo/Inventario/
+  Reportes/Usuarios/Pedidos (+ Configuración con aviso "Próximamente"), aliado → Panel/
+  Añadir artículo/Stock/Descripción/Licencia de distribuidor. El contenido alterna mediante
+  `mostrarMenuAdmin(panel)`/`mostrarMenuAliado(panel)` sobre `.admin-panel`/`.aliado-panel`
+  manteniendo los mismos ids (KPIs, tablas, formularios) que ya usaban las funciones de
+  render. Se eliminó la pantalla intermedia `choose-role` y el enlace "Admin" de la navbar
+  de tienda; el acceso del aliado es un enlace **"Soy aliado — Acceder a mi panel"** dentro
+  de `#screen-login` que lleva a `screen-aliado-login`. **Aislamiento 100% por rol**:
+  `showScreen` aplica whitelist de pantallas por rol (ADMIN→solo `admin`, ALIADO→solo
+  `aliado`, USER/invitado→tienda); con sesión de ADMIN/ALIADO el `.app-header` de la tienda
+  se oculta (`body.rol-admin`/`body.rol-aliado`) y cualquier intento de abrir la tienda
+  redirige al propio panel (hay que cerrar sesión para comprar). El avatar del header del
+  panel agrupa Actualizar datos / Cerrar sesión / Eliminar cuenta (`toggleUserMenu`).
+  Assets versionados a `?v=4`. Verificado E2E (Puppeteer): login admin → 6 botones del
+  panel renderizan datos (dashboard KPIs $, catálogo, inventario, reportes, usuarios con
+  filas, pedidos) + bloqueo de tienda + dropdown del avatar + cierre de sesión; login
+  aliado real (registrado por API) → 5 botones del panel + bloqueo de tienda; login cliente
+  → modal de políticas → home + bloqueo de paneles admin/aliado. Suite unitaria 135/135 en
+  verde.
 
 Pendiente recomendado para despliegue público: M2 (rate limiter por clave/parcialidad——ya existe por IP en la entrada 21) y la limpieza cosmética del HTML del panel admin. La pasarela simulada
 está lista para migrarse a Stripe/PayU (mismos contratos de `metodo_pago`/
@@ -933,4 +954,4 @@ Permissions-Policy, X-XSS-Protection).
 
 ---
 
-*Fin del documento — LUMURA Documentación Técnica v2.0 (Actualizado 21/08/2026)*
+*Fin del documento — LUMURA Documentación Técnica v2.0 (Actualizado 30/08/2026)*

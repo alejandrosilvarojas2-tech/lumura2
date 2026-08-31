@@ -275,6 +275,10 @@
   .admin-main { flex: 1; background: #f4f4f8; padding: 24px; overflow-y: auto; }
   .admin-layout { display: flex; min-height: 500px; }
   .admin-header { background: white; padding: 16px 24px; border-bottom: 1px solid var(--light); display: flex; align-items: center; justify-content: space-between; }
+  .admin-sidebar { position: relative; }
+  .admin-panel, .aliado-panel { display: none; }
+  .admin-panel.active, .aliado-panel.active { display: block; }
+  body.rol-admin .app-header, body.rol-aliado .app-header { display: none !important; }
   .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
   .kpi-card { background: white; border-radius: var(--radius); padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
   .kpi-card .label { font-size: 12px; color: var(--gray); margin-bottom: 6px; }
@@ -472,6 +476,9 @@ img.icon, img.icon-big, .icon-img { vertical-align: middle; }
     .screen[id^="screen-aliado-"] > div { flex-direction: column !important; }
     .screen[id^="screen-aliado-"] > div > div[style*="flex:1"] { padding: 20px 16px !important; }
     .screen[id^="screen-aliado-"] .admin-sidebar { width: 100%; flex-direction: row; }
+    #screen-aliado > div { flex-direction: column !important; }
+    #screen-aliado > div > div[style*="flex:1"] { padding: 20px 16px !important; }
+    #screen-aliado .admin-sidebar { width: 100%; flex-direction: row; }
 
     /* Tablas con scroll horizontal */
     .data-table { display: block; overflow-x: auto; white-space: nowrap; }

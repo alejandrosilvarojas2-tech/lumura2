@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="lumura.css?v=3">
+<link rel="stylesheet" href="lumura.css?v=4">
 </head>
 <body>
 
@@ -26,9 +26,6 @@
     </a>
     <a id="header-user-link" style="display:flex;align-items:center;gap:6px;" onclick="showScreen('login')">
       <img src="images/user.svg" class="icon" alt="" style="width:16px;height:16px;vertical-align:middle"> <span class="nav-text">Iniciar sesión</span>
-    </a>
-    <a class="admin-only" id="header-admin-link" style="display:none;align-items:center;gap:6px;" onclick="showScreen('admin-dash')">
-      <img src="images/dashboard.svg" class="icon" alt="" style="width:16px;height:16px;vertical-align:middle"> <span class="nav-text">Admin</span>
     </a>
   </div>
 </div>
@@ -69,6 +66,9 @@
           <div style="flex:1; height:1px; background:var(--light);"></div>
         </div>
         <button class="btn-secondary" onclick="proximamente('Inicio con Google')"><img src="images/google.jfif" class="icon" alt="" style="width:16px;height:16px;vertical-align:middle"> Continuar con Google</button>
+        <div style="text-align:center;margin-top:16px;border-top:1.5px solid var(--light);padding-top:16px;">
+          <a style="cursor:pointer;color:var(--accent);font-weight:700;font-size:14px;" onclick="showScreen('aliado-login')"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"> Soy aliado — Acceder a mi panel</a>
+        </div>
       </div>
     </div>
   </div>
@@ -123,32 +123,6 @@
   </div>
 </div>
 
-<!-- ============================================================ -->
-<!-- SCREEN: SELECCIÓN POST-LOGIN -->
-<!-- ============================================================ -->
-<div class="screen" id="screen-choose-role">
-  <div style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 60px);padding:32px;">
-    <div style="width:100%;max-width:420px;text-align:center;">
-      <div style="background: linear-gradient(160deg, var(--primary) 0%, #0f3460 60%, var(--accent) 100%); padding: 40px 24px 30px; border-radius:12px 12px 0 0;">
-        <div style="font-family:'Playfair Display',Georgia,serif; font-size: 42px; font-weight: 900; color: var(--accent); letter-spacing: 4px;">LUMURA</div>
-      </div>
-      <div style="padding: 32px 24px; background: white; border-radius: 0 0 12px 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.07);">
-        <h2 style="font-size:20px;font-weight:700;margin-bottom:6px;">¿Cómo quieres continuar?</h2>
-        <p style="color:var(--gray);font-size:14px;margin-bottom:28px;">Elige cómo deseas usar LUMURA</p>
-        <button class="btn-primary" style="width:100%;padding:16px;font-size:16px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:10px;" onclick="showScreen('aliado-login')">
-          <img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"> Soy aliado
-        </button>
-        <button class="btn-secondary" style="width:100%;padding:16px;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;" onclick="postLoginRedirect('cliente')">
-          <img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"> Cliente — Ir a la tienda
-        </button>
-        <div style="margin-top:20px;font-size:13px;color:var(--gray);">
-          <a style="color:var(--accent);cursor:pointer;font-weight:600;" onclick="cerrarSesion()">Cerrar sesión</a>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- SCREEN: ACCESO ALIADO (login específico) -->
 <div class="screen" id="screen-aliado-login">
   <div style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 60px);padding:32px;">
@@ -174,7 +148,7 @@
           <a style="color:var(--accent);cursor:pointer;font-weight:600;" onclick="abrirRegistroAliado()">Regístrate como aliado</a>
         </div>
         <div style="margin-top:16px;font-size:13px;color:var(--gray);text-align:center;">
-          <a style="color:var(--accent);cursor:pointer;font-weight:600;" onclick="showScreen('choose-role')">← Volver</a>
+          <a style="color:var(--accent);cursor:pointer;font-weight:600;" onclick="showScreen('login')">← Volver</a>
         </div>
       </div>
     </div>
@@ -487,42 +461,32 @@
   </div>
 </div>
 
-<!-- ============================================================ -->
-<!-- SCREEN 9: ADMIN DASHBOARD -->
-<!-- ============================================================ -->
-<div class="screen" id="screen-admin-dash">
-  <div class="screen-label">Pantalla 8 – Panel de Administración (Dashboard)</div>
-  <div class="desktop-frame">
-    <div class="desktop-bar">
-      <span></span><span></span><span></span>
-      <div class="desktop-url"></div>
+<div class="screen" id="screen-admin">
+  <div class="admin-layout">
+    <div class="admin-sidebar">
+      <div class="logo">LUMURA</div>
+      <div class="menu-item active" data-panel="dash" onclick="mostrarMenuAdmin('dash')"><span class="icon"><img src="images/dashboard.svg" class="icon" alt="" style="vertical-align:middle"></span>Dashboard</div>
+      <div class="menu-item" data-panel="cat" onclick="mostrarMenuAdmin('cat')"><span class="icon"><img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle"></span>Catálogo</div>
+      <div class="menu-item" data-panel="inv" onclick="mostrarMenuAdmin('inv')"><span class="icon"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"></span>Inventario</div>
+      <div class="menu-item" data-panel="rep" onclick="mostrarMenuAdmin('rep')"><span class="icon"><img src="images/chart-up.svg" class="icon" alt="" style="vertical-align:middle"></span>Reportes</div>
+      <div class="menu-item" data-panel="users" onclick="mostrarMenuAdmin('users')"><span class="icon"><img src="images/users.svg" class="icon" alt="" style="vertical-align:middle"></span>Usuarios</div>
+      <div class="menu-item" data-panel="orders" onclick="mostrarMenuAdmin('orders')"><span class="icon"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></span>Pedidos</div>
+      <div class="menu-item" onclick="proximamente('Configuración')"><span class="icon"><img src="images/settings.svg" class="icon" alt="" style="vertical-align:middle"></span>Configuración</div>
+      <div style="position:absolute; bottom:20px; left:0; right:0; padding: 0 20px;">
+        <div class="menu-item" onclick="cerrarSesion()"><span class="icon"><img src="images/unlock.svg" class="icon" alt="" style="vertical-align:middle"></span>Cerrar sesión</div>
+      </div>
     </div>
-    <div class="admin-layout">
-      <div class="admin-sidebar">
-        <div class="logo">LUMURA</div>
-        <div class="menu-item active" onclick="showScreen('admin-dash')"><span class="icon"><img src="images/dashboard.svg" class="icon" alt="" style="vertical-align:middle"></span>Dashboard</div>
-        <div class="menu-item" onclick="showScreen('admin-cat')"><span class="icon"><img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle"></span>Catálogo</div>
-        <div class="menu-item" onclick="showScreen('admin-inv')"><span class="icon"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"></span>Inventario</div>
-        <div class="menu-item" onclick="showScreen('admin-rep')"><span class="icon"><img src="images/chart-up.svg" class="icon" alt="" style="vertical-align:middle"></span>Reportes</div>
-        <div class="menu-item" onclick="showScreen('admin-users')"><span class="icon"><img src="images/users.svg" class="icon" alt="" style="vertical-align:middle"></span>Usuarios</div>
-        <div class="menu-item" onclick="showScreen('admin-orders')"><span class="icon"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></span>Pedidos</div>
-        <div class="menu-item" onclick="proximamente('Configuración')"><span class="icon"><img src="images/settings.svg" class="icon" alt="" style="vertical-align:middle"></span>Configuración</div>
-        <div style="position:absolute; bottom:20px; left:0; right:0; padding: 0 20px;">
-          <div class="menu-item logout-btn"><span class="icon"><img src="images/unlock.svg" class="icon" alt="" style="vertical-align:middle"></span>Cerrar sesión</div>
+    <div style="flex:1; display:flex; flex-direction:column;">
+      <div class="admin-header">
+        <div><div id="admin-title" style="font-size:18px; font-weight:800;">Dashboard</div><div id="admin-subtitle" style="font-size:12px; color:var(--gray);">Bienvenido, Administrador</div></div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <span style="font-size:18px; cursor:pointer;"><img src="images/bell.svg" class="icon" alt="" style="vertical-align:middle"></span>
+          <div id="admin-avatar" style="width:36px; height:36px; background:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; cursor:pointer; position:relative;">A</div>
         </div>
       </div>
-      <div style="flex:1; display:flex; flex-direction:column;">
-        <div class="admin-header">
-          <div>
-            <div style="font-size:18px; font-weight:800;">Dashboard</div>
-            <div style="font-size:12px; color:var(--gray);">Bienvenido, Administrador · 15 Abr 2025</div>
-          </div>
-          <div style="display:flex; gap:10px; align-items:center;">
-            <span style="font-size:18px; cursor:pointer;"><img src="images/bell.svg" class="icon" alt="" style="vertical-align:middle"></span>
-            <div style="width:36px; height:36px; background:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700;">A</div>
-          </div>
-        </div>
-        <div class="admin-main">
+      <div class="admin-main">
+
+        <div class="admin-panel active" id="admin-panel-dash">
           <div class="kpi-grid">
             <div class="kpi-card"><div class="label">Ingresos</div><div id="admin-revenue" class="value">$0<span class="icon-big"><img src="images/money.svg" class="icon" alt="" style="vertical-align:middle"></span></div></div>
             <div class="kpi-card"><div class="label">Pedidos</div><div id="admin-order-count" class="value">0<span class="icon-big"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></span></div></div>
@@ -548,71 +512,15 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px;"><span>#LUM-0047</span><span class="badge badge-blue">En proceso</span></div>
                 <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px;"><span>#LUM-0046</span><span class="badge badge-red">Pendiente</span></div>
                 <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px;"><span>#LUM-0045</span><span class="badge badge-green">Entregado</span></div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  </div>
-</div>
 
-<!-- ADMIN USERS -->
-<div id="screen-admin-users" class="screen">
-  <div class="admin-layout">
-    <div class="admin-sidebar">
-      <div class="menu-item" onclick="showScreen('admin-dash')"><span class="icon"><img src="images/dashboard.svg" class="icon" alt="" style="vertical-align:middle"></span>Dashboard</div>
-      <div class="menu-item" onclick="showScreen('admin-cat')"><span class="icon"><img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle"></span>Catálogo</div>
-      <div class="menu-item" onclick="showScreen('admin-inv')"><span class="icon"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"></span>Inventario</div>
-      <div class="menu-item" onclick="showScreen('admin-rep')"><span class="icon"><img src="images/chart-up.svg" class="icon" alt="" style="vertical-align:middle"></span>Reportes</div>
-      <div class="menu-item active" onclick="showScreen('admin-users')"><span class="icon"><img src="images/users.svg" class="icon" alt="" style="vertical-align:middle"></span>Usuarios</div>
-      <div class="menu-item" onclick="showScreen('admin-orders')"><span class="icon"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></span>Pedidos</div>
-      <div class="menu-item" onclick="proximamente('Configuración')"><span class="icon"><img src="images/settings.svg" class="icon" alt="" style="vertical-align:middle"></span>Configuración</div>
-      <div style="position:absolute; bottom:20px; left:0; right:0; padding: 0 20px;">
-        <div class="menu-item" onclick="cerrarSesion()"><span class="icon"><img src="images/unlock.svg" class="icon" alt="" style="vertical-align:middle"></span>Cerrar sesión</div>
-      </div>
-    </div>
-    <div style="flex:1;">
-      <div class="admin-header">
-        <div><div style="font-size:18px; font-weight:800;">Gestión de Usuarios</div><div style="font-size:12px; color:var(--gray);">Administra los usuarios registrados</div></div>
-      </div>
-      <div class="admin-main">
-        <div class="card" style="padding:0;">
-          <table class="data-table">
-            <thead><tr>
-              <th>ID</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Rol</th><th>Registro</th><th>Estado</th><th>Acción</th>
-            </tr></thead>
-            <tbody id="admin-users-body">
-              <tr><td colspan="8" style="text-align:center;padding:20px;">Cargando...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ============================================================ -->
-<!-- SCREEN 10: ADMIN - GESTIÓN CATÁLOGO -->
-<!-- ============================================================ -->
-<div class="screen" id="screen-admin-cat">
-  <div class="screen-label">Pantalla 9 – Gestión de Catálogo (Administrador)</div>
-  <div class="desktop-frame">
-    <div class="desktop-bar"><span></span><span></span><span></span><div class="desktop-url"></div></div>
-    <div class="admin-layout">
-      <div class="admin-sidebar">
-        <div class="logo">LUMURA</div>
-        <div class="menu-item" onclick="showScreen('admin-dash')"><span class="icon"><img src="images/dashboard.svg" class="icon" alt="" style="vertical-align:middle"></span>Dashboard</div>
-        <div class="menu-item active" onclick="showScreen('admin-cat')"><span class="icon"><img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle"></span>Catálogo</div>
-        <div class="menu-item" onclick="showScreen('admin-inv')"><span class="icon"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"></span>Inventario</div>
-        <div class="menu-item" onclick="showScreen('admin-rep')"><span class="icon"><img src="images/chart-up.svg" class="icon" alt="" style="vertical-align:middle"></span>Reportes</div>
-        <div class="menu-item" onclick="showScreen('admin-users')"><span class="icon"><img src="images/users.svg" class="icon" alt="" style="vertical-align:middle"></span>Usuarios</div>
-        <div class="menu-item" onclick="showScreen('admin-orders')"><span class="icon"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></span>Pedidos</div>
-        <div class="menu-item" onclick="proximamente('Configuración')"><span class="icon"><img src="images/settings.svg" class="icon" alt="" style="vertical-align:middle"></span>Configuración</div>
-      </div>
-      <div style="flex:1; display:flex; flex-direction:column;">
-        <div class="admin-header">
-          <div><div style="font-size:18px; font-weight:800;">Gestión de Catálogo</div><div style="font-size:12px; color:var(--gray);">Administra los productos de la tienda</div></div>
-          <button class="btn-sm" style="background:var(--accent); color:white; padding:10px 20px;" onclick="abrirModalProducto()">+ Nueva prenda</button>
-        </div>
-        <div class="admin-main">
+        <div class="admin-panel" id="admin-panel-cat">
+          <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
+            <button class="btn-sm" style="background:var(--accent); color:white; padding:10px 20px;" onclick="abrirModalProducto()">+ Nueva prenda</button>
+          </div>
           <div style="display:flex; gap:12px; margin-bottom:16px; align-items:center;">
             <div class="search-bar" style="margin:0; flex:1;">
               <span><img src="images/search.svg" class="icon" alt="" style="vertical-align:middle"></span>
@@ -633,40 +541,15 @@
               <thead><tr>
                 <th>ID</th><th>Producto</th><th>Categoría</th><th>Precio</th><th>Tallas</th><th>Estado</th><th>Acciones</th>
               </tr></thead>
-              <tbody id="admin-cat-body">
-              </tbody>
+              <tbody id="admin-cat-body"></tbody>
             </table>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-</div>
 
-<!-- ============================================================ -->
-<!-- SCREEN 11: ADMIN - INVENTARIO -->
-<!-- ============================================================ -->
-<div class="screen" id="screen-admin-inv">
-  <div class="screen-label">Pantalla 10 – Gestión de Inventario</div>
-  <div class="desktop-frame">
-    <div class="desktop-bar"><span></span><span></span><span></span><div class="desktop-url"></div></div>
-    <div class="admin-layout">
-      <div class="admin-sidebar">
-        <div class="logo">LUMURA</div>
-        <div class="menu-item" onclick="showScreen('admin-dash')"><span class="icon"><img src="images/dashboard.svg" class="icon" alt="" style="vertical-align:middle"></span>Dashboard</div>
-        <div class="menu-item" onclick="showScreen('admin-cat')"><span class="icon"><img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle"></span>Catálogo</div>
-        <div class="menu-item active" onclick="showScreen('admin-inv')"><span class="icon"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"></span>Inventario</div>
-        <div class="menu-item" onclick="showScreen('admin-rep')"><span class="icon"><img src="images/chart-up.svg" class="icon" alt="" style="vertical-align:middle"></span>Reportes</div>
-        <div class="menu-item" onclick="showScreen('admin-users')"><span class="icon"><img src="images/users.svg" class="icon" alt="" style="vertical-align:middle"></span>Usuarios</div>
-        <div class="menu-item" onclick="showScreen('admin-orders')"><span class="icon"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></span>Pedidos</div>
-        <div class="menu-item" onclick="proximamente('Configuración')"><span class="icon"><img src="images/settings.svg" class="icon" alt="" style="vertical-align:middle"></span>Configuración</div>
-      </div>
-      <div style="flex:1; display:flex; flex-direction:column;">
-        <div class="admin-header">
-          <div><div style="font-size:18px; font-weight:800;">Control de Inventario</div><div style="font-size:12px; color:var(--gray);">Stock actualizado al 15 Abr 2025</div></div>
-          <button class="btn-sm" style="background:var(--accent); color:white; padding:10px 20px;" onclick="proximamente('Registro de entrada')"><img src="images/inbox.svg" class="icon" alt="" style="vertical-align:middle"> Registrar entrada</button>
-        </div>
-        <div class="admin-main">
+        <div class="admin-panel" id="admin-panel-inv">
+          <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
+            <button class="btn-sm" style="background:var(--accent); color:white; padding:10px 20px;" onclick="proximamente('Registro de entrada')"><img src="images/inbox.svg" class="icon" alt="" style="vertical-align:middle"> Registrar entrada</button>
+          </div>
           <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:16px; margin-bottom:20px;">
             <div class="kpi-card"><div class="label">Total unidades</div><div id="inv-total-unidades" class="value">0</div><div class="change">Cargando...</div></div>
             <div class="kpi-card"><div class="label">Productos agotados</div><div id="inv-agotados" class="value" style="color:var(--accent);">0</div><div class="change" style="color:var(--accent);"><img src="images/warning.svg" class="icon" alt="" style="vertical-align:middle"> Requiere atención</div></div>
@@ -678,44 +561,18 @@
               <thead><tr>
                 <th>Producto</th><th>Categoría</th><th>Talla</th><th>Color</th><th>Stock</th><th>Estado</th><th>Acción</th>
               </tr></thead>
-              <tbody id="inv-body">
+              <tbody id="inv-body"></tbody>
             </table>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-</div>
 
-<!-- ============================================================ -->
-<!-- SCREEN 12: ADMIN - REPORTES -->
-<!-- ============================================================ -->
-<div class="screen" id="screen-admin-rep">
-  <div class="screen-label">Pantalla 11 – Reportes de Ventas</div>
-  <div class="desktop-frame">
-    <div class="desktop-bar"><span></span><span></span><span></span><div class="desktop-url"></div></div>
-    <div class="admin-layout">
-      <div class="admin-sidebar">
-        <div class="logo">LUMURA</div>
-        <div class="menu-item" onclick="showScreen('admin-dash')"><span class="icon"><img src="images/dashboard.svg" class="icon" alt="" style="vertical-align:middle"></span>Dashboard</div>
-        <div class="menu-item" onclick="showScreen('admin-cat')"><span class="icon"><img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle"></span>Catálogo</div>
-        <div class="menu-item" onclick="showScreen('admin-inv')"><span class="icon"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"></span>Inventario</div>
-        <div class="menu-item active" onclick="showScreen('admin-rep')"><span class="icon"><img src="images/chart-up.svg" class="icon" alt="" style="vertical-align:middle"></span>Reportes</div>
-        <div class="menu-item" onclick="showScreen('admin-users')"><span class="icon"><img src="images/users.svg" class="icon" alt="" style="vertical-align:middle"></span>Usuarios</div>
-        <div class="menu-item" onclick="showScreen('admin-orders')"><span class="icon"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></span>Pedidos</div>
-        <div class="menu-item" onclick="proximamente('Configuración')"><span class="icon"><img src="images/settings.svg" class="icon" alt="" style="vertical-align:middle"></span>Configuración</div>
-      </div>
-      <div style="flex:1; display:flex; flex-direction:column;">
-        <div class="admin-header">
-          <div><div style="font-size:18px; font-weight:800;">Reportes de Ventas</div><div style="font-size:12px; color:var(--gray);">Análisis de desempeño comercial</div></div>
-          <div style="display:flex; gap:8px;">
+        <div class="admin-panel" id="admin-panel-rep">
+          <div style="display:flex; justify-content:flex-end; gap:8px; margin-bottom:12px;">
             <select style="padding:8px 12px; border:1.5px solid var(--light); border-radius:8px; font-size:13px; outline:none;" onchange="proximamente('Cambio de período')">
               <option>Abril 2025</option><option>Marzo 2025</option>
             </select>
             <button class="btn-sm" style="background:var(--accent); color:white;" onclick="exportarPDF()"><img src="images/document.svg" class="icon" alt="" style="vertical-align:middle"> Exportar PDF</button>
           </div>
-        </div>
-        <div class="admin-main">
           <div style="display:grid; grid-template-columns: repeat(4,1fr); gap:12px; margin-bottom:20px;">
             <div class="kpi-card"><div class="label">Ingresos totales</div><div id="rep-ingresos" class="value" style="font-size:18px;">$0</div><div class="change">Cargando...</div></div>
             <div class="kpi-card"><div class="label">Pedidos completados</div><div id="rep-pedidos" class="value" style="font-size:18px;">0</div><div class="change">Cargando...</div></div>
@@ -770,230 +627,223 @@
             </table>
           </div>
         </div>
+
+        <div class="admin-panel" id="admin-panel-users">
+          <div class="card" style="padding:0;">
+            <table class="data-table">
+              <thead><tr>
+                <th>ID</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Rol</th><th>Registro</th><th>Estado</th><th>Acción</th>
+              </tr></thead>
+              <tbody id="admin-users-body">
+                <tr><td colspan="8" style="text-align:center;padding:20px;">Cargando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="admin-panel" id="admin-panel-orders">
+          <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
+            <select id="orders-filter" style="padding:8px 12px; border:1.5px solid var(--light); border-radius:8px; font-size:13px; outline:none;" onchange="cargarPedidosAdmin()">
+              <option value="">Todos los estados</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="enviado">Enviado</option>
+              <option value="entregado">Entregado</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+          </div>
+          <div class="card" style="padding:0;">
+            <table class="data-table">
+              <thead><tr>
+                <th>Pedido</th><th>Cliente ID</th><th>Productos</th><th>Total</th><th>Fecha</th><th>Estado</th><th>Seguimiento</th><th>Acción</th>
+              </tr></thead>
+              <tbody id="admin-orders-body">
+                <tr><td colspan="8" style="text-align:center;padding:20px;">Cargando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
 </div>
 
 <!-- ============================================================ -->
-<!-- SCREEN ALIADO: PANEL PRINCIPAL -->
+<!-- ALIADO: UNA SOLA PANTALLA CON PANELES -->
 <!-- ============================================================ -->
-<div class="screen" id="screen-aliado-dash">
-  <div style="display:flex;min-height:calc(100vh - 60px);">
+<div class="screen" id="screen-aliado">
+  <div style="display:flex;min-height:100vh;">
     <div class="admin-sidebar">
       <div class="logo">LUMURA</div>
-      <div class="menu-item active" onclick="showScreen('aliado-dash')"><span class="icon"><img src="images/dashboard.svg" class="icon" alt="" style="vertical-align:middle"></span>Panel</div>
-      <div class="menu-item" onclick="showScreen('aliado-add')"><span class="icon"><img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle"></span>Añadir artículo</div>
-      <div class="menu-item" onclick="showScreen('aliado-stock')"><span class="icon"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"></span>Stock</div>
-      <div class="menu-item" onclick="showScreen('aliado-desc')"><span class="icon"><img src="images/document.svg" class="icon" alt="" style="vertical-align:middle"></span>Descripción</div>
-      <div class="menu-item" onclick="showScreen('aliado-licencia')"><span class="icon"><img src="images/document.svg" class="icon" alt="" style="vertical-align:middle"></span>Licencia de distribuidor</div>
-    </div>
-    <div style="flex:1;padding:32px;">
-      <h2 style="font-size:22px;font-weight:800;margin-bottom:8px;">Panel de Aliado</h2>
-      <p style="color:var(--gray);font-size:14px;margin-bottom:24px;">Gestiona tus productos como aliado comercial</p>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;">
-        <div class="card" style="padding:20px;text-align:center;">
-          <div style="font-size:13px;color:var(--gray);margin-bottom:6px;">Productos propios</div>
-          <div style="font-size:28px;font-weight:800;" id="aliado-metric-productos">-</div>
-        </div>
-        <div class="card" style="padding:20px;text-align:center;">
-          <div style="font-size:13px;color:var(--gray);margin-bottom:6px;">Unidades en stock</div>
-          <div style="font-size:28px;font-weight:800;" id="aliado-metric-stock">-</div>
-        </div>
-        <div class="card" style="padding:20px;text-align:center;">
-          <div style="font-size:13px;color:var(--gray);margin-bottom:6px;">Valor del inventario</div>
-          <div style="font-size:28px;font-weight:800;" id="aliado-metric-valor">-</div>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:32px;">
-        <div class="card" style="padding:20px;text-align:center;border:2px solid var(--accent);">
-          <div style="font-size:13px;color:var(--gray);margin-bottom:6px;">Unidades vendidas</div>
-          <div style="font-size:28px;font-weight:800;color:var(--accent);" id="aliado-metric-vendidas">-</div>
-        </div>
-        <div class="card" style="padding:20px;text-align:center;border:2px solid var(--accent);">
-          <div style="font-size:13px;color:var(--gray);margin-bottom:6px;">Ingresos por ventas</div>
-          <div style="font-size:28px;font-weight:800;color:var(--accent);" id="aliado-metric-ingresos">-</div>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px;">
-        <div class="card" style="padding:24px;text-align:center;cursor:pointer;" onclick="showScreen('aliado-add')">
-          <div style="font-size:40px;margin-bottom:12px;"><img src="images/dress.svg" class="icon" alt="" style="width:48px;height:48px;vertical-align:middle"></div>
-          <div style="font-size:16px;font-weight:700;">Añadir artículo</div>
-          <div style="font-size:13px;color:var(--gray);margin-top:4px;">Registra nuevos productos en el catálogo</div>
-        </div>
-        <div class="card" style="padding:24px;text-align:center;cursor:pointer;" onclick="showScreen('aliado-stock')">
-          <div style="font-size:40px;margin-bottom:12px;"><img src="images/package.svg" class="icon" alt="" style="width:48px;height:48px;vertical-align:middle"></div>
-          <div style="font-size:16px;font-weight:700;">Stock</div>
-          <div style="font-size:13px;color:var(--gray);margin-top:4px;">Consulta y actualiza el inventario</div>
-        </div>
-        <div class="card" style="padding:24px;text-align:center;cursor:pointer;" onclick="showScreen('aliado-desc')">
-          <div style="font-size:40px;margin-bottom:12px;"><img src="images/document.svg" class="icon" alt="" style="width:48px;height:48px;vertical-align:middle"></div>
-          <div style="font-size:16px;font-weight:700;">Descripción</div>
-          <div style="font-size:13px;color:var(--gray);margin-top:4px;">Edita las descripciones de tus artículos</div>
-        </div>
-      </div>
-      <h3 style="font-size:16px;font-weight:800;margin-bottom:12px;">Últimas ventas</h3>
-      <div class="card" style="padding:0;overflow:hidden;">
-        <table class="admin-table" style="width:100%;border-collapse:collapse;">
-          <thead>
-            <tr style="background:var(--light);text-align:left;">
-              <th style="padding:10px 16px;font-size:13px;">Pedido</th>
-              <th style="padding:10px 16px;font-size:13px;">Producto</th>
-              <th style="padding:10px 16px;font-size:13px;text-align:center;">Unidades</th>
-              <th style="padding:10px 16px;font-size:13px;">Precio unitario</th>
-            </tr>
-          </thead>
-          <tbody id="aliado-ventas-body">
-            <tr><td colspan="4" style="text-align:center;padding:16px;color:var(--gray);">Cargando...</td></tr>
-          </tbody>
-        </table>
+      <div class="menu-item active" data-panel="dash" onclick="mostrarMenuAliado('dash')"><span class="icon"><img src="images/dashboard.svg" class="icon" alt="" style="vertical-align:middle"></span>Panel</div>
+      <div class="menu-item" data-panel="add" onclick="mostrarMenuAliado('add')"><span class="icon"><img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle"></span>Añadir artículo</div>
+      <div class="menu-item" data-panel="stock" onclick="mostrarMenuAliado('stock')"><span class="icon"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"></span>Stock</div>
+      <div class="menu-item" data-panel="desc" onclick="mostrarMenuAliado('desc')"><span class="icon"><img src="images/document.svg" class="icon" alt="" style="vertical-align:middle"></span>Descripción</div>
+      <div class="menu-item" data-panel="licencia" onclick="mostrarMenuAliado('licencia')"><span class="icon"><img src="images/document.svg" class="icon" alt="" style="vertical-align:middle"></span>Licencia de distribuidor</div>
+      <div style="position:absolute; bottom:20px; left:0; right:0; padding: 0 20px;">
+        <div class="menu-item" onclick="cerrarSesion()"><span class="icon"><img src="images/unlock.svg" class="icon" alt="" style="vertical-align:middle"></span>Cerrar sesión</div>
       </div>
     </div>
-  </div>
-</div>
+<div style="flex:1;padding:32px;">
 
-<!-- ============================================================ -->
-<!-- SCREEN ALIADO: AÑADIR ARTÍCULO -->
-<!-- ============================================================ -->
-<div class="screen" id="screen-aliado-add">
-  <div style="display:flex;min-height:calc(100vh - 60px);">
-    <div class="admin-sidebar">
-      <div class="logo">LUMURA</div>
-      <div class="menu-item" onclick="showScreen('aliado-dash')"><span class="icon"><img src="images/dashboard.svg" class="icon" alt="" style="vertical-align:middle"></span>Panel</div>
-      <div class="menu-item active" onclick="showScreen('aliado-add')"><span class="icon"><img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle"></span>Añadir artículo</div>
-      <div class="menu-item" onclick="showScreen('aliado-stock')"><span class="icon"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"></span>Stock</div>
-      <div class="menu-item" onclick="showScreen('aliado-desc')"><span class="icon"><img src="images/document.svg" class="icon" alt="" style="vertical-align:middle"></span>Descripción</div>
-      <div class="menu-item" onclick="showScreen('aliado-licencia')"><span class="icon"><img src="images/document.svg" class="icon" alt="" style="vertical-align:middle"></span>Licencia de distribuidor</div>
-    </div>
-    <div style="flex:1;padding:32px;">
-      <h2 style="font-size:22px;font-weight:800;margin-bottom:8px;">Añadir artículo</h2>
-      <p style="color:var(--gray);font-size:14px;margin-bottom:24px;">Registra un nuevo producto en el catálogo</p>
-      <div class="card" style="max-width:520px;padding:24px;">
-        <form id="aliado-add-form">
-          <div class="form-group">
-            <label>Nombre del artículo *</label>
-            <input id="aliado-art-nombre" placeholder="Ej: Camiseta Oversize" required>
+      <div class="admin-header" style="margin-bottom:24px;">
+        <div><div style="font-size:18px; font-weight:800;">Panel de Aliado</div><div style="font-size:12px; color:var(--gray);">Bienvenido(a), <span id="aliado-saludo">Aliado</span></div></div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <div id="aliado-avatar" style="width:36px; height:36px; background:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; cursor:pointer; position:relative;">A</div>
+        </div>
+      </div>
+
+      <div class="aliado-panel active" id="aliado-panel-dash">
+        <h2 style="font-size:22px;font-weight:800;margin-bottom:8px;">Panel de Aliado</h2>
+        <p style="color:var(--gray);font-size:14px;margin-bottom:24px;">Gestiona tus productos como aliado comercial</p>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;">
+          <div class="card" style="padding:20px;text-align:center;">
+            <div style="font-size:13px;color:var(--gray);margin-bottom:6px;">Productos propios</div>
+            <div style="font-size:28px;font-weight:800;" id="aliado-metric-productos">-</div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="card" style="padding:20px;text-align:center;">
+            <div style="font-size:13px;color:var(--gray);margin-bottom:6px;">Unidades en stock</div>
+            <div style="font-size:28px;font-weight:800;" id="aliado-metric-stock">-</div>
+          </div>
+          <div class="card" style="padding:20px;text-align:center;">
+            <div style="font-size:13px;color:var(--gray);margin-bottom:6px;">Valor del inventario</div>
+            <div style="font-size:28px;font-weight:800;" id="aliado-metric-valor">-</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:32px;">
+          <div class="card" style="padding:20px;text-align:center;border:2px solid var(--accent);">
+            <div style="font-size:13px;color:var(--gray);margin-bottom:6px;">Unidades vendidas</div>
+            <div style="font-size:28px;font-weight:800;color:var(--accent);" id="aliado-metric-vendidas">-</div>
+          </div>
+          <div class="card" style="padding:20px;text-align:center;border:2px solid var(--accent);">
+            <div style="font-size:13px;color:var(--gray);margin-bottom:6px;">Ingresos por ventas</div>
+            <div style="font-size:28px;font-weight:800;color:var(--accent);" id="aliado-metric-ingresos">-</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px;">
+          <div class="card" style="padding:24px;text-align:center;cursor:pointer;" onclick="mostrarMenuAliado('add')">
+            <div style="font-size:40px;margin-bottom:12px;"><img src="images/dress.svg" class="icon" alt="" style="width:48px;height:48px;vertical-align:middle"></div>
+            <div style="font-size:16px;font-weight:700;">Añadir artículo</div>
+            <div style="font-size:13px;color:var(--gray);margin-top:4px;">Registra nuevos productos en el catálogo</div>
+          </div>
+          <div class="card" style="padding:24px;text-align:center;cursor:pointer;" onclick="mostrarMenuAliado('stock')">
+            <div style="font-size:40px;margin-bottom:12px;"><img src="images/package.svg" class="icon" alt="" style="width:48px;height:48px;vertical-align:middle"></div>
+            <div style="font-size:16px;font-weight:700;">Stock</div>
+            <div style="font-size:13px;color:var(--gray);margin-top:4px;">Consulta y actualiza el inventario</div>
+          </div>
+          <div class="card" style="padding:24px;text-align:center;cursor:pointer;" onclick="mostrarMenuAliado('desc')">
+            <div style="font-size:40px;margin-bottom:12px;"><img src="images/document.svg" class="icon" alt="" style="width:48px;height:48px;vertical-align:middle"></div>
+            <div style="font-size:16px;font-weight:700;">Descripción</div>
+            <div style="font-size:13px;color:var(--gray);margin-top:4px;">Edita las descripciones de tus artículos</div>
+          </div>
+        </div>
+        <h3 style="font-size:16px;font-weight:800;margin-bottom:12px;">Últimas ventas</h3>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <table class="admin-table" style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:var(--light);text-align:left;">
+                <th style="padding:10px 16px;font-size:13px;">Pedido</th>
+                <th style="padding:10px 16px;font-size:13px;">Producto</th>
+                <th style="padding:10px 16px;font-size:13px;text-align:center;">Unidades</th>
+                <th style="padding:10px 16px;font-size:13px;">Precio unitario</th>
+              </tr>
+            </thead>
+            <tbody id="aliado-ventas-body">
+              <tr><td colspan="4" style="text-align:center;padding:16px;color:var(--gray);">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="aliado-panel" id="aliado-panel-add">
+        <h2 style="font-size:22px;font-weight:800;margin-bottom:8px;">Añadir artículo</h2>
+        <p style="color:var(--gray);font-size:14px;margin-bottom:24px;">Registra un nuevo producto en el catálogo</p>
+        <div class="card" style="max-width:520px;padding:24px;">
+          <form id="aliado-add-form">
             <div class="form-group">
-              <label>Precio (COP) *</label>
-              <input id="aliado-art-precio" type="number" min="0" step="100" placeholder="Ej: 59900" required>
+              <label>Nombre del artículo *</label>
+              <input id="aliado-art-nombre" placeholder="Ej: Camiseta Oversize" required>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div class="form-group">
+                <label>Precio (COP) *</label>
+                <input id="aliado-art-precio" type="number" min="0" step="100" placeholder="Ej: 59900" required>
+              </div>
+              <div class="form-group">
+                <label>Categoría</label>
+                <input id="aliado-art-categoria" placeholder="Ej: Camisetas">
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div class="form-group">
+                <label>Tallas (separadas por coma)</label>
+                <input id="aliado-art-talla" placeholder="Ej: S,M,L,XL">
+              </div>
+              <div class="form-group">
+                <label>Colores (separados por coma)</label>
+                <input id="aliado-art-color" placeholder="Ej: Negro,Blanco">
+              </div>
             </div>
             <div class="form-group">
-              <label>Categoría</label>
-              <input id="aliado-art-categoria" placeholder="Ej: Camisetas">
-            </div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-            <div class="form-group">
-              <label>Tallas (separadas por coma)</label>
-              <input id="aliado-art-talla" placeholder="Ej: S,M,L,XL">
+              <label>Stock inicial</label>
+              <input id="aliado-art-stock" type="number" min="0" max="10000" value="0">
             </div>
             <div class="form-group">
-              <label>Colores (separados por coma)</label>
-              <input id="aliado-art-color" placeholder="Ej: Negro,Blanco">
+              <label>Descripción <span style="color:var(--gray);font-size:12px;"><span id="aliado-art-desc-count">0</span>/500</span></label>
+              <textarea id="aliado-art-descripcion" rows="3" maxlength="500" style="width:100%;padding:10px;border:1.5px solid var(--light);border-radius:8px;font-family:inherit;resize:vertical;" oninput="actualizarContadorArtDesc(this)"></textarea>
             </div>
-          </div>
-          <div class="form-group">
-            <label>Stock inicial</label>
-            <input id="aliado-art-stock" type="number" min="0" max="10000" value="0">
-          </div>
-          <div class="form-group">
-            <label>Descripción <span style="color:var(--gray);font-size:12px;"><span id="aliado-art-desc-count">0</span>/500</span></label>
-            <textarea id="aliado-art-descripcion" rows="3" maxlength="500" style="width:100%;padding:10px;border:1.5px solid var(--light);border-radius:8px;font-family:inherit;resize:vertical;" oninput="actualizarContadorArtDesc(this)"></textarea>
-          </div>
-          <div style="border:2px dashed var(--light);border-radius:12px;padding:30px 24px;text-align:center;cursor:pointer;transition:border-color 0.2s;" id="aliado-img-dropzone" onclick="document.getElementById('aliado-art-img').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--light)'" ondrop="event.preventDefault();this.style.borderColor='var(--light)';handleAliadoImgDrop(event)">
-            <img id="aliado-img-preview" src="images/upload.svg" alt="" style="width:64px;height:64px;opacity:0.4;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;">
-            <div style="font-size:15px;font-weight:600;color:var(--dark);" id="aliado-img-text">Arrastra una imagen o haz clic aquí</div>
-            <div style="font-size:12px;color:var(--gray);margin-top:4px;">JPG, PNG, WEBP — Máx. 5MB</div>
-            <input type="file" id="aliado-art-img" accept="image/*" style="display:none" onchange="handleAliadoImgSelect(this)">
-          </div>
-          <button type="submit" class="btn-primary" style="width:100%;margin-top:20px;"><img src="images/save.svg" class="icon" alt="" style="vertical-align:middle"> Publicar artículo</button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ============================================================ -->
-<!-- SCREEN ALIADO: STOCK -->
-<!-- ============================================================ -->
-<div class="screen" id="screen-aliado-stock">
-  <div style="display:flex;min-height:calc(100vh - 60px);">
-    <div class="admin-sidebar">
-      <div class="logo">LUMURA</div>
-      <div class="menu-item" onclick="showScreen('aliado-dash')"><span class="icon"><img src="images/dashboard.svg" class="icon" alt="" style="vertical-align:middle"></span>Panel</div>
-      <div class="menu-item" onclick="showScreen('aliado-add')"><span class="icon"><img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle"></span>Añadir artículo</div>
-      <div class="menu-item active" onclick="showScreen('aliado-stock')"><span class="icon"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"></span>Stock</div>
-      <div class="menu-item" onclick="showScreen('aliado-desc')"><span class="icon"><img src="images/document.svg" class="icon" alt="" style="vertical-align:middle"></span>Descripción</div>
-      <div class="menu-item" onclick="showScreen('aliado-licencia')"><span class="icon"><img src="images/document.svg" class="icon" alt="" style="vertical-align:middle"></span>Licencia de distribuidor</div>
-    </div>
-    <div style="flex:1;padding:32px;">
-      <h2 style="font-size:22px;font-weight:800;margin-bottom:8px;">Gestión de Stock</h2>
-      <p style="color:var(--gray);font-size:14px;margin-bottom:24px;">Consulta y actualiza el inventario de tus productos</p>
-      <div class="card" style="padding:0;">
-        <table class="data-table">
-          <thead><tr><th>ID</th><th>Producto</th><th>Categoría</th><th>Stock actual</th><th>Agregar</th><th>Estado</th></tr></thead>
-          <tbody id="aliado-stock-body">
-            <tr><td colspan="6" style="text-align:center;padding:20px;">Cargando...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ============================================================ -->
-<!-- SCREEN ALIADO: DESCRIPCIÓN DEL ARTÍCULO -->
-<!-- ============================================================ -->
-<div class="screen" id="screen-aliado-desc">
-  <div style="display:flex;min-height:calc(100vh - 60px);">
-    <div class="admin-sidebar">
-      <div class="logo">LUMURA</div>
-      <div class="menu-item" onclick="showScreen('aliado-dash')"><span class="icon"><img src="images/dashboard.svg" class="icon" alt="" style="vertical-align:middle"></span>Panel</div>
-      <div class="menu-item" onclick="showScreen('aliado-add')"><span class="icon"><img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle"></span>Añadir artículo</div>
-      <div class="menu-item" onclick="showScreen('aliado-stock')"><span class="icon"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"></span>Stock</div>
-      <div class="menu-item active" onclick="showScreen('aliado-desc')"><span class="icon"><img src="images/document.svg" class="icon" alt="" style="vertical-align:middle"></span>Descripción</div>
-      <div class="menu-item" onclick="showScreen('aliado-licencia')"><span class="icon"><img src="images/document.svg" class="icon" alt="" style="vertical-align:middle"></span>Licencia de distribuidor</div>
-    </div>
-    <div style="flex:1;padding:32px;">
-      <h2 style="font-size:22px;font-weight:800;margin-bottom:8px;">Descripción del Artículo</h2>
-      <p style="color:var(--gray);font-size:14px;margin-bottom:24px;">Edita las descripciones de tus productos</p>
-      <div id="aliado-desc-list"></div>
-    </div>
-  </div>
-</div>
-
-<!-- PANTALLA LICENCIA DE DISTRIBUIDOR (ALIADO) -->
-<div class="screen" id="screen-aliado-licencia">
-  <div style="display:flex;min-height:calc(100vh - 60px);">
-    <div class="admin-sidebar">
-      <div class="menu-item" onclick="showScreen('aliado-dash')"><span class="icon"><img src="images/dashboard.svg" class="icon" alt="" style="vertical-align:middle"></span>Panel</div>
-      <div class="menu-item" onclick="showScreen('aliado-add')"><span class="icon"><img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle"></span>Añadir artículo</div>
-      <div class="menu-item" onclick="showScreen('aliado-stock')"><span class="icon"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"></span>Stock</div>
-      <div class="menu-item" onclick="showScreen('aliado-desc')"><span class="icon"><img src="images/document.svg" class="icon" alt="" style="vertical-align:middle"></span>Descripción</div>
-      <div class="menu-item active" onclick="showScreen('aliado-licencia')"><span class="icon"><img src="images/document.svg" class="icon" alt="" style="vertical-align:middle"></span>Licencia de distribuidor</div>
-    </div>
-    <div style="flex:1;padding:32px;">
-      <h2 style="font-size:22px;font-weight:800;margin-bottom:8px;">Licencia de distribuidor</h2>
-      <p style="color:var(--gray);font-size:14px;margin-bottom:4px;">Sube tu licencia de distribuidor autorizado</p>
-      <p style="color:var(--gray);font-size:12px;margin-bottom:24px;">Formatos aceptados: JPG, PNG, GIF, WEBP. Máximo 5 MB.</p>
-      <div class="card" style="padding:24px;max-width:520px;">
-        <div id="aliado-licencia-preview" style="display:none;margin-bottom:16px;">
-          <img id="aliado-licencia-img-preview" src="" alt="Vista previa de la licencia" style="max-width:100%;max-height:300px;border-radius:12px;border:1px solid var(--light);">
+            <div style="border:2px dashed var(--light);border-radius:12px;padding:30px 24px;text-align:center;cursor:pointer;transition:border-color 0.2s;" id="aliado-img-dropzone" onclick="document.getElementById('aliado-art-img').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--light)'" ondrop="event.preventDefault();this.style.borderColor='var(--light)';handleAliadoImgDrop(event)">
+              <img id="aliado-img-preview" src="images/upload.svg" alt="" style="width:64px;height:64px;opacity:0.4;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;">
+              <div style="font-size:15px;font-weight:600;color:var(--dark);" id="aliado-img-text">Arrastra una imagen o haz clic aquí</div>
+              <div style="font-size:12px;color:var(--gray);margin-top:4px;">JPG, PNG, WEBP — Máx. 5MB</div>
+              <input type="file" id="aliado-art-img" accept="image/*" style="display:none" onchange="handleAliadoImgSelect(this)">
+            </div>
+            <button type="submit" class="btn-primary" style="width:100%;margin-top:20px;"><img src="images/save.svg" class="icon" alt="" style="vertical-align:middle"> Publicar artículo</button>
+          </form>
         </div>
-        <div id="aliado-licencia-actual" style="display:none;margin-bottom:16px;">
-          <p style="font-size:13px;font-weight:700;color:var(--dark);margin-bottom:8px;">Licencia actual</p>
-          <img id="aliado-licencia-img-actual" src="" alt="Licencia actual" style="max-width:100%;max-height:300px;border-radius:12px;border:1px solid var(--light);">
-        </div>
-        <input type="file" id="aliado-licencia-img" accept="image/jpeg,image/png,image/gif,image/webp,image/jpg,image/jfif" style="display:none;">
-        <button type="button" class="btn btn-outline" style="width:100%;margin-bottom:12px;" onclick="document.getElementById('aliado-licencia-img').click()">Seleccionar imagen de la licencia</button>
-        <div style="display:flex;gap:12px;">
-          <button type="button" class="btn btn-primary" style="flex:1;" onclick="guardarLicenciaAliado()">Guardar licencia</button>
-          <button type="button" class="btn btn-outline" style="flex:1;" onclick="volverPanelLicencia()">Volver</button>
-        </div>
-        <div id="aliado-licencia-msg" style="margin-top:12px;font-size:13px;"></div>
       </div>
+
+      <div class="aliado-panel" id="aliado-panel-stock">
+        <h2 style="font-size:22px;font-weight:800;margin-bottom:8px;">Gestión de Stock</h2>
+        <p style="color:var(--gray);font-size:14px;margin-bottom:24px;">Consulta y actualiza el inventario de tus productos</p>
+        <div class="card" style="padding:0;">
+          <table class="data-table">
+            <thead><tr><th>ID</th><th>Producto</th><th>Categoría</th><th>Stock actual</th><th>Agregar</th><th>Estado</th></tr></thead>
+            <tbody id="aliado-stock-body">
+              <tr><td colspan="6" style="text-align:center;padding:20px;">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="aliado-panel" id="aliado-panel-desc">
+        <h2 style="font-size:22px;font-weight:800;margin-bottom:8px;">Descripción del Artículo</h2>
+        <p style="color:var(--gray);font-size:14px;margin-bottom:24px;">Edita las descripciones de tus productos</p>
+        <div id="aliado-desc-list"></div>
+      </div>
+
+      <div class="aliado-panel" id="aliado-panel-licencia">
+        <h2 style="font-size:22px;font-weight:800;margin-bottom:8px;">Licencia de distribuidor</h2>
+        <p style="color:var(--gray);font-size:14px;margin-bottom:4px;">Sube tu licencia de distribuidor autorizado</p>
+        <p style="color:var(--gray);font-size:12px;margin-bottom:24px;">Formatos aceptados: JPG, PNG, GIF, WEBP. Máximo 5 MB.</p>
+        <div class="card" style="padding:24px;max-width:520px;">
+          <div id="aliado-licencia-preview" style="display:none;margin-bottom:16px;">
+            <img id="aliado-licencia-img-preview" src="" alt="Vista previa de la licencia" style="max-width:100%;max-height:300px;border-radius:12px;border:1px solid var(--light);">
+          </div>
+          <div id="aliado-licencia-actual" style="display:none;margin-bottom:16px;">
+            <p style="font-size:13px;font-weight:700;color:var(--dark);margin-bottom:8px;">Licencia actual</p>
+            <img id="aliado-licencia-img-actual" src="" alt="Licencia actual" style="max-width:100%;max-height:300px;border-radius:12px;border:1px solid var(--light);">
+          </div>
+          <input type="file" id="aliado-licencia-img" accept="image/jpeg,image/png,image/gif,image/webp,image/jpg,image/jfif" style="display:none;">
+          <button type="button" class="btn btn-outline" style="width:100%;margin-bottom:12px;" onclick="document.getElementById('aliado-licencia-img').click()">Seleccionar imagen de la licencia</button>
+          <div style="display:flex;gap:12px;">
+            <button type="button" class="btn btn-primary" style="flex:1;" onclick="guardarLicenciaAliado()">Guardar licencia</button>
+            <button type="button" class="btn btn-outline" style="flex:1;" onclick="volverPanelLicencia()">Volver</button>
+          </div>
+          <div id="aliado-licencia-msg" style="margin-top:12px;font-size:13px;"></div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -1208,54 +1058,6 @@
   </div>
 </div>
 
-<!-- ============================================================ -->
-<!-- SCREEN 13: ADMIN - PEDIDOS -->
-<!-- ============================================================ -->
-<div class="screen" id="screen-admin-orders">
-  <div class="screen-label">Pantalla 12 – Gestión de Pedidos</div>
-  <div class="desktop-frame">
-    <div class="desktop-bar"><span></span><span></span><span></span><div class="desktop-url"></div></div>
-    <div class="admin-layout">
-      <div class="admin-sidebar">
-        <div class="logo">LUMURA</div>
-        <div class="menu-item" onclick="showScreen('admin-dash')"><span class="icon"><img src="images/dashboard.svg" class="icon" alt="" style="vertical-align:middle"></span>Dashboard</div>
-        <div class="menu-item" onclick="showScreen('admin-cat')"><span class="icon"><img src="images/dress.svg" class="icon" alt="" style="vertical-align:middle"></span>Catálogo</div>
-        <div class="menu-item" onclick="showScreen('admin-inv')"><span class="icon"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"></span>Inventario</div>
-        <div class="menu-item" onclick="showScreen('admin-rep')"><span class="icon"><img src="images/chart-up.svg" class="icon" alt="" style="vertical-align:middle"></span>Reportes</div>
-        <div class="menu-item active" onclick="showScreen('admin-orders')"><span class="icon"><img src="images/cart.svg" class="icon" alt="" style="vertical-align:middle"></span>Pedidos</div>
-        <div class="menu-item" onclick="showScreen('admin-users')"><span class="icon"><img src="images/users.svg" class="icon" alt="" style="vertical-align:middle"></span>Usuarios</div>
-        <div class="menu-item" onclick="proximamente('Configuración')"><span class="icon"><img src="images/settings.svg" class="icon" alt="" style="vertical-align:middle"></span>Configuración</div>
-      </div>
-      <div style="flex:1; display:flex; flex-direction:column;">
-        <div class="admin-header">
-          <div><div style="font-size:18px; font-weight:800;">Gestión de Pedidos</div><div style="font-size:12px; color:var(--gray);">Administra los pedidos de los clientes</div></div>
-          <div style="display:flex; gap:8px;">
-            <select id="orders-filter" style="padding:8px 12px; border:1.5px solid var(--light); border-radius:8px; font-size:13px; outline:none;" onchange="cargarPedidosAdmin()">
-              <option value="">Todos los estados</option>
-              <option value="pendiente">Pendiente</option>
-              <option value="enviado">Enviado</option>
-              <option value="entregado">Entregado</option>
-              <option value="cancelado">Cancelado</option>
-            </select>
-          </div>
-        </div>
-        <div class="admin-main">
-          <div class="card" style="padding:0;">
-            <table class="data-table">
-              <thead><tr>
-                <th>Pedido</th><th>Cliente ID</th><th>Productos</th><th>Total</th><th>Fecha</th><th>Estado</th><th>Seguimiento</th><th>Acción</th>
-              </tr></thead>
-              <tbody id="admin-orders-body">
-                <tr><td colspan="8" style="text-align:center;padding:20px;">Cargando...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script src="lumura.js?v=3"></script>
+<script src="lumura.js?v=4"><script src="lumura.js?v=3"></script>
 </body>
 </html>
