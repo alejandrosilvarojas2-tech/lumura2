@@ -1027,6 +1027,16 @@ Suite unitaria 135/135 en verde.
   se restaura (`state.token` → `irInicioPorRol()`) y un 3er artículo también va directo a Stock
   sin el anuncio (persistencia del flag). Assets versionados a `?v=11` (CSS sin cambios). Suite
   unitaria 135/135 en verde.
+- **Inventario del admin con botón de borrar artículo (E2E, 31/08/2026)**: el panel
+  `#admin-panel-inv` (`cargarInventario` en `lumura.js`) mostraba en la columna "Acción" solo el
+  botón de stock ("Urgente/Reabastecer/Ajustar", todos con `proximamente`). Ahora cada fila
+  incluye además un botón de **borrar** (papelera, `images/trash.svg`) que reusa la función
+  existente `eliminarProducto(id)` del admin (igual que en Catálogo): confirma con `confirm`,
+  llama `DELETE /api/admin/productos/:id` y `cargarProductos()` re-renderiza el inventario si el
+  panel está activo. Sin cambios de backend ni de estructura del panel. Verificado E2E
+  (Puppeteer): filas del inventario con `onclick="eliminarProducto(...)`; el borrado (aceptando el
+  `confirm`) elimina la prenda demo del inventario. Assets versionados a `?v=12` (CSS sin
+  cambios). Suite unitaria 135/135 en verde.
 - **Categorías unificadas y filtrables por rol (E2E, 30/08/2026)**: se unificó el sistema de
   categorías en **una lista canónica `CATEGORIAS`** de 23 valores (Camisetas, Camisas, Blusas,
   Pantalones, Jeans, Faldas, Vestidos, Chaquetas, Abrigos, Sueter, Chalecos, Trajes, Ropa

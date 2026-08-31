@@ -1727,7 +1727,8 @@ function cargarInventario() {
       + '<td>' + (p.color || '-') + '</td>'
       + '<td><span style="font-weight:700;color:' + color + ';">' + stock + '</span> uds.</td>'
       + '<td>' + estado + '</td>'
-      + '<td><button class="btn-sm" style="' + btnClass + '" onclick="proximamente(\'Ajuste de stock\')">' + btnText + '</button></td>'
+      + '<td><button class="btn-sm" style="' + btnClass + '" onclick="proximamente(\'Ajuste de stock\')">' + btnText + '</button>'
+      + '<button class="btn-sm" style="background:#fce4ec;color:var(--accent);margin-left:4px;" onclick="eliminarProducto(' + p.id_catalogo + ')"><img src="images/trash.svg" class="icon" alt="" style="vertical-align:middle"></button></td>'
       + '</tr>';
   }).join('');
 }
