@@ -1001,6 +1001,19 @@ Suite unitaria 135/135 en verde.
   camiseta con "Camisetas" → cliente ve el botón y al hacer clic ve la camiseta nueva + la legacy
   en minúscula; búsqueda "camiset" la encuentra; catálogo admin filtrado sigue mostrando la
   prenda. Assets versionados a `?v=9` (CSS sin cambios). Suite unitaria 135/135 en verde.
+- **Banner restaurado y búsqueda del cliente eliminada (E2E, 31/08/2026)**: se restauró el
+  **banner `.hero-banner`** en el home con la imagen **`closet.gif` de fondo** (el CSS
+  `.hero-banner` de `lumura.css` ya apuntaba a `images/closet.gif`; se reintrodujo el contenedor
+  en `#screen-home` con el titular "Hasta 40% OFF / en Temporada" y su subtítulo, **sin** el badge
+  "OFERTA ESPECIAL" ni el botón "Ver colección →" que antes se retiraron) y se **eliminó la barra
+  de búsqueda del cliente** (`#search-input` y su `div` en `index.html`, más el código muerto
+  `mostrarBusqueda()`/`searchTimeout`/`filtrarBusqueda()` en `lumura.js`; `filtrarCategoria`
+  ahora llama `renderProductos(cat, '')`). El buscador del **admin** (`#admin-search-input`) se
+  conserva. El único filtro del home es el de categorías. Verificado E2E (Puppeteer): sin
+  `#search-input`; `.hero-banner` visible con `background-image` `closet.gif`; siguen ausentes
+  "OFERTA ESPECIAL" y "Ver colección"; filtro por "Camisetas" sigue listando la camiseta nueva +
+  legacy; catálogo admin OK. Assets versionados a `?v=10` (CSS sin cambios). Suite unitaria
+  135/135 en verde.
 - **Categorías unificadas y filtrables por rol (E2E, 30/08/2026)**: se unificó el sistema de
   categorías en **una lista canónica `CATEGORIAS`** de 23 valores (Camisetas, Camisas, Blusas,
   Pantalones, Jeans, Faldas, Vestidos, Chaquetas, Abrigos, Sueter, Chalecos, Trajes, Ropa

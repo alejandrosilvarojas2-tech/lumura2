@@ -1659,21 +1659,6 @@ async function eliminarProducto(id) {
   }
 }
 
-function mostrarBusqueda() {
-  const input = document.getElementById('search-input');
-  if (input) { input.focus(); input.scrollIntoView({ behavior: 'smooth' }); }
-}
-
-let searchTimeout;
-function filtrarBusqueda() {
-  clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(() => {
-    const term = document.getElementById('search-input')?.value || '';
-    const catActiva = document.querySelector('.tag.active')?.dataset?.cat || '';
-    renderProductos(catActiva, term);
-  }, 200);
-}
-
 function mostrarFavoritos() {
   const favs = state.productos.filter(p => state.favoritos.includes(p.id_catalogo));
   if (favs.length === 0) return mostrarMensaje('No tienes favoritos aún', 'info');
@@ -1817,8 +1802,7 @@ function filtrarCategoria(cat) {
     const todo = document.querySelector('.tag[data-cat=""]');
     if (todo) todo.classList.add('active');
   }
-  const term = document.getElementById('search-input')?.value || '';
-  renderProductos(cat, term);
+  renderProductos(cat, '');
 }
 
 async function cargarAliadoDashboard() {
