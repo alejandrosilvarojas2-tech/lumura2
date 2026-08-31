@@ -1041,6 +1041,24 @@
   </div>
 </div>
 
+<!-- MODAL AVISO DERECHO DE RETRACTO -->
+<div id="modal-aviso-retracto" class="modal-overlay" style="display:none;">
+  <div class="modal-content" style="max-width:720px;max-height:85vh;display:flex;flex-direction:column;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-shrink:0;">
+      <h3 style="margin:0;font-size:18px;">Aviso: Derecho de Retracto</h3>
+    </div>
+    <div style="flex:1;overflow-y:auto;font-size:13px;line-height:1.7;color:var(--dark);padding-right:8px;">
+      <h4 style="font-size:17px;font-weight:800;margin:0 0 4px;text-align:center;"># AVISO: DERECHO DE RETRACTO — APLICACIÓN LUMURA</h4>
+      <p>De acuerdo con el <strong>artículo 47 de la Ley 1480 de 2011</strong> (Estatuto del Consumidor), aplicable a las ventas a distancia realizadas por internet, el consumidor tiene derecho a retractarse de su compra o membresía dentro de los <strong>cinco (5) días hábiles</strong> siguientes a la celebración del contrato o a la entrega del bien. Al ejercer este derecho, Lumura reintegrará al consumidor <strong>la totalidad del dinero pagado</strong>, sin realizar descuentos ni retenciones por ningún concepto, en un plazo máximo de <strong>treinta (30) días calendario</strong> desde el momento en que se ejerza el retracto. Ten en cuenta que existen ciertas excepciones a este derecho contempladas en la ley, por lo que te recomendamos revisar los términos y condiciones específicos de tu membresía antes de suscribirte.</p>
+      <p style="text-align:center;color:var(--gray);font-size:11px;margin-top:16px;font-style:italic;">Nota: Esta información tiene fines orientativos generales; no reemplaza asesoría legal. Para casos específicos, se recomienda consultar directamente el texto del artículo 47 de la Ley 1480 de 2011 o a un abogado.</p>
+    </div>
+    <div style="flex-shrink:0;padding-top:12px;border-top:1px solid var(--light);display:flex;gap:10px;">
+      <button class="btn-secondary" style="flex:1;" onclick="cancelarRetracto()">Volver a los planes</button>
+      <button class="btn-primary" style="flex:2;" onclick="aceptarRetracto()">Acepto y continuar al pago</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL PRODUCTO -->
 <div id="modal-producto" class="modal-overlay" style="display:none;">
   <div class="modal-content">
@@ -1124,6 +1142,6 @@
   </div>
 </div>
 
-<script src="lumura.js?v=6"></script>
+<script src="lumura.js?v=7"></script>
 </body>
 </html>

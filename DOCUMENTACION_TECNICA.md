@@ -974,6 +974,19 @@ verde.
   (Puppeteer): aliado real por API → login → añadir artículo → aceptar el aviso de compromiso
   → membresías con los 3 textos completos → Básico → confirmación de pago con resumen →
   Confirmar → Stock. Suite unitaria 135/135 en verde.
+- **Aviso de Derecho de Retracto en membresías (E2E, 30/08/2026)**: al elegir un plan de
+  membresía se abre el modal `#modal-aviso-retracto` con el texto verbatim del usuario basado
+  en el **artículo 47 de la Ley 1480 de 2011** (Estatuto del Consumidor): derecho a retractarse
+  dentro de los 5 días hábiles, reintegro total sin descuentos en máximo 30 días calendario,
+  excepciones contempladas en la ley y la nota de que la información es orientativa y no
+  reemplaza asesoría legal. `elegirPlanAliado(plan)` ahora rellena `#pago-plan-detalle` y abre
+  el modal dejando el plan pendiente en `planAliadoPendiente`; **"Volver a los planes"**
+  (`cancelarRetracto`) cierra el modal y regresa a las tarjetas, **"Acepto y continuar al
+  pago"** (`aceptarRetracto`) cierra y muestra `#aliado-panel-pago`. Assets versionados a
+  `?v=7` (CSS sin cambios). Verificado E2E (Puppeteer): elección → modal visible con el texto
+  del artículo 47 y de la nota legal → "Volver a los planes" regresa a membresías → nueva
+  elección → "Acepto y continuar" → confirmación de pago con resumen → Confirmar → Stock.
+  Suite unitaria 135/135 en verde.
 
 Pendiente recomendado para despliegue público: M2 (rate limiter por clave/parcialidad——ya existe por IP en la entrada 21) y la limpieza cosmética del HTML del panel admin. La pasarela simulada
 está lista para migrarse a Stripe/PayU (mismos contratos de `metodo_pago`/

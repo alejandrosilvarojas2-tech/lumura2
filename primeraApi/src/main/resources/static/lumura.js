@@ -406,6 +406,8 @@ const datosPlanes = {
   }
 };
 
+let planAliadoPendiente = null;
+
 function elegirPlanAliado(plan) {
   const p = datosPlanes[plan];
   if (!p) return;
@@ -415,7 +417,21 @@ function elegirPlanAliado(plan) {
       + '<div style="font-size:24px;font-weight:800;color:var(--accent);margin-bottom:8px;">' + p.precio + '</div>'
       + '<p style="font-size:13px;color:var(--gray);line-height:1.6;margin:0;">' + p.detalle + '</p>';
   }
-  mostrarMenuAliado('pago');
+  planAliadoPendiente = plan;
+  const modal = document.getElementById('modal-aviso-retracto');
+  if (modal) modal.style.display = 'flex';
+}
+
+function aceptarRetracto() {
+  const modal = document.getElementById('modal-aviso-retracto');
+  if (modal) modal.style.display = 'none';
+  mostrarMenuAliado(planAliadoPendiente ? 'pago' : 'membresias');
+}
+
+function cancelarRetracto() {
+  const modal = document.getElementById('modal-aviso-retracto');
+  if (modal) modal.style.display = 'none';
+  mostrarMenuAliado('membresias');
 }
 
 function confirmarPagoAliado() {
