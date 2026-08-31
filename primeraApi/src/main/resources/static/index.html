@@ -58,7 +58,7 @@
         <button type="submit" class="btn-primary">Iniciar sesión</button>
         </form>
         <div style="text-align: center; margin-top: 20px; font-size: 14px; color: var(--gray);">
-          ¿No tienes cuenta? <a style="color: var(--accent); font-weight: 600; cursor: pointer;" onclick="showScreen('register')">Regístrate</a>
+          ¿No tienes cuenta? <a style="color: var(--accent); font-weight: 600; cursor: pointer;" onclick="showScreen('register-choose')">Regístrate</a>
         </div>
         <div style="display: flex; align-items: center; gap: 10px; margin: 20px 0;">
           <div style="flex:1; height:1px; background:var(--light);"></div>
@@ -70,6 +70,34 @@
           <a style="cursor:pointer;color:var(--accent);font-weight:700;font-size:14px;" onclick="showScreen('aliado-login')"><img src="images/package.svg" class="icon" alt="" style="vertical-align:middle"> Soy aliado — Acceder a mi panel</a>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN: CREAR PERFIL (CLIENTE O ALIADO) -->
+<!-- ============================================================ -->
+<div class="screen" id="screen-register-choose" style="display:none;">
+  <div style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 60px);padding:32px;">
+    <div style="width:100%;max-width:440px;background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.07);">
+      <div style="padding: 24px 24px 0;">
+        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 4px;">Crear cuenta</h2>
+        <p style="color: var(--gray); font-size: 13px; margin-bottom: 20px;">Elige el tipo de perfil que quieres crear</p>
+        <div style="display:grid;gap:12px;">
+          <div class="card" style="padding:20px;cursor:pointer;" onclick="showScreen('register')">
+            <div style="font-size:16px;font-weight:700;color:var(--dark);">Crear perfil de Cliente</div>
+            <div style="font-size:13px;color:var(--gray);margin-top:4px;">Compra en la tienda y gestiona tus pedidos</div>
+          </div>
+          <div class="card" style="padding:20px;cursor:pointer;" onclick="showScreen('register-aliado')">
+            <div style="font-size:16px;font-weight:700;color:var(--dark);">Crear perfil de Aliado</div>
+            <div style="font-size:13px;color:var(--gray);margin-top:4px;">Vende tus productos en la plataforma</div>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:16px;font-size:14px;color:var(--gray);">
+          ¿Ya tienes cuenta? <a style="color:var(--accent);font-weight:600;cursor:pointer;" onclick="showScreen('login')">Inicia sesión</a>
+        </div>
+      </div>
+      <div style="height:24px;"></div>
     </div>
   </div>
 </div>
@@ -192,7 +220,7 @@
         <button type="submit" class="btn-primary">Crear cuenta</button>
         </form>
         <div style="text-align:center;margin-top:16px;font-size:14px;color:var(--gray);">
-          ¿Tienes un negocio? <a style="color:var(--accent);font-weight:600;cursor:pointer;" onclick="showScreen('register-aliado')">Únete al Programa de Aliados</a>
+          ¿Tienes un negocio? <a style="color:var(--accent);font-weight:600;cursor:pointer;" onclick="showScreen('register-choose')">Únete al Programa de Aliados</a>
         </div>
         <div style="text-align: center; margin-top: 10px; font-size: 14px; color: var(--gray);">
           ¿Ya tienes cuenta? <a style="color: var(--accent); font-weight: 600; cursor: pointer;" onclick="showScreen('login')">Inicia sesión</a>
@@ -269,7 +297,7 @@
           </div>
           <div style="display:flex;gap:10px;margin-top:20px;">
             <button type="submit" class="btn-primary" style="flex:2;">Registrarme como aliado</button>
-            <button type="button" class="btn-secondary" style="flex:1;" onclick="showScreen('login')">Volver</button>
+            <button type="button" class="btn-secondary" style="flex:1;" onclick="showScreen('register-choose')">Volver</button>
           </div>
         </form>
         <div style="text-align:center;margin-top:16px;font-size:13px;color:var(--gray);">
@@ -1058,6 +1086,6 @@
   </div>
 </div>
 
-<script src="lumura.js?v=4"><script src="lumura.js?v=3"></script>
+<script src="lumura.js?v=5"></script>
 </body>
 </html>

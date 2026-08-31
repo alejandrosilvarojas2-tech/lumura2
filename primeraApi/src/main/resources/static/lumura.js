@@ -203,8 +203,22 @@ async function handleRegister(e) {
       password: pass,
       confirmar_password: pass2,
     });
-    mostrarMensaje('Registro exitoso. Inicia sesión.', 'success');
-    showScreen('login');
+    try {
+      const data = await api.post('/api/auth/login', { correo_usuario: email, password: pass });
+      state.token = data.token;
+      state.user = data.usuario;
+      localStorage.setItem('lumura_token', data.token);
+      localStorage.setItem('lumura_user', JSON.stringify(data.usuario));
+      actualizarUI();
+      sincronizarFavoritos();
+    } catch (err) { /* si el auto-login falla, el usuario entra por el login */ }
+    if (state.token) {
+      mostrarMensaje('Cuenta creada. Bienvenido, ' + (state.user?.nombre || email), 'success');
+      document.getElementById('modal-politicas').style.display = 'flex';
+    } else {
+      mostrarMensaje('Registro exitoso. Inicia sesión.', 'success');
+      showScreen('login');
+    }
   } catch (err) {
     mostrarMensaje(err.message, 'error');
   }

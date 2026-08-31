@@ -942,7 +942,22 @@ en vivo contra el servidor real. La sección 8 se conserva como registro histór
   filas, pedidos) + bloqueo de tienda + dropdown del avatar + cierre de sesión; login
   aliado real (registrado por API) → 5 botones del panel + bloqueo de tienda; login cliente
   → modal de políticas → home + bloqueo de paneles admin/aliado. Suite unitaria 135/135 en
-  verde.
+verde.
+- **Registro con elección de perfil Cliente/Aliado (E2E, 30/08/2026)**: el enlace "Regístrate"
+  del login abre una nueva pantalla intermedia `register-choose` ("Crear cuenta — Elige el
+  tipo de perfil") con dos tarjetas: **Crear perfil de Cliente** → formulario `register`, y
+  **Crear perfil de Aliado** → formulario `register-aliado` (datos del negocio). Al registrar
+  un **cliente** el frontend hace auto-login (`POST /api/auth/register` + `POST
+  /api/auth/login` con las mismas credenciales; el endpoint de registro no emite token) y sigue
+  el flujo estándar de cliente: `modal-politicas` → "Acepto las políticas" → **home (la
+  tienda)** con sesión activa. El registro de aliado conserva su flujo (éxito → login). Los
+  enlaces cruzados entre formularios ahora pasan por el selector de perfil ("Únete al Programa
+  de Aliados" en `register` y "Volver" en `register-aliado` → `register-choose`). De paso se
+  corrigió un doble `<script>` heredado en `index.html` (se cargaba `lumura.js?v=3` y quedaba
+  un tag abierto); ahora hay `<script src="lumura.js?v=5"></script>` único. Verificado E2E
+  (Puppeteer): chooser con ambas opciones, cliente→form→auto-login→políticas→tienda (token
+  en localStorage), logout→chooser→aliado→form del negocio, y enlaces cruzados. Suite
+  unitaria 135/135 en verde.
 
 Pendiente recomendado para despliegue público: M2 (rate limiter por clave/parcialidad——ya existe por IP en la entrada 21) y la limpieza cosmética del HTML del panel admin. La pasarela simulada
 está lista para migrarse a Stripe/PayU (mismos contratos de `metodo_pago`/
