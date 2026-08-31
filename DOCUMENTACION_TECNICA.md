@@ -562,6 +562,7 @@ primeraApi/
 | `jjwt-impl` | io.jsonwebtoken | 0.12.5 | Implementación de JWT |
 | `jjwt-jackson` | io.jsonwebtoken | 0.12.5 | Serialización JWT con Jackson |
 | `jbcrypt` | org.mindrot | 0.4 | Hash de contraseñas BCrypt |
+| `spring-boot-starter-mail` | org.springframework.boot | 3.2.5 | Envío de correo transaccional (SMTP) |
 | `spring-boot-starter-test` | org.springframework.boot | 3.2.5 | Testing (JUnit, Mockito) |
 
 ## 7.3 APIs REST — Resumen (23 Endpoints)
@@ -859,10 +860,11 @@ en vivo contra el servidor real. La sección 8 se conserva como registro histór
 | 21 | **Rate limit por IP y revocación de tokens JWT** | (1) `RateLimitFilter` **corregido**: el cálculo de ventana anterior guardaba el minuto como timestamp y comparaba milisegundos, por lo que la ventana se reiniciaba en cada petición y nunca llegaba a 429. Ahora usa ventana fija de 60 s por IP (login/registro 10 req/min, `/api/admin` 60, resto 120) con reloj inyectable y limpieza de entradas viejas; 5 tests unitarios (límite login en 11ª, límites independientes por ruta e IP, reinicio de ventana, límite admin). (2) **Revocación de tokens**: nuevo `JwtAuthFilter` central (config) que valida firma/expiración y el claim `tv` contra `usuario.token_version` (columna nueva, alias `token_version`); se incrementa la versión en `POST /api/auth/logout` (nuevo), en `reset-password` y en bloqueo/desbloqueo por el admin → el token viejo muere de inmediato (401 "Tu sesión expiró"), el frontend ya redirige a login en 401. `generateToken` ganó una sobrecarga con versión; los tokens usan el claim `tv`. Verificado E2E: login → token A sirve `/api/admin/usuarios` 200 → logout 200 → token A revocado 401 "Tu sesión expiró. Inicia sesión de nuevo" → re-login 200 → ráfaga de logins fallidos → 8× 429. Columnas `token_version` verificadas en MySQL. 12 tests nuevos (AuthControllerTest, AdminControllerTest, JwtUtilTest, RateLimitFilterTest) → **134 total** |
 | 22 | **Rate limit por clase de ruta (fix "botones admin vacíos")** | Reportado: "ninguno de los botones del panel admin muestra el contenido". Causa: `RateLimitFilter` usaba **un solo contador por IP** compartido entre todas las URIs; una carga normal del SPA (assets estáticos + llamadas API) agotaba el bucket del login (10) o de `/api/admin`, y las respuestas 429 dejaban las pantallas con `display:block` pero sin datos (tablas/fetch vacíos). Fix: buckets **independientes por clase** (login/registro, `/api/admin`, resto) con tres mapas por IP, misma ventana fija de 60 s y limpieza por clase; test nuevo `traficoGeneral_noAgotaElBucketDeLogin` (30 assets + 1 login → 200). Verificado E2E (Puppeteer): login 200, las 6 pantallas admin (`admin-dash`, `admin-cat`, `admin-inv`, `admin-rep`, `admin-users`, `admin-orders`) renderizan sus datos; stress (2 cargas de página + 2 logins + 36 clics rápidos) → **0 respuestas 429/401** en APIs. 1 test nuevo → **135 total** |
 | 23 | **Código de membresía + countdown + bloqueo automático (E2E, 31/08/2026)** | Al confirmar el pago simulado de la membresía, `confirmarPagoAliado()` ahora llama `POST /api/aliado/membresia` `{plan}`: el servidor genera y persiste el **código `MEM-<idAliado>-<PLAN>-<aaaammdd>-<n4>`** (derivado del id del aliado) y el **vencimiento = duración del plan + 1 día de gracia** (basico 30d, medio 240d, premium 360d, todos +1). Columnas nuevas en `usuario`: `membresia_codigo`, `membresia_plan`, `membresia_activada_en`, `membresia_vence` (JPA `ddl-auto=update`). `GET /api/admin/usuarios` y la respuesta de `/api/auth/login` exponen los campos de membresía. **Bloqueo automático**: el login de un ALIADO con `membresia_vence` pasado responde 403 "Cuenta bloqueada por membresía vencida… Genera tu pago para continuar." (validado en `AuthController.login`); en el frontend, `iniciarVigilanciaMembresiaAliado()` (timer de 1 s con guard) muestra al llegar a 0 el mensaje de bloqueo y cierra la sesión en caliente. **Admin**: badge "Membresía vencida" en la tabla de usuarios y, vía "Ver", block `#perfil-memb-row` en el modal de perfil con Código/Plan/Activada/Vence + **countdown** (`#perfil-memb-countdown`, formato `d HH:MM:SS`); al llegar a 0 aparece la nota "Membresía vencida — cuenta bloqueada automáticamente hasta que el aliado genere el pago". Assets a `?v=13`. 13 tests unitarios nuevos (AliadoControllerTest 8, AuthControllerTest 3, AdminControllerTest 2) → **148 total** |
+| 24 | **Correos transaccionales en tiempo real (E2E, 31/08/2026)** | Se añadió `spring-boot-starter-mail` y el servicio `EmailService` (`enviar(destinatario, asunto, cuerpoHtml)`, `@Async`, plantilla HTML con cabecera LUMURA, nunca lanza). En **modo demo** (`app.mail.enabled=false` default) los correos NO se envían: se registran `[MAIL][DEMO]` en el log para no depender de infraestructura SMTP en dev; para activarlos se definen variables de entorno `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM`, `MAIL_ENABLED=true` (proveedor tipo SendGrid/Mailgun/Brevo, `starttls` en 587). **Disparadores**: (1) `POST /api/aliado/membresia` → correo al aliado con el código y el vencimiento; (2) `POST /api/pedidos` → confirmación al **cliente** (pedido #N, total, estado, referencia de pago) y aviso "¡Vendiste!" a cada **aliado vendedor** (mensaje entre roles, reusando `DetalleCompra.idCatalogo → Catalogo.idAliado → Usuario.correo_usuario`); (3) `PUT /api/admin/usuarios/{id}/bloquear|desbloquear` → correo al afectado (motivo+fecha / reactivación). **Aviso automático por "falta de pago"**: con `@EnableScheduling`, `MembresiaVencimientoJob` (cada 6 h) envía **recordatorio** ~5 días antes de que venza la membresía (deduplicado en memoria) y **aviso de bloqueo** a los aliados con `membresia_vence` pasada (reusa `membresia_*` de la entrada 23, sin cambios de esquema). 9 tests unitarios nuevos (EmailServiceTest 4, MembresiaVencimientoJobTest 2, +disparadores en AliadoController/PedidoController/AdminControllerTest) → **157 total**. Verificado en servidor real (modo demo): al confirmar membresía y al comprar aparecen en el log `[MAIL][DEMO]` al aliado y al cliente+vendedor |
 
 ## 9.4 Evidencia de Pruebas Integrales (21/08/2026)
 
-- Suite unitaria: **148/148 verde** (`.\mvnw.cmd test`)
+- Suite unitaria: **157/157 verde** (`.\mvnw.cmd test`)
 - E2E sobre servidor real (localhost:8080): registro/login, catálogo, carrito con FK,
   checkout antifraude (total server-side), desglose de pedido, cancelación con permisos,
   favoritos (agregar/duplicado/borrar/aislamiento entre usuarios), descuento y bloqueo
@@ -1086,14 +1088,27 @@ Suite unitaria 135/135 en verde.
   `/api/aliado/membresia` devuelve el código → admin ve badge "Activo" en la tabla → clic en
   Ver → modal muestra Código, Plan, Activada, Vence, countdown y sin nota de vencimiento (si
   aún no expiró). Si el aliado vuelve a publicar → la membresía ya está registrada.
+- **Correos transaccionales en tiempo real (E2E, 31/08/2026)**: se añadió la capa de correo
+  (`EmailService` + `spring-boot-starter-mail`) conectada a los disparadores de membresía,
+  compra y bloqueo, más el job de vencimiento. Verificado en servidor real en **modo demo**
+  (`MAIL_ENABLED=false`): al confirmar el pago de la membresía aparece en el log
+  `[MAIL][DEMO]` dirigido al **aliado** ("Tu membresía Básico fue activada"); al realizar una
+  compra aparecen dos correos — al **cliente comprador** ("Pedido #43 confirmado — LUMURA") y
+  al **aliado vendedor** ("¡Vendiste en LUMURA! Pedido #43", mensaje entre roles). Los correos
+  de bloqueo/desbloqueo y el recordatorio/aviso de vencimiento se cubren con tests unitarios.
+  Suite unitaria 157/157 verde.
 
 Pendiente recomendado para despliegue público: M2 (rate limiter por clave/parcialidad——ya existe por IP en la entrada 21) y la limpieza cosmética del HTML del panel admin. La pasarela simulada
 está lista para migrarse a Stripe/PayU (mismos contratos de `metodo_pago`/
-`referencia_pago`), la recuperación de contraseña requiere conectar un servidor SMTP
-real (hoy el enlace se muestra en la respuesta/log) y los pedidos ya tienen seguimiento
-de envío con historial de estados. Cabeceras de seguridad aplicadas vía
-`SecurityHeaderFilter` (CSP, X-Content-Type-Options, X-Frame-Options, Referrer-Policy,
-Permissions-Policy, X-XSS-Protection).
+`referencia_pago`). Los correos transaccionales ya están implementados
+(`EmailService`, entrada 24) y solo hace falta definir las variables de entorno
+`SMTP_HOST/PORT/USER/PASSWORD/MAIL_FROM` con `MAIL_ENABLED=true` de un proveedor
+SMTP (SendGrid/Mailgun/Brevo) para activarlos; la recuperación de contraseña
+(`/api/auth/recuperar`) sigue mostrando el `enlace_demo` en la respuesta/log y
+podría reenviarse por el mismo `EmailService` cuando se conecte SMTP. Los pedidos
+ya tienen seguimiento de envío con historial de estados. Cabeceras de seguridad
+aplicadas vía `SecurityHeaderFilter` (CSP, X-Content-Type-Options, X-Frame-Options,
+Referrer-Policy, Permissions-Policy, X-XSS-Protection).
 
 ---
 

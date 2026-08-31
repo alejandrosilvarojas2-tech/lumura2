@@ -10,6 +10,7 @@ import com.lumura.primeraApi.repository.CarritoRepository;
 import com.lumura.primeraApi.repository.CompraRepository;
 import com.lumura.primeraApi.repository.DetalleCompraRepository;
 import com.lumura.primeraApi.repository.UsuarioRepository;
+import com.lumura.primeraApi.service.EmailService;
 import com.lumura.primeraApi.service.PagoSimuladoService;
 import com.lumura.primeraApi.util.JwtUtil;
 import org.slf4j.Logger;
@@ -35,19 +36,22 @@ public class PedidoController {
     private final DetalleCompraRepository detalleCompraRepository;
     private final UsuarioRepository usuarioRepository;
     private final JwtUtil jwtUtil;
+    private final EmailService emailService;
 
     public PedidoController(CompraRepository compraRepository,
                             CarritoRepository carritoRepository,
                             CatalogoRepository catalogoRepository,
                             DetalleCompraRepository detalleCompraRepository,
                             UsuarioRepository usuarioRepository,
-                            JwtUtil jwtUtil) {
+                            JwtUtil jwtUtil,
+                            EmailService emailService) {
         this.compraRepository = compraRepository;
         this.carritoRepository = carritoRepository;
         this.catalogoRepository = catalogoRepository;
         this.detalleCompraRepository = detalleCompraRepository;
         this.usuarioRepository = usuarioRepository;
         this.jwtUtil = jwtUtil;
+        this.emailService = emailService;
     }
 
     @PostMapping
@@ -150,7 +154,68 @@ public class PedidoController {
         respuesta.put("id", compra.getIdCompra());
         respuesta.put("total", total);
         if (referenciaPago != null) respuesta.put("referencia_pago", referenciaPago);
+
+        notificarCompra(compra, idUsuario, total, metodoPago, referenciaPago, detalles);
         return ResponseEntity.ok(respuesta);
+    }
+
+    // Envía la confirmación de compra al cliente y el aviso de venta a los aliados
+    // vendedores de cada producto (mensaje "entre roles").
+    private void notificarCompra(Compra compra, Integer idUsuario, BigDecimal total,
+                                 String metodoPago, String referenciaPago, List<DetalleCompra> detalles) {
+        String numero = "#" + compra.getIdCompra();
+        // Confirmación al cliente comprador
+        usuarioRepository.findById(idUsuario).ifPresent(cliente -> {
+            String metodo = metodoPago != null && !metodoPago.isBlank() ? metodoPago : "Contra entrega";
+            StringBuilder itemsHtml = new StringBuilder("<ul>");
+            Optional.ofNullable(detalles).orElse(List.of()).forEach(d -> itemsHtml
+                    .append("<li>").append(d.getCantidad()).append("x ").append(d.getArticulo())
+                    .append(" — $").append(d.getPrecioUnitario()).append("</li>"));
+            itemsHtml.append("</ul>");
+            String ref = referenciaPago != null ? "<p><b>Referencia de pago:</b> " + referenciaPago + "</p>" : "";
+            emailService.enviar(cliente.getCorreoUsuario(),
+                    "Pedido " + numero + " confirmado — LUMURA",
+                    EmailService.plantilla("¡Compra confirmada, " + cliente.getNombreUsuario() + "!",
+                            "<p>Tu pedido <b>" + numero + "</b> fue confirmado correctamente por un total de <b>$" + total + "</b>.</p>"
+                            + itemsHtml.toString()
+                            + "<p><b>Método de pago:</b> " + metodo + "<br>"
+                            + "<b>Estado:</b> pendiente</p>"
+                            + ref
+                            + "<p>Recibirás una actualización cuando tu pedido sea enviado.</p>"));
+        });
+
+        // Aviso a cada aliado vendedor (puede repetirse entre productos)
+        Set<Integer> idsProductos = detalles.stream()
+                .map(DetalleCompra::getIdCatalogo)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (idsProductos.isEmpty()) return;
+        Map<Integer, Catalogo> productos = catalogoRepository.findAllById(idsProductos).stream()
+                .collect(Collectors.toMap(Catalogo::getIdCatalogo, p -> p));
+        Map<Integer, String> avisosPorAliado = new LinkedHashMap<>();
+        for (DetalleCompra d : detalles) {
+            if (d.getIdCatalogo() == null) continue;
+            Catalogo producto = productos.get(d.getIdCatalogo());
+            if (producto == null || producto.getIdAliado() == null) continue;
+            avisosPorAliado.merge(producto.getIdAliado(),
+                    d.getCantidad() + "x " + descLargo(d, producto),
+                    (a, b) -> a + "<br>" + b);
+        }
+        avisosPorAliado.forEach((idAliado, detalle) ->
+                usuarioRepository.findById(idAliado)
+                        .filter(u -> "ALIADO".equals(u.getRol()))
+                        .ifPresent(vendedor -> emailService.enviar(vendedor.getCorreoUsuario(),
+                                "¡Vendiste en LUMURA! Pedido " + numero,
+                                EmailService.plantilla("¡Venta realizada, " + vendedor.getNombreUsuario() + "!",
+                                        "<p>Se vendieron tus productos en el pedido <b>" + numero + "</b>:</p>"
+                                        + "<p>" + detalle + "</p>"
+                                        + "<p>Total del pedido: <b>$" + total + "</b>. Sigue publicando para vender más.</p>"))));
+    }
+
+    private String descLargo(DetalleCompra d, Catalogo producto) {
+        String nombre = producto.getArticulo() != null ? producto.getArticulo() : d.getArticulo();
+        if (producto.getTalla() != null && !producto.getTalla().isBlank()) nombre += " (Talla " + producto.getTalla() + ")";
+        return nombre + " — $" + d.getPrecioUnitario();
     }
 
     @GetMapping("/{idUsuario}")

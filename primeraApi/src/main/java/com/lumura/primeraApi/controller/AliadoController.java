@@ -6,6 +6,7 @@ import com.lumura.primeraApi.entity.Usuario;
 import com.lumura.primeraApi.repository.CatalogoRepository;
 import com.lumura.primeraApi.repository.DetalleCompraRepository;
 import com.lumura.primeraApi.repository.UsuarioRepository;
+import com.lumura.primeraApi.service.EmailService;
 import com.lumura.primeraApi.util.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,15 +29,18 @@ public class AliadoController {
     private final DetalleCompraRepository detalleCompraRepository;
     private final UsuarioRepository usuarioRepository;
     private final JwtUtil jwtUtil;
+    private final EmailService emailService;
 
     public AliadoController(CatalogoRepository catalogoRepository,
                             DetalleCompraRepository detalleCompraRepository,
                             UsuarioRepository usuarioRepository,
-                            JwtUtil jwtUtil) {
+                            JwtUtil jwtUtil,
+                            EmailService emailService) {
         this.catalogoRepository = catalogoRepository;
         this.detalleCompraRepository = detalleCompraRepository;
         this.usuarioRepository = usuarioRepository;
         this.jwtUtil = jwtUtil;
+        this.emailService = emailService;
     }
 
     @GetMapping("/productos")
@@ -325,7 +329,27 @@ public class AliadoController {
         u.setMembresiaVence(vence);
         usuarioRepository.save(u);
         log.info("Membresía {} confirmada para aliado {} — código {}", plan, userId, codigo);
+
+        String planNombre = nombrePlan(plan);
+        emailService.enviar(u.getCorreoUsuario(),
+                "Tu membresía " + planNombre + " fue activada",
+                EmailService.plantilla("¡Membresía activada, " + u.getNombreUsuario() + "!",
+                        "<p>Tu membresía <b>" + planNombre + "</b> de distribuidor LUMURA fue activada correctamente.</p>"
+                        + "<p><b>Código de membresía:</b> <code>" + codigo + "</code></p>"
+                        + "<p><b>Plan:</b> " + planNombre + "<br>"
+                        + "<b>Activada el:</b> " + ahora.toLocalDate() + "<br>"
+                        + "<b>Vence el:</b> " + vence.toLocalDate() + " (incluye 1 día de gracia)</p>"
+                        + "<p>Tu negocio ya puede operar normalmente en LUMURA.</p>"));
         return ResponseEntity.ok(toMembresiaMap(u));
+    }
+
+    private String nombrePlan(String plan) {
+        switch (plan) {
+            case "basico": return "Básico";
+            case "medio": return "Medio";
+            case "premium": return "Premium";
+            default: return plan;
+        }
     }
 
     private Map<String, Object> toMembresiaMap(Usuario u) {

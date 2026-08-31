@@ -34,6 +34,8 @@ class AliadoControllerTest {
     private UsuarioRepository usuarioRepository;
     @Mock
     private JwtUtil jwtUtil;
+    @Mock
+    private com.lumura.primeraApi.service.EmailService emailService;
 
     @InjectMocks
     private AliadoController aliadoController;
@@ -498,6 +500,21 @@ class AliadoControllerTest {
 
         assertEquals(401, res.getStatusCode().value());
         verifyNoInteractions(usuarioRepository);
+    }
+
+    @Test
+    void confirmarPagoMembresia_planValido_enviaCorreoDeConfirmacionAlAliado() {
+        mockToken(TOKEN_ALIADO, 7, "ALIADO");
+        Usuario u = usuarioAliado(7);
+        u.setNombreUsuario("Ana");
+        u.setCorreoUsuario("ana@lumura.com");
+        when(usuarioRepository.findById(7)).thenReturn(Optional.of(u));
+        when(usuarioRepository.save(u)).thenReturn(u);
+
+        aliadoController.confirmarPagoMembresia(TOKEN_ALIADO, body("plan", "medio"));
+
+        verify(emailService).enviar(eq("ana@lumura.com"), contains("activada"),
+                contains("MEM-7-MEDIO"));
     }
 
     @Test

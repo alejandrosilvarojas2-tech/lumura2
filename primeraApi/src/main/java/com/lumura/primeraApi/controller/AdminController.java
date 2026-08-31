@@ -6,6 +6,7 @@ import com.lumura.primeraApi.entity.Usuario;
 import com.lumura.primeraApi.repository.CatalogoRepository;
 import com.lumura.primeraApi.repository.CompraRepository;
 import com.lumura.primeraApi.repository.UsuarioRepository;
+import com.lumura.primeraApi.service.EmailService;
 import com.lumura.primeraApi.util.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,15 +35,18 @@ public class AdminController {
     private final UsuarioRepository usuarioRepository;
     private final CatalogoRepository catalogoRepository;
     private final JwtUtil jwtUtil;
+    private final EmailService emailService;
 
     public AdminController(CompraRepository compraRepository,
                            UsuarioRepository usuarioRepository,
                            CatalogoRepository catalogoRepository,
-                           JwtUtil jwtUtil) {
+                           JwtUtil jwtUtil,
+                           EmailService emailService) {
         this.compraRepository = compraRepository;
         this.usuarioRepository = usuarioRepository;
         this.catalogoRepository = catalogoRepository;
         this.jwtUtil = jwtUtil;
+        this.emailService = emailService;
     }
 
     @GetMapping("/dashboard")
@@ -272,6 +276,14 @@ public class AdminController {
         usuarioRepository.incrementarTokenVersion(u.getIdUsuario());
 
         log.info("Usuario {} bloqueado por {} días (motivo: {})", id, dias, motivo.trim());
+        emailService.enviar(u.getCorreoUsuario(),
+                "Tu cuenta en LUMURA fue bloqueada",
+                EmailService.plantilla("Cuenta bloqueada, " + u.getNombreUsuario(),
+                        "<p>Tu cuenta en LUMURA fue <b>bloqueada temporalmente</b> por un administrador.</p>"
+                        + "<p><b>Motivo:</b> " + u.getMotivoBloqueo() + "<br>"
+                        + "<b>Bloqueo vigente hasta:</b> " + u.getBloqueoHasta().toLocalDate() + "</p>"
+                        + "<p>Si consideras que es un error o necesitas generar el pago de tu membresía, "
+                        + "contacta con el soporte de LUMURA.</p>"));
         return ResponseEntity.ok(Map.of(
                 "mensaje", "Usuario bloqueado correctamente",
                 "bloqueado", true,
@@ -299,6 +311,11 @@ public class AdminController {
         usuarioRepository.incrementarTokenVersion(u.getIdUsuario());
 
         log.info("Usuario {} desbloqueado por admin", id);
+        emailService.enviar(u.getCorreoUsuario(),
+                "Tu cuenta en LUMURA fue reactivada",
+                EmailService.plantilla("¡Cuenta reactivada, " + u.getNombreUsuario() + "!",
+                        "<p>Tu cuenta en LUMURA fue <b>desbloqueada</b> y puedes volver a iniciar sesión con normalidad.</p>"
+                        + "<p>Si eres aliado y tenías una membresía vencida, recuerda generar tu pago para no volver a quedar bloqueado.</p>"));
         return ResponseEntity.ok(Map.of("mensaje", "Usuario desbloqueado correctamente", "bloqueado", false));
     }
 

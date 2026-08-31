@@ -6,11 +6,19 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
     Optional<Usuario> findByCorreoUsuario(String correoUsuario);
     Optional<Usuario> findByResetToken(String resetToken);
+
+    // Aliados con membresía vigente que vence dentro de la ventana dada (para recordatorios).
+    List<Usuario> findByRolAndMembresiaVenceBetween(String rol, LocalDateTime desde, LocalDateTime hasta);
+
+    // Aliados con membresía ya vencida (para el aviso de bloqueo automático).
+    List<Usuario> findByRolAndMembresiaVenceBefore(String rol, LocalDateTime antes);
 
     @Modifying
     @Query("UPDATE Usuario u SET u.tokenVersion = COALESCE(u.tokenVersion, 0) + 1 WHERE u.idUsuario = :idUsuario")

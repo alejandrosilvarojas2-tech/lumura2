@@ -22,6 +22,9 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,6 +38,8 @@ class AdminControllerTest {
     private CatalogoRepository catalogoRepository;
     @Mock
     private JwtUtil jwtUtil;
+    @Mock
+    private com.lumura.primeraApi.service.EmailService emailService;
 
     @InjectMocks
     private AdminController adminController;
@@ -389,5 +394,23 @@ class AdminControllerTest {
         ResponseEntity<?> res = adminController.desbloquearUsuario(TOKEN_ADMIN, 99);
 
         assertEquals(404, res.getStatusCode().value());
+    }
+
+    @Test
+    void bloquearYDesbloquear_enviaCorreoAlUsuarioAfectado() {
+        mockToken(TOKEN_ADMIN, "ADMIN");
+        Usuario cliente = new Usuario();
+        cliente.setIdUsuario(5);
+        cliente.setRol("USER");
+        cliente.setNombreUsuario("Pedro");
+        cliente.setCorreoUsuario("pedro@lumura.com");
+        when(usuarioRepository.findById(5)).thenReturn(Optional.of(cliente));
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        adminController.bloquearUsuario(TOKEN_ADMIN, 5, Map.of("motivo", "Falta de pago", "dias", "7"));
+        verify(emailService).enviar(eq("pedro@lumura.com"), contains("bloqueada"), contains("Falta de pago"));
+
+        adminController.desbloquearUsuario(TOKEN_ADMIN, 5);
+        verify(emailService).enviar(eq("pedro@lumura.com"), contains("reactivada"), anyString());
     }
 }

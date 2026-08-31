@@ -20,12 +20,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -43,6 +47,8 @@ class PedidoControllerTest {
     private UsuarioRepository usuarioRepository;
     @Mock
     private JwtUtil jwtUtil;
+    @Mock
+    private com.lumura.primeraApi.service.EmailService emailService;
 
     @InjectMocks
     private PedidoController pedidoController;
@@ -354,5 +360,47 @@ class PedidoControllerTest {
         ResponseEntity<?> res = pedidoController.cancelar(TOKEN_USER, 99);
 
         assertEquals(404, res.getStatusCode().value());
+    }
+
+    @Test
+    void crear_enviaConfirmacionAlClienteYAvisoAlAliadoVendedor() {
+        mockToken(TOKEN_USER, 1);
+        when(carritoRepository.findByIdUsuario(1)).thenReturn(List.of(itemCarrito(2, "Jeans Slim Fit", 1)));
+        when(catalogoRepository.findById(2)).thenReturn(Optional.of(producto(2, "Jeans Slim Fit", "89900", 10)));
+        when(compraRepository.save(any(Compra.class))).thenAnswer(inv -> {
+            Compra c = inv.getArgument(0);
+            c.setIdCompra(55);
+            return c;
+        });
+
+        // Cliente comprador
+        Usuario cliente = new Usuario();
+        cliente.setIdUsuario(1);
+        cliente.setNombreUsuario("Cliente");
+        cliente.setCorreoUsuario("cliente@lumura.com");
+        cliente.setRol("USER");
+        when(usuarioRepository.findById(1)).thenReturn(Optional.of(cliente));
+
+        // Producto pertenece al aliado 7
+        Catalogo jeans = new Catalogo();
+        jeans.setIdCatalogo(2);
+        jeans.setArticulo("Jeans Slim Fit");
+        jeans.setPrecio(new BigDecimal("89900"));
+        jeans.setTalla("M");
+        jeans.setIdAliado(7);
+        when(catalogoRepository.findAllById(any(Collection.class))).thenReturn(List.of(jeans));
+
+        Usuario vendedor = new Usuario();
+        vendedor.setIdUsuario(7);
+        vendedor.setNombreUsuario("Ana");
+        vendedor.setCorreoUsuario("ana@lumura.com");
+        vendedor.setRol("ALIADO");
+        when(usuarioRepository.findById(7)).thenReturn(Optional.of(vendedor));
+
+        ResponseEntity<?> res = pedidoController.crear(TOKEN_USER, bodyPago());
+
+        assertEquals(200, res.getStatusCode().value());
+        verify(emailService).enviar(eq("cliente@lumura.com"), contains("#55"), anyString());
+        verify(emailService).enviar(eq("ana@lumura.com"), contains("Vendiste"), contains("Jeans Slim Fit"));
     }
 }
