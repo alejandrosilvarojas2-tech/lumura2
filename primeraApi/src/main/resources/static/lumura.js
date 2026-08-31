@@ -434,7 +434,17 @@ function cancelarRetracto() {
   mostrarMenuAliado('membresias');
 }
 
+function membAliadoElegida() {
+  return !!localStorage.getItem('lumura_membresia_elegida_' + (state.user?.id || ''));
+}
+
+function marcarMembAliadoElegida() {
+  const id = state.user?.id;
+  if (id) localStorage.setItem('lumura_membresia_elegida_' + id, '1');
+}
+
 function confirmarPagoAliado() {
+  marcarMembAliadoElegida();
   const det = document.getElementById('pago-plan-detalle');
   const nombre = det?.querySelector('div')?.textContent || 'tu plan';
   mostrarMensaje('Pago de ' + nombre + ' confirmado correctamente', 'success');
@@ -487,7 +497,7 @@ async function publicarArticuloAliado() {
     document.getElementById('aliado-add-form').reset();
     resetAliadoFormulario();
     await cargarProductos();
-    mostrarMenuAliado('membresias');
+    mostrarMenuAliado(membAliadoElegida() ? 'stock' : 'membresias');
   } catch (err) {
     mostrarMensaje(err.message, 'error');
   }

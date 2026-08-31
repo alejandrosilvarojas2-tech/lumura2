@@ -1014,6 +1014,19 @@ Suite unitaria 135/135 en verde.
   "OFERTA ESPECIAL" y "Ver colección"; filtro por "Camisetas" sigue listando la camiseta nueva +
   legacy; catálogo admin OK. Assets versionados a `?v=10` (CSS sin cambios). Suite unitaria
   135/135 en verde.
+- **Anuncio de membresías del aliado solo una vez (E2E, 31/08/2026)**: el panel
+  `#aliado-panel-membresias` ya no se muestra en **cada** publicación. `confirmarPagoAliado`
+  marca la elección como persistente con `marcarMembAliadoElegida()` en `localStorage`
+  (llave `lumura_membresia_elegida_<id_usuario>` según `state.user.id`) y
+  `publicarArticuloAliado` decide con `membAliadoElegida()`: si el aliado ya confirmó el pago de
+  una membresía va **directo a Stock**, si no, muestra el anuncio. El enlace "Más tarde — Volver
+  al Stock" (sin escoger plan) no marca la elección, por lo que el anuncio vuelve a salir en la
+  siguiente publicación. Sin cambios de backend ni de HTML (solo `lumura.js`; los paneles se
+  conservan). Verificado E2E (Puppeteer): flag persistido en localStorage (1 llave); 2º artículo
+  publicado → anuncio ausente y aterrizaje directo en Stock; **tras recargar la página** la sesión
+  se restaura (`state.token` → `irInicioPorRol()`) y un 3er artículo también va directo a Stock
+  sin el anuncio (persistencia del flag). Assets versionados a `?v=11` (CSS sin cambios). Suite
+  unitaria 135/135 en verde.
 - **Categorías unificadas y filtrables por rol (E2E, 30/08/2026)**: se unificó el sistema de
   categorías en **una lista canónica `CATEGORIAS`** de 23 valores (Camisetas, Camisas, Blusas,
   Pantalones, Jeans, Faldas, Vestidos, Chaquetas, Abrigos, Sueter, Chalecos, Trajes, Ropa
