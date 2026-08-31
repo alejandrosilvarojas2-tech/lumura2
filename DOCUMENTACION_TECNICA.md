@@ -958,6 +958,22 @@ verde.
   (Puppeteer): chooser con ambas opciones, cliente→form→auto-login→políticas→tienda (token
   en localStorage), logout→chooser→aliado→form del negocio, y enlaces cruzados. Suite
   unitaria 135/135 en verde.
+- **Ventana de membresías del aliado (E2E, 30/08/2026)**: tras **publicar un artículo** el
+  panel del aliado muestra una pantalla completa `#aliado-panel-membresias` con las 3 tarjetas
+  cuyos textos fueron aportados por el cliente: **Membresía Básico** ($10.000 COP/mes, 1er mes
+  gratis, renovación automática mensual y un día de gracia adicional), **Membresía Medio**
+  ($60.000 COP, vigencia 8 meses, dos meses gratis, renovación automática) y **Membresía
+  Premium (Empresas)** ($90.000 COP, vigencia 12 meses, renovación automática + publicidad
+  aleatoria en redes sociales y plataformas asociadas de Lumura). Al pulsar un plan →
+  `#aliado-panel-pago` con resumen dinámico del plan (`#pago-plan-detalle`, datos del objeto
+  JS `datosPlanes` vía `elegirPlanAliado(plan)`); **Confirmar pago** (`confirmarPagoAliado`)
+  es un pago **simulado** (sin pasarela ni tarjeta, sin endpoint nuevo): mensaje de éxito y
+  vuelta al Stock. Enlace "Más tarde — Volver al Stock" permite saltarla. Redirección
+  implementada en el éxito de `publicarArticuloAliado` (`mostrarMenuAliado('membresias')` en
+  vez de `'stock'`). Assets versionados a `?v=6` (CSS sin cambios, `?v=4`). Verificado E2E
+  (Puppeteer): aliado real por API → login → añadir artículo → aceptar el aviso de compromiso
+  → membresías con los 3 textos completos → Básico → confirmación de pago con resumen →
+  Confirmar → Stock. Suite unitaria 135/135 en verde.
 
 Pendiente recomendado para despliegue público: M2 (rate limiter por clave/parcialidad——ya existe por IP en la entrada 21) y la limpieza cosmética del HTML del panel admin. La pasarela simulada
 está lista para migrarse a Stripe/PayU (mismos contratos de `metodo_pago`/

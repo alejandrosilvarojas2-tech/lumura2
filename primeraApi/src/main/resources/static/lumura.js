@@ -388,6 +388,43 @@ function volverPanelLicencia() {
   mostrarMenuAliado('dash');
 }
 
+const datosPlanes = {
+  basico: {
+    nombre: 'Membresía Básico',
+    precio: '$10.000 COP/mes',
+    detalle: 'Con la Membresía Básico de Lumura, disfruta de tu primer mes completamente gratis. A partir de ahí, el valor mensual es de $10.000 COP, con renovación automática cada mes. Además, cuentas con un día de gracia adicional después del cierre del mes para que el descuento se genere sin contratiempos en tu tarjeta de crédito o débito asociada.'
+  },
+  medio: {
+    nombre: 'Membresía Medio',
+    precio: '$60.000 COP',
+    detalle: 'La Membresía Medio te ofrece dos meses completamente gratis para que aproveches al máximo los beneficios de ser aliado de Lumura. Su valor es de $60.000 COP y tiene una vigencia de 8 meses, renovándose automáticamente al finalizar cada periodo, garantizando continuidad sin necesidad de trámites adicionales.'
+  },
+  premium: {
+    nombre: 'Membresía Premium (Empresas)',
+    precio: '$90.000 COP',
+    detalle: 'Diseñada para empresas que buscan crecer junto a Lumura, la Membresía Premium tiene una vigencia de 12 meses por un valor de $90.000 COP, renovándose automáticamente al finalizar el periodo. Como beneficio exclusivo, tu marca recibe publicidad aleatoria en redes sociales y plataformas asociadas de Lumura, aumentando tu visibilidad ante una audiencia más amplia sin esfuerzo adicional de tu parte, posicionando tu negocio de forma constante y estratégica.'
+  }
+};
+
+function elegirPlanAliado(plan) {
+  const p = datosPlanes[plan];
+  if (!p) return;
+  const cont = document.getElementById('pago-plan-detalle');
+  if (cont) {
+    cont.innerHTML = '<div style="font-size:18px;font-weight:800;margin-bottom:4px;">' + p.nombre + '</div>'
+      + '<div style="font-size:24px;font-weight:800;color:var(--accent);margin-bottom:8px;">' + p.precio + '</div>'
+      + '<p style="font-size:13px;color:var(--gray);line-height:1.6;margin:0;">' + p.detalle + '</p>';
+  }
+  mostrarMenuAliado('pago');
+}
+
+function confirmarPagoAliado() {
+  const det = document.getElementById('pago-plan-detalle');
+  const nombre = det?.querySelector('div')?.textContent || 'tu plan';
+  mostrarMensaje('Pago de ' + nombre + ' confirmado correctamente', 'success');
+  setTimeout(function () { mostrarMenuAliado('stock'); }, 1200);
+}
+
 
 async function guardarArticuloAliado(e) {
   e.preventDefault();
@@ -433,7 +470,7 @@ async function publicarArticuloAliado() {
     document.getElementById('aliado-add-form').reset();
     resetAliadoFormulario();
     await cargarProductos();
-    mostrarMenuAliado('stock');
+    mostrarMenuAliado('membresias');
   } catch (err) {
     mostrarMensaje(err.message, 'error');
   }
