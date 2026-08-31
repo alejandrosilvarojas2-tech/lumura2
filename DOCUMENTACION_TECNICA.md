@@ -358,7 +358,7 @@ El frontend implementa **12 pantallas** que se muestran/ocultan mediante la func
 | 10 | `screen-admin-cat` | Gestión de Catálogo | ADMIN | Tabla de productos, filtros, modal para crear/editar, CRUD completo |
 | 11 | `screen-admin-inv` | Control de Inventario | ADMIN | KPIs de stock, tabla con alertas de productos agotados y stock bajo |
 | 12 | `screen-admin-rep` | Reportes de Ventas | ADMIN | KPIs de ventas, gráfico semanal, top productos, últimas transacciones |
-| 13 | `screen-admin-users` | Gestión de Usuarios | ADMIN | Tabla de usuarios (id, nombre, email, teléfono, rol, registro, estado) con botones **Ver** (modal `modal-perfil-usuario` con perfil completo, incluidos datos de aliado: negocio, NIT, contacto, categoría, licencia; el admin queda "Protegido"), **Bloquear** (modal `modal-bloqueo-usuario` con motivo + días), **Desbloquear** y **Eliminar**; el admin autenticado no aparece en la lista |
+| 13 | `screen-admin-users` | Gestión de Usuarios | ADMIN | Tabla de usuarios (id, nombre, email, teléfono, rol, registro, estado) con botones **Ver** (modal `modal-perfil-usuario` con perfil completo, incluidos datos de aliado: negocio, NIT, contacto, categoría, licencia, **membresía** con código, plan, activada el, vence el, countdown; el admin queda "Protegido"), **Bloquear** (modal `modal-bloqueo-usuario` con motivo + días), **Desbloquear** y **Eliminar**; el admin autenticado no aparece en la lista; badge **"Membresía vencida"** (naranja) para aliados con membresía expirada |
 | 14 | `screen-aliado-dash` | Dashboard Aliado | ALIADO | KPIs de ventas del aliado, productos, accesos rápidos |
 | 15 | `screen-aliado-add` | Añadir Artículo | ALIADO | Formulario para publicar un producto del aliado |
 | 16 | `screen-aliado-stock` | Stock Aliado | ALIADO | Control de inventario de los productos del aliado |
@@ -564,12 +564,12 @@ primeraApi/
 | `jbcrypt` | org.mindrot | 0.4 | Hash de contraseñas BCrypt |
 | `spring-boot-starter-test` | org.springframework.boot | 3.2.5 | Testing (JUnit, Mockito) |
 
-## 7.3 APIs REST — Resumen (21 Endpoints)
+## 7.3 APIs REST — Resumen (23 Endpoints)
 
 | Método | Ruta | Auth | Descripción |
 |--------|------|------|-------------|
 | POST | `/api/auth/register` | No | Registro de usuario |
-| POST | `/api/auth/login` | No | Inicio de sesión |
+| POST | `/api/auth/login` | No | Inicio de sesión (403 si la cuenta está bloqueada o si es ALIADO con membresía de distribuidor vencida; la respuesta incluye `membresia` cuando existe) |
 | POST | `/api/auth/logout` | JWT | Cierra sesión e invalida todos los tokens del usuario |
 | PUT | `/api/auth/cuenta` | JWT | Actualizar datos personales |
 | DELETE | `/api/auth/cuenta` | JWT | Eliminar cuenta |
@@ -584,13 +584,15 @@ primeraApi/
 | POST | `/api/pedidos` | JWT | Crear pedido |
 | GET | `/api/pedidos/{idUsuario}` | JWT | Historial de pedidos (con `detalles[]`; cada detalle incluye `vendedor` con datos del aliado) |
 | PUT | `/api/pedidos/{id}/cancelar` | JWT | Cancelar pedido |
+| GET | `/api/aliado/membresia` | JWT | Ver membresía de distribuidor del aliado `{membresia: {codigo, plan, activada_en, vence}}` |
+| POST | `/api/aliado/membresia` | JWT | Confirmar pago (simulado) de la membresía `{plan: basico|medio|premium}` → genera y persiste el código `MEM-<idAliado>-<PLAN>-<aaaammdd>-<n4>` y el vencimiento (duración + 1 día de gracia) |
 | GET | `/api/admin/dashboard` | JWT+ADMIN | KPIs del negocio |
 | GET | `/api/admin/pedidos` | JWT+ADMIN | Todos los pedidos |
 | PUT | `/api/admin/pedidos/{id}` | JWT+ADMIN | Actualizar estado pedido |
 | POST | `/api/admin/productos` | JWT+ADMIN | Crear producto |
 | PUT | `/api/admin/productos/{id}` | JWT+ADMIN | Actualizar producto |
 | DELETE | `/api/admin/productos/{id}` | JWT+ADMIN | Eliminar producto |
-| GET | `/api/admin/usuarios` | JWT+ADMIN | Listar usuarios (excluye al admin autenticado; incluye `bloqueado`, `motivo_bloqueo`, `bloqueo_hasta`) |
+| GET | `/api/admin/usuarios` | JWT+ADMIN | Listar usuarios (excluye al admin autenticado; incluye `bloqueado`, `motivo_bloqueo`, `bloqueo_hasta` y, para aliados, `membresia_codigo`, `membresia_plan`, `membresia_activada_en`, `membresia_vence`) |
 | PUT | `/api/admin/usuarios/{id}/bloquear` | JWT+ADMIN | Bloquear usuario `{motivo, dias}` (400 si es ADMIN, motivo vacío o días < 1) |
 | PUT | `/api/admin/usuarios/{id}/desbloquear` | JWT+ADMIN | Desbloquear usuario (limpia motivo y fecha) |
 | DELETE | `/api/admin/usuarios/{id}` | JWT+ADMIN | Eliminar usuario |
@@ -856,10 +858,11 @@ en vivo contra el servidor real. La sección 8 se conserva como registro histór
 | 20 | **Detalles del vendedor en checkout, confirmación y pedidos** | Reportado: "al comprar el producto desde la sección cliente no salen los detalles del aliado que subió el producto". El carrito ya los mostraba (entrada 18), pero el **checkout** no listaba los ítems y la **confirmación** no tenía el desglose. Backend: `DetalleCompra` añade campo `@Transient Map<String,Object> vendedor` y `PedidoController.adjuntarDetalles` resuelve el aliado de cada detalle (`catalogo.id_aliado` → `UsuarioRepository`, filtra rol ALIADO) exponiendo `vendedor_nombre`, `vendedor_correo`, `vendedor_telefono`, `vendedor_negocio`. Frontend: nuevo bloque `#checkout-items` en `screen-checkout` renderizado por `renderCheckoutItems()` (hook de `showScreen`), bloque `#confirm-items` en `screen-confirm` poblado al confirmar, y `renderDetallesPedido` muestra el vendedor por ítem en "Mis pedidos". Verificado E2E (Puppeteer): cliente compra "zapatillas urbanas" → detalle del producto con "Vendido por: aguacate" (+NIT, contacto, teléfono, dirección) → carrito, `#checkout-items`, confirmación (`#LUM-39`) y pedidos muestran "Vendedor: aguacate - sandra rojas · aguacate" con correo `sandrarojasmoda@gmail.com` y teléfono `3182244198`; 0 errores JS; 1 test unitario nuevo en PedidoControllerTest. Además: assets versionados (`lumura.js?v=3`, `lumura.css?v=3`) para forzar recarga del frontend ante caché del navegador — verificado de nuevo el botón "Usuarios" del sidebar → 32 filas con columna Estado y botones |
 | 21 | **Rate limit por IP y revocación de tokens JWT** | (1) `RateLimitFilter` **corregido**: el cálculo de ventana anterior guardaba el minuto como timestamp y comparaba milisegundos, por lo que la ventana se reiniciaba en cada petición y nunca llegaba a 429. Ahora usa ventana fija de 60 s por IP (login/registro 10 req/min, `/api/admin` 60, resto 120) con reloj inyectable y limpieza de entradas viejas; 5 tests unitarios (límite login en 11ª, límites independientes por ruta e IP, reinicio de ventana, límite admin). (2) **Revocación de tokens**: nuevo `JwtAuthFilter` central (config) que valida firma/expiración y el claim `tv` contra `usuario.token_version` (columna nueva, alias `token_version`); se incrementa la versión en `POST /api/auth/logout` (nuevo), en `reset-password` y en bloqueo/desbloqueo por el admin → el token viejo muere de inmediato (401 "Tu sesión expiró"), el frontend ya redirige a login en 401. `generateToken` ganó una sobrecarga con versión; los tokens usan el claim `tv`. Verificado E2E: login → token A sirve `/api/admin/usuarios` 200 → logout 200 → token A revocado 401 "Tu sesión expiró. Inicia sesión de nuevo" → re-login 200 → ráfaga de logins fallidos → 8× 429. Columnas `token_version` verificadas en MySQL. 12 tests nuevos (AuthControllerTest, AdminControllerTest, JwtUtilTest, RateLimitFilterTest) → **134 total** |
 | 22 | **Rate limit por clase de ruta (fix "botones admin vacíos")** | Reportado: "ninguno de los botones del panel admin muestra el contenido". Causa: `RateLimitFilter` usaba **un solo contador por IP** compartido entre todas las URIs; una carga normal del SPA (assets estáticos + llamadas API) agotaba el bucket del login (10) o de `/api/admin`, y las respuestas 429 dejaban las pantallas con `display:block` pero sin datos (tablas/fetch vacíos). Fix: buckets **independientes por clase** (login/registro, `/api/admin`, resto) con tres mapas por IP, misma ventana fija de 60 s y limpieza por clase; test nuevo `traficoGeneral_noAgotaElBucketDeLogin` (30 assets + 1 login → 200). Verificado E2E (Puppeteer): login 200, las 6 pantallas admin (`admin-dash`, `admin-cat`, `admin-inv`, `admin-rep`, `admin-users`, `admin-orders`) renderizan sus datos; stress (2 cargas de página + 2 logins + 36 clics rápidos) → **0 respuestas 429/401** en APIs. 1 test nuevo → **135 total** |
+| 23 | **Código de membresía + countdown + bloqueo automático (E2E, 31/08/2026)** | Al confirmar el pago simulado de la membresía, `confirmarPagoAliado()` ahora llama `POST /api/aliado/membresia` `{plan}`: el servidor genera y persiste el **código `MEM-<idAliado>-<PLAN>-<aaaammdd>-<n4>`** (derivado del id del aliado) y el **vencimiento = duración del plan + 1 día de gracia** (basico 30d, medio 240d, premium 360d, todos +1). Columnas nuevas en `usuario`: `membresia_codigo`, `membresia_plan`, `membresia_activada_en`, `membresia_vence` (JPA `ddl-auto=update`). `GET /api/admin/usuarios` y la respuesta de `/api/auth/login` exponen los campos de membresía. **Bloqueo automático**: el login de un ALIADO con `membresia_vence` pasado responde 403 "Cuenta bloqueada por membresía vencida… Genera tu pago para continuar." (validado en `AuthController.login`); en el frontend, `iniciarVigilanciaMembresiaAliado()` (timer de 1 s con guard) muestra al llegar a 0 el mensaje de bloqueo y cierra la sesión en caliente. **Admin**: badge "Membresía vencida" en la tabla de usuarios y, vía "Ver", block `#perfil-memb-row` en el modal de perfil con Código/Plan/Activada/Vence + **countdown** (`#perfil-memb-countdown`, formato `d HH:MM:SS`); al llegar a 0 aparece la nota "Membresía vencida — cuenta bloqueada automáticamente hasta que el aliado genere el pago". Assets a `?v=13`. 13 tests unitarios nuevos (AliadoControllerTest 8, AuthControllerTest 3, AdminControllerTest 2) → **148 total** |
 
 ## 9.4 Evidencia de Pruebas Integrales (21/08/2026)
 
-- Suite unitaria: **135/135 verde** (`.\mvnw.cmd test`)
+- Suite unitaria: **148/148 verde** (`.\mvnw.cmd test`)
 - E2E sobre servidor real (localhost:8080): registro/login, catálogo, carrito con FK,
   checkout antifraude (total server-side), desglose de pedido, cancelación con permisos,
   favoritos (agregar/duplicado/borrar/aislamiento entre usuarios), descuento y bloqueo
@@ -1061,6 +1064,28 @@ Suite unitaria 135/135 en verde.
   filtran otras categorías → búsqueda "camiset" las encuentra → el filtro del catálogo admin por
   "Camisetas" muestra la camiseta. Assets versionados a `?v=8` (CSS sin cambios). Suite unitaria
   135/135 en verde.
+- **Código de membresía + countdown + bloqueo automático (E2E, 31/08/2026)**: tras confirmar
+  el pago de la membresía (simulado, sin tarjeta), `confirmarPagoAliado()` ahora es `async` y
+  llama `POST /api/aliado/membresia {plan}`; el servidor genera y persiste el **código
+  `MEM-<idAliado>-<PLAN>-<aaaammdd>-<n4>`** (derivado del id del aliado) y el **vencimiento =
+  duración del plan + 1 día de gracia** (basico 30+1, medio 240+1, premium 360+1). Las
+  columnas `membresia_codigo`, `membresia_plan`, `membresia_activada_en`, `membresia_vence` se
+  crean vía JPA (`ddl-auto=update`); se documentan en `schema.sql`. `GET /api/admin/usuarios`
+  y la respuesta de `/api/auth/login` exponen los campos de membresía. **Bloqueo automático**:
+  el login de un ALIADO con `membresia_vence` vencida responde 403 "Cuenta bloqueada por
+  membresía vencida… Genera tu pago para continuar" (`AuthController.login`); en el frontend
+  `iniciarVigilanciaMembresiaAliado()` corre un `setInterval(1s)` y al llegar a 0 cierra la
+  sesión en caliente mostrando "Tu membresía venció…". **Admin**: badge **"Membresía
+  vencida"** (naranja) en la tabla; en el modal Ver (botón "Ver"), block `#perfil-memb-row`
+  con Código, Plan, Activada el, Vence el + **countdown** (`#perfil-memb-countdown`, formato
+  `d HH:MM:SS`); al llegar a 0, nota "Membresía vencida — cuenta bloqueada automáticamente
+  hasta que el aliado genere el pago". Mensaje de éxito de pago muestra el código y
+  localStorage guarda `lumura_membresia_<id>`. Assets a `?v=13`. 13 tests unitarios nuevos
+  (AliadoControllerTest 8, AuthControllerTest 3, AdminControllerTest 2) → **148 total**. Verificado
+  E2E (Puppeteer): aliado confirma pago → mensaje con `MEM-<id>-<PLAN>-…` → GET
+  `/api/aliado/membresia` devuelve el código → admin ve badge "Activo" en la tabla → clic en
+  Ver → modal muestra Código, Plan, Activada, Vence, countdown y sin nota de vencimiento (si
+  aún no expiró). Si el aliado vuelve a publicar → la membresía ya está registrada.
 
 Pendiente recomendado para despliegue público: M2 (rate limiter por clave/parcialidad——ya existe por IP en la entrada 21) y la limpieza cosmética del HTML del panel admin. La pasarela simulada
 está lista para migrarse a Stripe/PayU (mismos contratos de `metodo_pago`/
@@ -1072,4 +1097,4 @@ Permissions-Policy, X-XSS-Protection).
 
 ---
 
-*Fin del documento — LUMURA Documentación Técnica v2.0 (Actualizado 30/08/2026)*
+*Fin del documento — LUMURA Documentación Técnica v2.0 (Actualizado 31/08/2026)*

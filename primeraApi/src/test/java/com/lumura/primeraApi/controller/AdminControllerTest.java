@@ -231,6 +231,62 @@ class AdminControllerTest {
     }
 
     @Test
+    void listarUsuarios_aliadoIncluyeDatosDeMembresia() {
+        mockToken(TOKEN_ADMIN, "ADMIN");
+        when(jwtUtil.getUserIdFromToken("token-admin")).thenReturn(1);
+
+        Usuario admin = new Usuario();
+        admin.setIdUsuario(1);
+        admin.setRol("ADMIN");
+        admin.setCorreoUsuario("admin@lumura.com");
+        Usuario aliado = new Usuario();
+        aliado.setIdUsuario(4);
+        aliado.setRol("ALIADO");
+        aliado.setCorreoUsuario("aliado@lumura.com");
+        aliado.setMembresiaCodigo("MEM-4-BASICO-20260101-AAAA");
+        aliado.setMembresiaPlan("basico");
+        aliado.setMembresiaActivadaEn(java.time.LocalDateTime.now().minusDays(1));
+        aliado.setMembresiaVence(java.time.LocalDateTime.now().plusDays(30));
+        when(usuarioRepository.findAll()).thenReturn(List.of(admin, aliado));
+
+        ResponseEntity<?> res = adminController.listarUsuarios(TOKEN_ADMIN);
+
+        assertEquals(200, res.getStatusCode().value());
+        List<?> body = (List<?>) res.getBody();
+        assertEquals(1, body.size());
+        Map<?, ?> unico = (Map<?, ?>) body.get(0);
+        assertEquals("MEM-4-BASICO-20260101-AAAA", unico.get("membresia_codigo"));
+        assertEquals("basico", unico.get("membresia_plan"));
+        assertNotNull(unico.get("membresia_activada_en"));
+        assertNotNull(unico.get("membresia_vence"));
+    }
+
+    @Test
+    void listarUsuarios_clienteTraeNulosDeMembresia() {
+        mockToken(TOKEN_ADMIN, "ADMIN");
+        when(jwtUtil.getUserIdFromToken("token-admin")).thenReturn(1);
+
+        Usuario admin = new Usuario();
+        admin.setIdUsuario(1);
+        admin.setRol("ADMIN");
+        admin.setCorreoUsuario("admin@lumura.com");
+        Usuario cliente = new Usuario();
+        cliente.setIdUsuario(2);
+        cliente.setRol("USER");
+        cliente.setCorreoUsuario("cliente@lumura.com");
+        when(usuarioRepository.findAll()).thenReturn(List.of(admin, cliente));
+
+        ResponseEntity<?> res = adminController.listarUsuarios(TOKEN_ADMIN);
+
+        assertEquals(200, res.getStatusCode().value());
+        List<?> body = (List<?>) res.getBody();
+        Map<?, ?> unico = (Map<?, ?>) body.get(0);
+        assertNull(unico.get("membresia_codigo"));
+        assertNull(unico.get("membresia_plan"));
+        assertNull(unico.get("membresia_vence"));
+    }
+
+    @Test
     void bloquearUsuario_valido_retorna200() {
         mockToken(TOKEN_ADMIN, "ADMIN");
         Usuario cliente = new Usuario();

@@ -33,7 +33,11 @@ CREATE TABLE IF NOT EXISTS usuario (
   bloqueado BOOLEAN DEFAULT FALSE,          -- true = perfil bloqueado por el admin
   motivo_bloqueo TEXT,                       -- motivo del bloqueo registrado por el admin
   bloqueo_hasta DATETIME(6),                  -- fecha de fin del bloqueo (NULL = indefinido)
-  token_version INT NOT NULL DEFAULT 0         -- versión de revocación de JWT (se incrementa en logout/cambio de clave/bloqueo)
+  token_version INT NOT NULL DEFAULT 0,        -- versión de revocación de JWT (se incrementa en logout/cambio de clave/bloqueo)
+  membresia_codigo VARCHAR(40),                -- código de membresía de distribuidor del aliado (MEM-<idAliado>-<PLAN>-<aaaammdd>-<n4>)
+  membresia_plan VARCHAR(20),                  -- plan de la membresía (basico | medio | premium)
+  membresia_activada_en DATETIME(6),           -- fecha/hora en que se activó la membresía
+  membresia_vence DATETIME(6)                  -- fecha de vencimiento (duración del plan + 1 día de gracia)
 );
 
 -- Catálogo de productos

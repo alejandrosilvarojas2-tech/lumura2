@@ -346,6 +346,78 @@ class AuthControllerTest {
     }
 
     @Test
+    void login_aliadoConMembresiaVencida_retorna403ConMensaje() {
+        Usuario usuario = new Usuario();
+        usuario.setIdUsuario(2);
+        usuario.setNombreUsuario("Luis");
+        usuario.setCorreoUsuario("luis@correo.com");
+        usuario.setPasswordHash(BCrypt.hashpw("secreto123", BCrypt.gensalt()));
+        usuario.setRol("ALIADO");
+        usuario.setMembresiaCodigo("MEM-2-BASICO-20260101-AAAA");
+        usuario.setMembresiaPlan("basico");
+        usuario.setMembresiaActivadaEn(java.time.LocalDateTime.now().minusDays(40));
+        usuario.setMembresiaVence(java.time.LocalDateTime.now().minusDays(1));
+
+        when(usuarioRepository.findByCorreoUsuario("luis@correo.com")).thenReturn(Optional.of(usuario));
+
+        ResponseEntity<?> res = authController.login(Map.of("correo_usuario", "luis@correo.com", "password", "secreto123"));
+
+        assertEquals(403, res.getStatusCode().value());
+        Map<?, ?> body = (Map<?, ?>) res.getBody();
+        assertTrue(((String) body.get("error")).contains("membresía vencida"));
+        assertTrue(((String) body.get("error")).contains("Genera tu pago"));
+        verify(jwtUtil, never()).generateToken(any(), anyString(), anyString());
+    }
+
+    @Test
+    void login_aliadoConMembresiaVigente_incluyeDatosDeMembresia() {
+        Usuario usuario = new Usuario();
+        usuario.setIdUsuario(2);
+        usuario.setNombreUsuario("Luis");
+        usuario.setCorreoUsuario("luis@correo.com");
+        usuario.setPasswordHash(BCrypt.hashpw("secreto123", BCrypt.gensalt()));
+        usuario.setRol("ALIADO");
+        usuario.setMembresiaCodigo("MEM-2-BASICO-20260101-AAAA");
+        usuario.setMembresiaPlan("basico");
+        usuario.setMembresiaActivadaEn(java.time.LocalDateTime.now().minusDays(1));
+        usuario.setMembresiaVence(java.time.LocalDateTime.now().plusDays(30));
+
+        when(usuarioRepository.findByCorreoUsuario("luis@correo.com")).thenReturn(Optional.of(usuario));
+        when(jwtUtil.generateToken(2, "luis@correo.com", "ALIADO", 0)).thenReturn("token-jwt");
+
+        ResponseEntity<?> res = authController.login(Map.of("correo_usuario", "luis@correo.com", "password", "secreto123"));
+
+        assertEquals(200, res.getStatusCode().value());
+        Map<?, ?> body = (Map<?, ?>) res.getBody();
+        Map<?, ?> user = (Map<?, ?>) body.get("usuario");
+        Map<?, ?> membresia = (Map<?, ?>) user.get("membresia");
+        assertNotNull(membresia);
+        assertEquals("MEM-2-BASICO-20260101-AAAA", membresia.get("codigo"));
+        assertEquals("basico", membresia.get("plan"));
+        assertNotNull(membresia.get("vence"));
+    }
+
+    @Test
+    void login_clienteSinMembresia_noIncluyeDatosDeMembresia() {
+        Usuario usuario = new Usuario();
+        usuario.setIdUsuario(3);
+        usuario.setNombreUsuario("Ana");
+        usuario.setCorreoUsuario("ana@correo.com");
+        usuario.setPasswordHash(BCrypt.hashpw("secreto123", BCrypt.gensalt()));
+        usuario.setRol("USER");
+
+        when(usuarioRepository.findByCorreoUsuario("ana@correo.com")).thenReturn(Optional.of(usuario));
+        when(jwtUtil.generateToken(3, "ana@correo.com", "USER", 0)).thenReturn("token-jwt");
+
+        ResponseEntity<?> res = authController.login(Map.of("correo_usuario", "ana@correo.com", "password", "secreto123"));
+
+        assertEquals(200, res.getStatusCode().value());
+        Map<?, ?> body = (Map<?, ?>) res.getBody();
+        Map<?, ?> user = (Map<?, ?>) body.get("usuario");
+        assertFalse(user.containsKey("membresia"));
+    }
+
+    @Test
     void recuperar_usuarioExistente_generaTokenYEnlace() {
         Usuario usuario = new Usuario();
         usuario.setIdUsuario(1);

@@ -179,18 +179,38 @@ public class AuthController {
             log.info("Bloqueo vencido, cuenta {} desbloqueada", correo);
         }
 
+        // Bloqueo automático por membresía de distribuidor vencida (aplica solo a aliados)
+        if ("ALIADO".equals(usuario.getRol())
+                && usuario.getMembresiaVence() != null
+                && !usuario.getMembresiaVence().isAfter(LocalDateTime.now())) {
+            log.warn("Login bloqueado - membresía vencida: {} (vencía el {})", correo, usuario.getMembresiaVence());
+            return ResponseEntity.status(403).body(Map.of(
+                    "error", "Cuenta bloqueada por membresía vencida el " + usuario.getMembresiaVence()
+                            + ". Genera tu pago para continuar."
+            ));
+        }
+
         log.info("Login exitoso: {} ({})", usuario.getNombreUsuario(), correo);
         int version = usuario.getTokenVersion() == null ? 0 : usuario.getTokenVersion();
         String token = jwtUtil.generateToken(usuario.getIdUsuario(), usuario.getCorreoUsuario(), usuario.getRol(), version);
+
+        Map<String, Object> userMap = new java.util.LinkedHashMap<>();
+        userMap.put("id", usuario.getIdUsuario());
+        userMap.put("nombre", usuario.getNombreUsuario());
+        userMap.put("correo", usuario.getCorreoUsuario());
+        userMap.put("rol", usuario.getRol());
+        userMap.put("direccion", usuario.getDireccionUsuario() != null ? usuario.getDireccionUsuario() : "");
+        if (usuario.getMembresiaCodigo() != null) {
+            userMap.put("membresia", Map.of(
+                "codigo", usuario.getMembresiaCodigo(),
+                "plan", usuario.getMembresiaPlan(),
+                "activada_en", usuario.getMembresiaActivadaEn(),
+                "vence", usuario.getMembresiaVence()
+            ));
+        }
         return ResponseEntity.ok(Map.of(
             "token", token,
-            "usuario", Map.of(
-                "id", usuario.getIdUsuario(),
-                "nombre", usuario.getNombreUsuario(),
-                "correo", usuario.getCorreoUsuario(),
-                "rol", usuario.getRol(),
-                "direccion", usuario.getDireccionUsuario() != null ? usuario.getDireccionUsuario() : ""
-            )
+            "usuario", userMap
         ));
     }
 

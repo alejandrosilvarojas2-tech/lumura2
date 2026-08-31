@@ -82,6 +82,7 @@ async function handleLogin(e) {
       showScreen('admin');
     } else if (data.usuario.rol === 'ALIADO') {
       showScreen('aliado');
+      iniciarVigilanciaMembresiaAliado();
     } else {
       document.getElementById('modal-politicas').style.display = 'flex';
     }
@@ -163,6 +164,7 @@ function accederAliado() {
       sincronizarFavoritos();
       mostrarMensaje('Bienvenido, ' + data.usuario.nombre, 'success');
       showScreen('aliado');
+      iniciarVigilanciaMembresiaAliado();
     })
     .catch(function(err) {
       mostrarMensaje(err.message || 'Credenciales inválidas', 'error');
@@ -443,12 +445,76 @@ function marcarMembAliadoElegida() {
   if (id) localStorage.setItem('lumura_membresia_elegida_' + id, '1');
 }
 
-function confirmarPagoAliado() {
-  marcarMembAliadoElegida();
+async function confirmarPagoAliado() {
   const det = document.getElementById('pago-plan-detalle');
   const nombre = det?.querySelector('div')?.textContent || 'tu plan';
-  mostrarMensaje('Pago de ' + nombre + ' confirmado correctamente', 'success');
-  setTimeout(function () { mostrarMenuAliado('stock'); }, 1200);
+  if (!planAliadoPendiente) return mostrarMensaje('Selecciona un plan de membresía', 'error');
+  try {
+    const res = await api.post('/api/aliado/membresia', { plan: planAliadoPendiente });
+    marcarMembAliadoElegida();
+    const mem = {
+      codigo: res.codigo,
+      plan: res.plan,
+      activada_en: res.activada_en,
+      vence: res.vence
+    };
+    const id = state.user?.id;
+    if (id) {
+      localStorage.setItem('lumura_membresia_' + id, JSON.stringify(mem));
+      if (state.user) {
+        state.user.membresia = mem;
+        localStorage.setItem('lumura_user', JSON.stringify(state.user));
+      }
+    }
+    mostrarMensaje('Pago de ' + nombre + ' confirmado correctamente · Código: ' + res.codigo, 'success');
+    setTimeout(function () { mostrarMenuAliado('stock'); }, 1500);
+  } catch (err) {
+    mostrarMensaje(err.message, 'error');
+  }
+}
+
+function leerMembresiaLocalAliado() {
+  const id = state.user?.id;
+  const raw = id ? localStorage.getItem('lumura_membresia_' + id) : null;
+  if (raw) {
+    try { return JSON.parse(raw); } catch (e) { return null; }
+  }
+  return null;
+}
+
+function esMembresiaVencida(venc) {
+  if (!venc) return false;
+  const t = new Date(venc).getTime();
+  return !isNaN(t) && t <= Date.now();
+}
+
+// Vigilancia de membresía del aliado: al vencer (incluido el día de gracia) muestra
+// el mensaje de bloqueo automático y cierra la sesión en caliente.
+function iniciarVigilanciaMembresiaAliado() {
+  if (window.__membVigilanciaActiva) return;
+  const id = state.user?.id;
+  if (!id || state.user?.rol !== 'ALIADO') return;
+  let mem = state.user?.membresia || null;
+  if (!mem || !mem.vence) mem = leerMembresiaLocalAliado();
+  if (!mem || !mem.vence) return;
+
+  const alVencer = function () {
+    window.clearInterval(window.__membVigilancia);
+    window.__membVigilancia = null;
+    window.__membVigilanciaActiva = false;
+    localStorage.removeItem('lumura_membresia_' + id);
+    cerrarSesion();
+    mostrarMensaje('Tu membresía venció el ' + new Date(mem.vence).toLocaleString('es-CO') + '. Cuenta bloqueada hasta generar el pago.', 'error');
+  };
+
+  if (esMembresiaVencida(mem.vence)) {
+    alVencer();
+    return;
+  }
+  window.__membVigilanciaActiva = true;
+  window.__membVigilancia = window.setInterval(function () {
+    if (esMembresiaVencida(mem.vence)) alVencer();
+  }, 1000);
 }
 
 
@@ -724,6 +790,8 @@ async function guardarEdicionProductoAliado(id) {
 }
 
 function cerrarSesion() {
+  if (window.__membVigilancia) { window.clearInterval(window.__membVigilancia); window.__membVigilancia = null; }
+  window.__membVigilanciaActiva = false;
   if (state.token) {
     // Revoca el token en el servidor; si ya expiró el 401 se ignora.
     const t = state.token;
@@ -1125,9 +1193,14 @@ async function cargarUsuariosAdmin() {
       const isAdmin = u.rol === 'ADMIN';
       const bloqueado = !!u.bloqueado;
       const estadoHasta = u.bloqueo_hasta ? ' hasta ' + new Date(u.bloqueo_hasta).toLocaleDateString('es-CO') : '';
-      const estadoHtml = bloqueado
-        ? '<span class="badge badge-orange">Bloqueado' + estadoHasta + '</span>'
-        : '<span class="badge badge-green">Activo</span>';
+      let estadoHtml;
+      if (bloqueado) {
+        estadoHtml = '<span class="badge badge-orange">Bloqueado' + estadoHasta + '</span>';
+      } else if (u.rol === 'ALIADO' && esMembresiaVencida(u.membresia_vence)) {
+        estadoHtml = '<span class="badge badge-orange">Membresía vencida</span>';
+      } else {
+        estadoHtml = '<span class="badge badge-green">Activo</span>';
+      }
       return '<tr>'
         + '<td>' + u.id_usuario + '</td>'
         + '<td style="font-weight:600;">' + escHtml(u.nombre_usuario) + '</td>'
@@ -1217,6 +1290,44 @@ async function desbloquearUsuario(id) {
 }
 
 let perfilUsuarioActual = null;
+let perfilMembCountdown = null;
+
+const NOMBRE_PLAN_MEMBRESIA = { basico: 'Básico', medio: 'Medio', premium: 'Premium (Empresas)' };
+
+function detenerCountdownMembresia() {
+  if (perfilMembCountdown) { window.clearInterval(perfilMembCountdown); perfilMembCountdown = null; }
+}
+
+function formatearCountdown(ms) {
+  if (ms <= 0) return null;
+  const seg = Math.floor(ms / 1000);
+  const d = Math.floor(seg / 86400);
+  const h = Math.floor((seg % 86400) / 3600);
+  const m = Math.floor((seg % 3600) / 60);
+  const s = seg % 60;
+  const dd = (n) => String(n).padStart(2, '0');
+  return (d > 0 ? d + 'd ' : '') + dd(h) + ':' + dd(m) + ':' + dd(s);
+}
+
+function iniciarCountdownMembresia(vence) {
+  detenerCountdownMembresia();
+  const el = document.getElementById('perfil-memb-countdown');
+  const nota = document.getElementById('perfil-memb-nota');
+  if (!el) return;
+  const actualizar = function () {
+    const resta = new Date(vence).getTime() - Date.now();
+    if (resta <= 0) {
+      el.innerHTML = '<span style="color:#dc3545;font-weight:700;">Vencida</span>';
+      if (nota) nota.style.display = 'block';
+      detenerCountdownMembresia();
+    } else {
+      el.textContent = formatearCountdown(resta);
+      if (nota) nota.style.display = 'none';
+    }
+  };
+  actualizar();
+  perfilMembCountdown = window.setInterval(actualizar, 1000);
+}
 
 function verPerfilUsuario(id) {
   const usuarios = window.__usuariosAdmin || [];
@@ -1244,6 +1355,19 @@ function verPerfilUsuario(id) {
     document.getElementById('perfil-licencia').innerHTML = (lic && lic.trim())
       ? '<a href="' + escHtml(lic) + '" target="_blank" rel="noopener">Ver licencia</a>'
       : '<span style="color:var(--gray);">Sin licencia</span>';
+
+    const memRow = document.getElementById('perfil-memb-row');
+    const tieneMembresia = !!u.membresia_codigo;
+    if (memRow) memRow.style.display = tieneMembresia ? 'block' : 'none';
+    if (tieneMembresia) {
+      document.getElementById('perfil-memb-codigo').value = u.membresia_codigo;
+      document.getElementById('perfil-memb-plan').value = NOMBRE_PLAN_MEMBRESIA[u.membresia_plan] || u.membresia_plan || '-';
+      document.getElementById('perfil-memb-activada').value = u.membresia_activada_en ? new Date(u.membresia_activada_en).toLocaleString('es-CO') : '-';
+      document.getElementById('perfil-memb-vence').value = u.membresia_vence ? new Date(u.membresia_vence).toLocaleString('es-CO') : '-';
+      iniciarCountdownMembresia(u.membresia_vence);
+    } else {
+      detenerCountdownMembresia();
+    }
   }
   const estadoBloqueo = document.getElementById('perfil-estado');
   if (estadoBloqueo) {
@@ -1274,6 +1398,7 @@ function verPerfilUsuario(id) {
 }
 
 function cerrarModalPerfil() {
+  detenerCountdownMembresia();
   document.getElementById('modal-perfil-usuario').style.display = 'none';
 }
 
@@ -1881,6 +2006,7 @@ function mostrarMenuAdmin(panel) {
 
 function mostrarMenuAliado(panel) {
   const nombre = panel || 'dash';
+  iniciarVigilanciaMembresiaAliado();
   document.querySelectorAll('#screen-aliado .admin-sidebar .menu-item[data-panel]').forEach(function (el) {
     el.classList.toggle('active', el.dataset.panel === nombre);
   });

@@ -206,6 +206,10 @@ public class AdminController {
             m.put("bloqueado", Boolean.TRUE.equals(u.getBloqueado()));
             m.put("motivo_bloqueo", u.getMotivoBloqueo());
             m.put("bloqueo_hasta", u.getBloqueoHasta());
+            m.put("membresia_codigo", u.getMembresiaCodigo());
+            m.put("membresia_plan", u.getMembresiaPlan());
+            m.put("membresia_activada_en", u.getMembresiaActivadaEn());
+            m.put("membresia_vence", u.getMembresiaVence());
             return m;
         }).collect(Collectors.toList());
 

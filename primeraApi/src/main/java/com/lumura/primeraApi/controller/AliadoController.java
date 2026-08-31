@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -283,6 +285,76 @@ public class AliadoController {
                     return ResponseEntity.ok(Map.of("mensaje", "Licencia guardada correctamente", "licencia", licencia));
                 })
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    // Devuelve la membresía de distribuidor del aliado autenticado, si la tiene
+    @GetMapping("/membresia")
+    public ResponseEntity<?> obtenerMembresia(@RequestHeader(value = "Authorization", required = false) String auth) {
+        Integer userId = extraerAliadoId(auth);
+        if (userId == null) return ResponseEntity.status(401).body(Map.of("error", "Token requerido o no eres aliado"));
+        return usuarioRepository.findById(userId)
+                .map(u -> ResponseEntity.ok(Map.of(
+                        "membresia", toMembresiaMap(u))))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // Confirma el pago (simulado) de la membresía: genera el código derivado del id del aliado y su vencimiento.
+    @PostMapping("/membresia")
+    public ResponseEntity<?> confirmarPagoMembresia(@RequestHeader(value = "Authorization", required = false) String auth,
+                                                    @RequestBody(required = false) Map<String, String> body) {
+        Integer userId = extraerAliadoId(auth);
+        if (userId == null) return ResponseEntity.status(401).body(Map.of("error", "Token requerido o no eres aliado"));
+        if (body == null || body.get("plan") == null || body.get("plan").isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Debes indicar el plan de la membresía"));
+        }
+        String plan = body.get("plan").trim().toLowerCase(java.util.Locale.ROOT);
+        Integer dias = duracionPlan(plan);
+        if (dias == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Plan inválido. Usa: basico, medio o premium"));
+        }
+
+        LocalDateTime ahora = LocalDateTime.now();
+        LocalDateTime vence = ahora.plusDays(dias).plusDays(1); // +1 día de gracia
+        String codigo = "MEM-" + userId + "-" + plan.toUpperCase(java.util.Locale.ROOT)
+                + "-" + ahora.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-" + sufijoAleatorio();
+
+        Usuario u = usuarioRepository.findById(userId).orElseThrow();
+        u.setMembresiaCodigo(codigo);
+        u.setMembresiaPlan(plan);
+        u.setMembresiaActivadaEn(ahora);
+        u.setMembresiaVence(vence);
+        usuarioRepository.save(u);
+        log.info("Membresía {} confirmada para aliado {} — código {}", plan, userId, codigo);
+        return ResponseEntity.ok(toMembresiaMap(u));
+    }
+
+    private Map<String, Object> toMembresiaMap(Usuario u) {
+        if (u.getMembresiaCodigo() == null) {
+            return Map.of();
+        }
+        return Map.of(
+            "codigo", u.getMembresiaCodigo(),
+            "plan", u.getMembresiaPlan(),
+            "activada_en", u.getMembresiaActivadaEn(),
+            "vence", u.getMembresiaVence()
+        );
+    }
+
+    private Integer duracionPlan(String plan) {
+        switch (plan) {
+            case "basico": return 30;
+            case "medio": return 240;
+            case "premium": return 360;
+            default: return null;
+        }
+    }
+
+    private String sufijoAleatorio() {
+        String chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        StringBuilder sb = new StringBuilder();
+        java.util.Random rnd = new java.util.Random();
+        for (int i = 0; i < 4; i++) sb.append(chars.charAt(rnd.nextInt(chars.length())));
+        return sb.toString();
     }
 
     private boolean esAdmin(String auth) {

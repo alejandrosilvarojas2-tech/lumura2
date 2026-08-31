@@ -65,6 +65,27 @@ public class Usuario {
     @Column(name = "token_version")
     private Integer tokenVersion = 0;
 
+    @Column(name = "membresia_codigo", length = 40)
+    private String membresiaCodigo;
+
+    @Column(name = "membresia_plan", length = 20)
+    private String membresiaPlan;
+
+    @Column(name = "membresia_activada_en")
+    private LocalDateTime membresiaActivadaEn;
+
+    @Column(name = "membresia_vence")
+    private LocalDateTime membresiaVence;
+
+    public String getMembresiaCodigo() { return membresiaCodigo; }
+    public void setMembresiaCodigo(String membresiaCodigo) { this.membresiaCodigo = membresiaCodigo; }
+    public String getMembresiaPlan() { return membresiaPlan; }
+    public void setMembresiaPlan(String membresiaPlan) { this.membresiaPlan = membresiaPlan; }
+    public LocalDateTime getMembresiaActivadaEn() { return membresiaActivadaEn; }
+    public void setMembresiaActivadaEn(LocalDateTime membresiaActivadaEn) { this.membresiaActivadaEn = membresiaActivadaEn; }
+    public LocalDateTime getMembresiaVence() { return membresiaVence; }
+    public void setMembresiaVence(LocalDateTime membresiaVence) { this.membresiaVence = membresiaVence; }
+
     public Integer getTokenVersion() { return tokenVersion; }
     public void setTokenVersion(Integer tokenVersion) { this.tokenVersion = tokenVersion; }
 

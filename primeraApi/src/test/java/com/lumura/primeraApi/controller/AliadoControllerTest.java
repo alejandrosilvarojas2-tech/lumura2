@@ -413,13 +413,131 @@ class AliadoControllerTest {
         verifyNoInteractions(usuarioRepository);
     }
 
-    @Test
+@Test
     void guardarLicencia_cliente_retorna401() {
         String token = TOKEN_CLIENTE.substring(7);
         when(jwtUtil.validateToken(token)).thenReturn(true);
         when(jwtUtil.getRolFromToken(token)).thenReturn("USER");
 
         ResponseEntity<?> res = aliadoController.guardarLicencia(TOKEN_CLIENTE, body("licencia", "/uploads/x.jpg"));
+
+        assertEquals(401, res.getStatusCode().value());
+    }
+
+    @Test
+    void confirmarPagoMembresia_planBasico_generaCodigoConIdAliadoYVencimiento() {
+        mockToken(TOKEN_ALIADO, 7, "ALIADO");
+        Usuario u = usuarioAliado(7);
+        when(usuarioRepository.findById(7)).thenReturn(Optional.of(u));
+        when(usuarioRepository.save(u)).thenReturn(u);
+
+        ResponseEntity<?> res = aliadoController.confirmarPagoMembresia(TOKEN_ALIADO, body("plan", "basico"));
+
+        assertEquals(200, res.getStatusCode().value());
+        Map<?, ?> mem = (Map<?, ?>) res.getBody();
+        String codigo = (String) mem.get("codigo");
+        assertNotNull(codigo);
+        assertTrue(codigo.startsWith("MEM-7-BASICO-"), "El código debe llevar el id del aliado: " + codigo);
+        assertEquals("basico", mem.get("plan"));
+        assertNotNull(mem.get("activada_en"));
+        assertNotNull(mem.get("vence"));
+        java.time.LocalDateTime vence = (java.time.LocalDateTime) mem.get("vence");
+        java.time.LocalDateTime ahora = java.time.LocalDateTime.now();
+        assertTrue(vence.isAfter(ahora.plusDays(30)) && vence.isBefore(ahora.plusDays(32)),
+                "Vence = 30 días + 1 de gracia, pero fue " + vence);
+        assertEquals(codigo, u.getMembresiaCodigo());
+        assertEquals("basico", u.getMembresiaPlan());
+        verify(usuarioRepository).save(u);
+    }
+
+    @Test
+    void confirmarPagoMembresia_planPremium_vence12MesesMasDiaDeGracia() {
+        mockToken(TOKEN_ALIADO, 9, "ALIADO");
+        Usuario u = usuarioAliado(9);
+        when(usuarioRepository.findById(9)).thenReturn(Optional.of(u));
+        when(usuarioRepository.save(u)).thenReturn(u);
+
+        ResponseEntity<?> res = aliadoController.confirmarPagoMembresia(TOKEN_ALIADO, body("plan", "premium"));
+
+        assertEquals(200, res.getStatusCode().value());
+        Map<?, ?> mem = (Map<?, ?>) res.getBody();
+        assertTrue(((String) mem.get("codigo")).startsWith("MEM-9-PREMIUM-"));
+        java.time.LocalDateTime vence = (java.time.LocalDateTime) mem.get("vence");
+        java.time.LocalDateTime ahora = java.time.LocalDateTime.now();
+        assertTrue(vence.isAfter(ahora.plusDays(360)) && vence.isBefore(ahora.plusDays(362)),
+                "Vence = 360 días + 1 de gracia, pero fue " + vence);
+    }
+
+    @Test
+    void confirmarPagoMembresia_planInvalido_retorna400() {
+        mockToken(TOKEN_ALIADO, 7, "ALIADO");
+
+        ResponseEntity<?> res = aliadoController.confirmarPagoMembresia(TOKEN_ALIADO, body("plan", "ultra"));
+
+        assertEquals(400, res.getStatusCode().value());
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    void confirmarPagoMembresia_sinPlan_retorna400() {
+        mockToken(TOKEN_ALIADO, 7, "ALIADO");
+
+        ResponseEntity<?> res = aliadoController.confirmarPagoMembresia(TOKEN_ALIADO, body("plan", ""));
+
+        assertEquals(400, res.getStatusCode().value());
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    void confirmarPagoMembresia_cliente_retorna401() {
+        String token = TOKEN_CLIENTE.substring(7);
+        when(jwtUtil.validateToken(token)).thenReturn(true);
+        when(jwtUtil.getRolFromToken(token)).thenReturn("USER");
+
+        ResponseEntity<?> res = aliadoController.confirmarPagoMembresia(TOKEN_CLIENTE, body("plan", "basico"));
+
+        assertEquals(401, res.getStatusCode().value());
+        verifyNoInteractions(usuarioRepository);
+    }
+
+    @Test
+    void obtenerMembresia_aliadoSinMembresia_retornaVacio() {
+        mockToken(TOKEN_ALIADO, 7, "ALIADO");
+        when(usuarioRepository.findById(7)).thenReturn(Optional.of(usuarioAliado(7)));
+
+        ResponseEntity<?> res = aliadoController.obtenerMembresia(TOKEN_ALIADO);
+
+        assertEquals(200, res.getStatusCode().value());
+        Map<?, ?> body = (Map<?, ?>) res.getBody();
+        assertTrue(((Map<?, ?>) body.get("membresia")).isEmpty());
+    }
+
+    @Test
+    void obtenerMembresia_aliadoConMembresia_retornaDatos() {
+        mockToken(TOKEN_ALIADO, 7, "ALIADO");
+        Usuario u = usuarioAliado(7);
+        u.setMembresiaCodigo("MEM-7-BASICO-20260101-AAAA");
+        u.setMembresiaPlan("basico");
+        u.setMembresiaActivadaEn(java.time.LocalDateTime.now().minusDays(1));
+        u.setMembresiaVence(java.time.LocalDateTime.now().plusDays(30));
+        when(usuarioRepository.findById(7)).thenReturn(Optional.of(u));
+
+        ResponseEntity<?> res = aliadoController.obtenerMembresia(TOKEN_ALIADO);
+
+        assertEquals(200, res.getStatusCode().value());
+        Map<?, ?> body = (Map<?, ?>) res.getBody();
+        Map<?, ?> mem = (Map<?, ?>) body.get("membresia");
+        assertEquals("MEM-7-BASICO-20260101-AAAA", mem.get("codigo"));
+        assertEquals("basico", mem.get("plan"));
+    }
+
+    @Test
+    void obtenerMembresia_cliente_retorna401() {
+        String token = TOKEN_CLIENTE.substring(7);
+        when(jwtUtil.validateToken(token)).thenReturn(true);
+        when(jwtUtil.getRolFromToken(token)).thenReturn("USER");
+
+        ResponseEntity<?> res = aliadoController.obtenerMembresia(TOKEN_CLIENTE);
 
         assertEquals(401, res.getStatusCode().value());
         verifyNoInteractions(usuarioRepository);
