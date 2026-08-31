@@ -30,6 +30,25 @@ class JwtUtilTest {
     }
 
     @Test
+    void tokenIncluyeVersionDeRevocacion() {
+        JwtUtil jwt = new JwtUtil(SECRETO_VALIDO, 86400000L, "dev");
+
+        String token = jwt.generateToken(12, "a@b.com", "USER", 3);
+
+        assertTrue(jwt.validateToken(token));
+        assertEquals(3, jwt.getTokenVersion(token));
+    }
+
+    @Test
+    void tokenSinVersion_tomaVersion0() {
+        JwtUtil jwt = new JwtUtil(SECRETO_VALIDO, 86400000L, "dev");
+
+        String token = jwt.generateToken(2, "x@y.com", "ADMIN");
+
+        assertEquals(0, jwt.getTokenVersion(token));
+    }
+
+    @Test
     void secretoDistinto_rechazaTokensDeOtraInstancia() {
         JwtUtil emisor = new JwtUtil(SECRETO_VALIDO, 86400000L, "dev");
         JwtUtil verificador = new JwtUtil("x".repeat(40), 86400000L, "dev");

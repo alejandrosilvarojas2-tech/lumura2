@@ -32,7 +32,8 @@ CREATE TABLE IF NOT EXISTS usuario (
   licencia_distribuidor TEXT,               -- URL de la licencia de distribuidor autorizado del aliado
   bloqueado BOOLEAN DEFAULT FALSE,          -- true = perfil bloqueado por el admin
   motivo_bloqueo TEXT,                       -- motivo del bloqueo registrado por el admin
-  bloqueo_hasta DATETIME(6)                  -- fecha de fin del bloqueo (NULL = indefinido)
+  bloqueo_hasta DATETIME(6),                  -- fecha de fin del bloqueo (NULL = indefinido)
+  token_version INT NOT NULL DEFAULT 0         -- versión de revocación de JWT (se incrementa en logout/cambio de clave/bloqueo)
 );
 
 -- Catálogo de productos

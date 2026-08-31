@@ -264,6 +264,8 @@ public class AdminController {
         u.setMotivoBloqueo(motivo.trim());
         u.setBloqueoHasta(LocalDateTime.now().plusDays(dias));
         usuarioRepository.save(u);
+        // Mata las sesiones activas del bloqueado para que el 403 también aplique en caliente.
+        usuarioRepository.incrementarTokenVersion(u.getIdUsuario());
 
         log.info("Usuario {} bloqueado por {} días (motivo: {})", id, dias, motivo.trim());
         return ResponseEntity.ok(Map.of(
@@ -288,6 +290,9 @@ public class AdminController {
         u.setMotivoBloqueo(null);
         u.setBloqueoHasta(null);
         usuarioRepository.save(u);
+        // Los tokens emitidos mientras estuvo bloqueado mueren: el usuario
+        // debe iniciar sesión de nuevo tras el desbloqueo.
+        usuarioRepository.incrementarTokenVersion(u.getIdUsuario());
 
         log.info("Usuario {} desbloqueado por admin", id);
         return ResponseEntity.ok(Map.of("mensaje", "Usuario desbloqueado correctamente", "bloqueado", false));

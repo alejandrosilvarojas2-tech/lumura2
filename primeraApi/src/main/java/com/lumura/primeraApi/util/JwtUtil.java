@@ -62,15 +62,25 @@ public class JwtUtil {
     }
 
     public String generateToken(Integer userId, String email, String rol) {
+        return generateToken(userId, email, rol, 0);
+    }
+
+    public String generateToken(Integer userId, String email, String rol, int tokenVersion) {
         Date now = new Date();
         return Jwts.builder()
                 .subject(userId.toString())
                 .claim("email", email)
                 .claim("rol", rol)
+                .claim("tv", tokenVersion)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + expiration))
                 .signWith(key)
                 .compact();
+    }
+
+    public int getTokenVersion(String token) {
+        Object tv = getClaims(token).get("tv");
+        return tv == null ? 0 : Integer.parseInt(tv.toString());
     }
 
     public Claims getClaims(String token) {

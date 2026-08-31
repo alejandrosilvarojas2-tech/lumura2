@@ -40,6 +40,7 @@ npm start                        # ejecuta Maven Spring Boot
 | POST | `/api/auth/register` | No | Registro de usuario (requiere `confirmar_password`) |
 | POST | `/api/auth/register-aliado` | No | Registro de aliado/vendedor |
 | POST | `/api/auth/login` | No | Login, devuelve JWT + usuario. 403 si la cuenta está bloqueada (motivo + fecha fin); si el bloqueo venció, lo limpia y permite entrar |
+| POST | `/api/auth/logout` | JWT | Cierra la sesión e invalida todos los tokens del usuario (incrementa `token_version`) |
 | POST | `/api/auth/recuperar` | No | Solicita enlace de recuperación `{correo_usuario}`. No revela si el correo existe. En modo offline devuelve `enlace_demo` |
 | POST | `/api/auth/reset-password` | No | Restablece contraseña `{token, nueva_password, confirmar_password}`. Token de 30 min de vida, se invalida al usarse |
 | PUT | `/api/auth/cuenta` | JWT | Actualizar datos de la cuenta propia |
@@ -92,16 +93,18 @@ Errores estándar: 401 sin token, 403 si el recurso es de otro usuario o falta r
 - Frontend servido por Spring Boot en `localhost:8080`
 - API REST funcional: productos, auth, carrito, pedidos, admin dashboard
 - JWT implementado con jjwt 0.12.5
+  - El token lleva el claim `tv` (versión de revocación). El filtro central `JwtAuthFilter` (config) valida firma/expiración y rechaza 401 si `tv` no coincide con `usuario.token_version`; se incrementa en logout, cambio de contraseña y bloqueo/desbloqueo por el admin (el 401 dispara "Tu sesión expiró" en el frontend). Columnas: `token_version` (INT)
   - Sin `JWT_SECRET` definido: prod no arranca (fail-fast, mínimo 32 caracteres); dev genera un secreto efímero por ejecución (los tokens no sobreviven reinicios)
 - Jackson snake_case para serialización JSON
 - CORS abierto para desarrollo
 - Cabeceras de seguridad en `SecurityHeaderFilter`: CSP estricto (img-src permite http/https para `imagen_url` externa), X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy, X-XSS-Protection
+- Rate limit por IP (`RateLimitFilter`): ventana fija de 60s — login/registro 10 req/min, `/api/admin` 60, resto 120. Excede → 429 `{error}`
 - Admin detectado por campo `rol` (`ADMIN`) en BD y JWT — sin lógica basada en email
 - Recursos estáticos se sirven con `Cache-Control: no-cache, must-revalidate` (config en `application.properties`) para que el navegador siempre revalide y no queden versiones viejas de `index.html`/`lumura.js`/`lumura.css`. Los assets se referencian además con query string versionado (`lumura.js?v=3`, `lumura.css?v=3`) que hay que incrementar al cambiar su contenido si un usuario sigue viendo pantallas antiguas (recargar con Ctrl+F5)
 - El contacto del vendedor del producto se muestra en todas las etapas del flujo de compra: tarjeta del carrito (`vendedor_nombre/vendedor_correo/vendedor_telefono/vendedor_negocio` de `GET /api/carrito/:id`), lista de ítems del checkout (`#checkout-items`, función `renderCheckoutItems`), confirmación del pedido (`#confirm-items`) y desglose de "Mis pedidos" (`renderDetallesPedido`, servido por `DetalleCompra.vendedor` en `GET /api/pedidos/:id_usuario`)
 - `api.request` (lumura.js) detecta 401 con token vigente → cierra sesión y redirige a login ("Tu sesión expiró"). Clave en dev: al reiniciar el servidor el secreto JWT cambia y los tokens viejos mueren, por lo que hay que volver a iniciar sesión
 - Acceso aliado: pantalla `screen-aliado-login` (botón "Soy aliado" en `choose-role`) pide correo+contraseña; valida con `POST /api/auth/login`; si el rol es `ALIADO` va a `aliado-add` (subir artículo); si no, muestra "No eres aliado". Ofrece enlace "Regístrate como aliado" (`screen-register-aliado`). La pantalla `aliado-login` está exenta del bloqueo por rol en `showScreen`
-- Suite de tests: 122 tests unitarios (JUnit 5 + Mockito) — `.\mvnw.cmd test`
+- Suite de tests: 134 tests unitarios (JUnit 5 + Mockito) — `.\mvnw.cmd test`
 - Git remote: `git@github.com:alejandrosilvarojas2-tech/lumura2.git`
 
 ## Archivos relevantes

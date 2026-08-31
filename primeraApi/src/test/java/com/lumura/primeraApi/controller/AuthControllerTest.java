@@ -201,13 +201,65 @@ class AuthControllerTest {
         usuario.setRol("USER");
 
         when(usuarioRepository.findByCorreoUsuario("ana@correo.com")).thenReturn(Optional.of(usuario));
-        when(jwtUtil.generateToken(1, "ana@correo.com", "USER")).thenReturn("token-jwt");
+        when(jwtUtil.generateToken(1, "ana@correo.com", "USER", 0)).thenReturn("token-jwt");
 
         ResponseEntity<?> res = authController.login(Map.of("correo_usuario", "ana@correo.com", "password", "secreto123"));
 
         assertEquals(200, res.getStatusCode().value());
         Map<?, ?> body = (Map<?, ?>) res.getBody();
         assertEquals("token-jwt", body.get("token"));
+    }
+
+    @Test
+    void login_usaLaVersionActualDeRevocacion() {
+        Usuario usuario = new Usuario();
+        usuario.setIdUsuario(9);
+        usuario.setNombreUsuario("Ana");
+        usuario.setCorreoUsuario("ana@correo.com");
+        usuario.setPasswordHash(BCrypt.hashpw("secreto123", BCrypt.gensalt()));
+        usuario.setRol("USER");
+        usuario.setTokenVersion(4);
+
+        when(usuarioRepository.findByCorreoUsuario("ana@correo.com")).thenReturn(Optional.of(usuario));
+        when(jwtUtil.generateToken(eq(9), eq("ana@correo.com"), eq("USER"), eq(4))).thenReturn("token-v4");
+
+        ResponseEntity<?> res = authController.login(Map.of("correo_usuario", "ana@correo.com", "password", "secreto123"));
+
+        assertEquals(200, res.getStatusCode().value());
+        Map<?, ?> body = (Map<?, ?>) res.getBody();
+        assertEquals("token-v4", body.get("token"));
+    }
+
+    @Test
+    void logout_conTokenValido_incrementaVersionYRevoca() {
+        when(jwtUtil.validateToken("rev-token")).thenReturn(true);
+        when(jwtUtil.getUserIdFromToken("rev-token")).thenReturn(7);
+        when(usuarioRepository.incrementarTokenVersion(7)).thenReturn(1);
+
+        ResponseEntity<?> res = authController.logout("Bearer rev-token");
+
+        assertEquals(200, res.getStatusCode().value());
+        Map<?, ?> body = (Map<?, ?>) res.getBody();
+        assertEquals("Sesión cerrada correctamente", body.get("mensaje"));
+        verify(usuarioRepository).incrementarTokenVersion(7);
+    }
+
+    @Test
+    void logout_sinToken_retorna401() {
+        ResponseEntity<?> res = authController.logout(null);
+
+        assertEquals(401, res.getStatusCode().value());
+        verify(usuarioRepository, never()).incrementarTokenVersion(any());
+    }
+
+    @Test
+    void logout_tokenInvalido_retorna401() {
+        when(jwtUtil.validateToken("malo")).thenReturn(false);
+
+        ResponseEntity<?> res = authController.logout("Bearer malo");
+
+        assertEquals(401, res.getStatusCode().value());
+        verify(usuarioRepository, never()).incrementarTokenVersion(any());
     }
 
     @Test
@@ -274,7 +326,7 @@ class AuthControllerTest {
 
         when(usuarioRepository.findByCorreoUsuario("ana@correo.com")).thenReturn(Optional.of(usuario));
         when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(jwtUtil.generateToken(1, "ana@correo.com", "USER")).thenReturn("token-jwt");
+        when(jwtUtil.generateToken(1, "ana@correo.com", "USER", 0)).thenReturn("token-jwt");
 
         ResponseEntity<?> res = authController.login(Map.of("correo_usuario", "ana@correo.com", "password", "secreto123"));
 
@@ -348,6 +400,26 @@ class AuthControllerTest {
         assertTrue(BCrypt.checkpw("nuevaPass1", usuario.getPasswordHash()));
         assertNull(usuario.getResetToken());
         assertNull(usuario.getResetTokenExpira());
+    }
+
+    @Test
+    void resetPassword_revocaTokensPrevios() {
+        Usuario usuario = new Usuario();
+        usuario.setIdUsuario(5);
+        usuario.setCorreoUsuario("ana@correo.com");
+        usuario.setResetToken("token123");
+        usuario.setResetTokenExpira(java.time.LocalDateTime.now().plusMinutes(10));
+        when(usuarioRepository.findByResetToken("token123")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(usuarioRepository.incrementarTokenVersion(5)).thenReturn(1);
+
+        ResponseEntity<?> res = authController.resetPassword(Map.of(
+                "token", "token123",
+                "nueva_password", "nuevaPass1",
+                "confirmar_password", "nuevaPass1"));
+
+        assertEquals(200, res.getStatusCode().value());
+        verify(usuarioRepository).incrementarTokenVersion(5);
     }
 
     @Test

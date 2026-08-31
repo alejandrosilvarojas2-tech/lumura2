@@ -62,6 +62,12 @@ public class Usuario {
     @Column(name = "bloqueo_hasta")
     private LocalDateTime bloqueoHasta;
 
+    @Column(name = "token_version")
+    private Integer tokenVersion = 0;
+
+    public Integer getTokenVersion() { return tokenVersion; }
+    public void setTokenVersion(Integer tokenVersion) { this.tokenVersion = tokenVersion; }
+
     public Boolean getBloqueado() { return bloqueado; }
     public void setBloqueado(Boolean bloqueado) { this.bloqueado = bloqueado; }
     public String getMotivoBloqueo() { return motivoBloqueo; }

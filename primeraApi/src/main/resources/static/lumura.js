@@ -641,6 +641,14 @@ async function guardarEdicionProductoAliado(id) {
 }
 
 function cerrarSesion() {
+  if (state.token) {
+    // Revoca el token en el servidor; si ya expiró el 401 se ignora.
+    const t = state.token;
+    fetch('/api/auth/logout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + t }
+    }).catch(() => {});
+  }
   state.token = null;
   state.user = null;
   state.favoritos = [];

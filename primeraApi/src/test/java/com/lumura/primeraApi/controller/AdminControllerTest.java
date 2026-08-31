@@ -249,6 +249,7 @@ class AdminControllerTest {
         assertEquals("Fraude", cliente.getMotivoBloqueo());
         assertNotNull(cliente.getBloqueoHasta());
         assertTrue(cliente.getBloqueoHasta().isAfter(LocalDateTime.now()));
+        verify(usuarioRepository).incrementarTokenVersion(2);
     }
 
     @Test
@@ -321,6 +322,7 @@ class AdminControllerTest {
         assertFalse(cliente.getBloqueado());
         assertNull(cliente.getMotivoBloqueo());
         assertNull(cliente.getBloqueoHasta());
+        verify(usuarioRepository).incrementarTokenVersion(2);
     }
 
     @Test

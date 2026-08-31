@@ -570,8 +570,11 @@ primeraApi/
 |--------|------|------|-------------|
 | POST | `/api/auth/register` | No | Registro de usuario |
 | POST | `/api/auth/login` | No | Inicio de sesión |
+| POST | `/api/auth/logout` | JWT | Cierra sesión e invalida todos los tokens del usuario |
 | PUT | `/api/auth/cuenta` | JWT | Actualizar datos personales |
 | DELETE | `/api/auth/cuenta` | JWT | Eliminar cuenta |
+| POST | `/api/auth/recuperar` | No | Solicita enlace de recuperación (offline: `enlace_demo`) |
+| POST | `/api/auth/reset-password` | No | Restablece contraseña (revoca los JWT previos) |
 | GET | `/api/productos` | No | Listar catálogo completo |
 | GET | `/api/productos/{id}` | No | Detalle de producto |
 | GET | `/api/carrito/{idUsuario}` | JWT | Ver carrito del usuario |
@@ -851,10 +854,11 @@ en vivo contra el servidor real. La sección 8 se conserva como registro histór
 | 18 | **Contacto del vendedor en el carrito** | `GET /api/carrito/{id}` resuelve el aliado (`catalogo.id_aliado`) de cada ítem y añade `vendedor_nombre`, `vendedor_correo`, `vendedor_telefono` y `vendedor_negocio`. Frontend: cada ítem del carrito muestra el bloque "Vendedor: {nombre} · {negocio}" con su correo y teléfono. Verificado E2E (Puppeteer): cliente añade producto del aliado → ítem del carrito con "Vendedor: aguacate - sandra rojas", correo `sandrarojasmoda@gmail.com` y teléfono `3182244198`; 1 test unitario nuevo en CarritoControllerTest (111 total) |
 | 19 | **Bloqueo de usuarios (admin)** | `GET /api/admin/usuarios` ahora **excluye al admin autenticado** (filtra por id del token) y añade `bloqueado`, `motivo_bloqueo`, `bloqueo_hasta`. Nuevos endpoints `PUT /api/admin/usuarios/{id}/bloquear` (valida admin; 404 si no existe; 400 si es rol ADMIN, si falta `motivo` o si `dias` < 1; setea `bloqueado=true`, `motivo_bloqueo`, `bloqueo_hasta = now + dias`) y `PUT /api/admin/usuarios/{id}/desbloquear` (limpia los tres campos), ambos `@Transactional`. `AuthController.login` valida el bloqueo: si la cuenta está bloqueada y el bloqueo está vigente → 403 "Cuenta bloqueada. Motivo: ... Vuelve a intentarlo después del ..."; si el bloqueo venció → lo limpia y permite entrar. Frontend: columna **Estado** (badge verde "Activo" / naranja "Bloqueado hasta DD/MM/AAAA"), botones **Bloquear** (abre `modal-bloqueo-usuario` con motivo + días) / **Desbloquear** (con confirmación) / **Eliminar**; el modal perfil muestra el estado y permite bloquear/desbloquear. Verificado E2E: bloqueo por API y por UI con badge Bloqueado, login del bloqueado → 403 con motivo, desbloqueo → login 200, admin excluido de la lista, "no se puede bloquear al admin" → 400, `dias 0` → 400. 10 tests unitarios nuevos (AdminControllerTest + AuthControllerTest) → 122 total |
 | 20 | **Detalles del vendedor en checkout, confirmación y pedidos** | Reportado: "al comprar el producto desde la sección cliente no salen los detalles del aliado que subió el producto". El carrito ya los mostraba (entrada 18), pero el **checkout** no listaba los ítems y la **confirmación** no tenía el desglose. Backend: `DetalleCompra` añade campo `@Transient Map<String,Object> vendedor` y `PedidoController.adjuntarDetalles` resuelve el aliado de cada detalle (`catalogo.id_aliado` → `UsuarioRepository`, filtra rol ALIADO) exponiendo `vendedor_nombre`, `vendedor_correo`, `vendedor_telefono`, `vendedor_negocio`. Frontend: nuevo bloque `#checkout-items` en `screen-checkout` renderizado por `renderCheckoutItems()` (hook de `showScreen`), bloque `#confirm-items` en `screen-confirm` poblado al confirmar, y `renderDetallesPedido` muestra el vendedor por ítem en "Mis pedidos". Verificado E2E (Puppeteer): cliente compra "zapatillas urbanas" → detalle del producto con "Vendido por: aguacate" (+NIT, contacto, teléfono, dirección) → carrito, `#checkout-items`, confirmación (`#LUM-39`) y pedidos muestran "Vendedor: aguacate - sandra rojas · aguacate" con correo `sandrarojasmoda@gmail.com` y teléfono `3182244198`; 0 errores JS; 1 test unitario nuevo en PedidoControllerTest. Además: assets versionados (`lumura.js?v=3`, `lumura.css?v=3`) para forzar recarga del frontend ante caché del navegador — verificado de nuevo el botón "Usuarios" del sidebar → 32 filas con columna Estado y botones |
+| 21 | **Rate limit por IP y revocación de tokens JWT** | (1) `RateLimitFilter` **corregido**: el cálculo de ventana anterior guardaba el minuto como timestamp y comparaba milisegundos, por lo que la ventana se reiniciaba en cada petición y nunca llegaba a 429. Ahora usa ventana fija de 60 s por IP (login/registro 10 req/min, `/api/admin` 60, resto 120) con reloj inyectable y limpieza de entradas viejas; 5 tests unitarios (límite login en 11ª, límites independientes por ruta e IP, reinicio de ventana, límite admin). (2) **Revocación de tokens**: nuevo `JwtAuthFilter` central (config) que valida firma/expiración y el claim `tv` contra `usuario.token_version` (columna nueva, alias `token_version`); se incrementa la versión en `POST /api/auth/logout` (nuevo), en `reset-password` y en bloqueo/desbloqueo por el admin → el token viejo muere de inmediato (401 "Tu sesión expiró"), el frontend ya redirige a login en 401. `generateToken` ganó una sobrecarga con versión; los tokens usan el claim `tv`. Verificado E2E: login → token A sirve `/api/admin/usuarios` 200 → logout 200 → token A revocado 401 "Tu sesión expiró. Inicia sesión de nuevo" → re-login 200 → ráfaga de logins fallidos → 8× 429. Columnas `token_version` verificadas en MySQL. 12 tests nuevos (AuthControllerTest, AdminControllerTest, JwtUtilTest, RateLimitFilterTest) → **134 total** |
 
 ## 9.4 Evidencia de Pruebas Integrales (21/08/2026)
 
-- Suite unitaria: **122/122 verde** (`.\mvnw.cmd test`)
+- Suite unitaria: **134/134 verde** (`.\mvnw.cmd test`)
 - E2E sobre servidor real (localhost:8080): registro/login, catálogo, carrito con FK,
   checkout antifraude (total server-side), desglose de pedido, cancelación con permisos,
   favoritos (agregar/duplicado/borrar/aislamiento entre usuarios), descuento y bloqueo
@@ -918,8 +922,7 @@ en vivo contra el servidor real. La sección 8 se conserva como registro histór
   catálogo siguen funcionando con el CSP activo.
 - Persistencia verificada directamente en MySQL (`detalle_compra`, `favoritos`).
 
-Pendiente recomendado para despliegue público: M1/M2 (rate limiter) y revocación de
-tokens, además de limpieza cosmética del HTML del panel admin. La pasarela simulada
+Pendiente recomendado para despliegue público: M2 (rate limiter por clave/parcialidad——ya existe por IP en la entrada 21) y la limpieza cosmética del HTML del panel admin. La pasarela simulada
 está lista para migrarse a Stripe/PayU (mismos contratos de `metodo_pago`/
 `referencia_pago`), la recuperación de contraseña requiere conectar un servidor SMTP
 real (hoy el enlace se muestra en la respuesta/log) y los pedidos ya tienen seguimiento

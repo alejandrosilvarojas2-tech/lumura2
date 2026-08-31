@@ -180,7 +180,8 @@ public class AuthController {
         }
 
         log.info("Login exitoso: {} ({})", usuario.getNombreUsuario(), correo);
-        String token = jwtUtil.generateToken(usuario.getIdUsuario(), usuario.getCorreoUsuario(), usuario.getRol());
+        int version = usuario.getTokenVersion() == null ? 0 : usuario.getTokenVersion();
+        String token = jwtUtil.generateToken(usuario.getIdUsuario(), usuario.getCorreoUsuario(), usuario.getRol(), version);
         return ResponseEntity.ok(Map.of(
             "token", token,
             "usuario", Map.of(
@@ -191,6 +192,24 @@ public class AuthController {
                 "direccion", usuario.getDireccionUsuario() != null ? usuario.getDireccionUsuario() : ""
             )
         ));
+    }
+
+    // Cierra la sesión revocando todos los tokens activos del usuario
+    // (incrementa token_version; los tokens viejos dejan de ser aceptados).
+    @PostMapping("/logout")
+    @Transactional
+    public ResponseEntity<?> logout(@RequestHeader(value = "Authorization", required = false) String auth) {
+        if (auth == null || !auth.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
+        }
+        String token = auth.substring(7);
+        if (!jwtUtil.validateToken(token)) {
+            return ResponseEntity.status(401).body(Map.of("error", "Token inválido"));
+        }
+        Integer userId = jwtUtil.getUserIdFromToken(token);
+        usuarioRepository.incrementarTokenVersion(userId);
+        log.info("Sesión cerrada (tokens revocados): userId={}", userId);
+        return ResponseEntity.ok(Map.of("mensaje", "Sesión cerrada correctamente"));
     }
 
     @DeleteMapping("/cuenta")
@@ -315,6 +334,9 @@ public class AuthController {
         usuario.setResetToken(null);
         usuario.setResetTokenExpira(null);
         usuarioRepository.save(usuario);
+        // Revoca todos los tokens previos: tras cambiar la contraseña,
+        // cualquier sesión activa con el token antiguo debe morir.
+        usuarioRepository.incrementarTokenVersion(usuario.getIdUsuario());
 
         log.info("Contraseña restablecida: userId={}", usuario.getIdUsuario());
         return ResponseEntity.ok(Map.of("mensaje", "Contraseña actualizada correctamente"));
