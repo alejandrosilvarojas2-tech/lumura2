@@ -986,7 +986,31 @@ verde.
   `?v=7` (CSS sin cambios). Verificado E2E (Puppeteer): elección → modal visible con el texto
   del artículo 47 y de la nota legal → "Volver a los planes" regresa a membresías → nueva
   elección → "Acepto y continuar" → confirmación de pago con resumen → Confirmar → Stock.
-  Suite unitaria 135/135 en verde.
+Suite unitaria 135/135 en verde.
+- **Categorías unificadas y filtrables por rol (E2E, 30/08/2026)**: se unificó el sistema de
+  categorías en **una lista canónica `CATEGORIAS`** de 23 valores (Camisetas, Camisas, Blusas,
+  Pantalones, Jeans, Faldas, Vestidos, Chaquetas, Abrigos, Sueter, Chalecos, Trajes, Ropa
+  interior, Calcetines, Zapatos, Sandalias, Botas, Accesorios, Sombreros, Cinturones, Bufandas,
+  Tennis, Ropa deportiva) definida en `lumura.js`. Todos los formularios que antes eran **texto
+  libre** pasaron a **`<select>`** rellenados por `cargarOpcionesCategorias()`: artículo del
+  aliado `#aliado-art-categoria` (**obligatorio**), modal de producto del admin
+  `#modal-prod-categoria`, modal de edición del aliado `#edit-art-categoria` (renderizado en JS),
+  registro del aliado `#aliado-categoria` y filtro del catálogo admin `#admin-cat-filter`. En la
+  tienda del cliente los botones de categorías (`#tag-filter`, hoy con id propio) se **generan
+  dinámicamente** con `renderCategoriasTags()` desde `CATEGORIAS` + las categorías distintas
+  presentes en los productos, y sus clics usan **delegación de eventos** (antes se bindeaban una
+  sola vez y morían al regenerarse). `normalizarCategoria()` (trim + minúsculas + tabla
+  `SINONIMOS` para legacy: `camiseta→Camisetas`, `camisas y blusas→Camisas`, `jeans y
+  pantalones→Jeans`, `calzado→Zapatos`, `tenis/zapatillas/sneakers→Tennis`, etc.) normaliza las
+  comparaciones de `renderProductos` y `renderAdminCatalogo`, el valor pre-seleccionado del modal
+  admin y el select de edición — por eso los productos viejos en minúscula (`camiseta`,
+  `chaquetas`…) aparecen bajo sus botones **sin migrar la BD**. La búsqueda del cliente sigue
+  combinando término + categoría activa. Verificado E2E (Puppeteer): aliado real publica una
+  camiseta eligiendo "Camisetas" en el select → cliente logueado → el botón "Camisetas" existe en
+  Categorías → clic → aparecen la camiseta nueva **y** la legacy en minúscula del seed → no se
+  filtran otras categorías → búsqueda "camiset" las encuentra → el filtro del catálogo admin por
+  "Camisetas" muestra la camiseta. Assets versionados a `?v=8` (CSS sin cambios). Suite unitaria
+  135/135 en verde.
 
 Pendiente recomendado para despliegue público: M2 (rate limiter por clave/parcialidad——ya existe por IP en la entrada 21) y la limpieza cosmética del HTML del panel admin. La pasarela simulada
 está lista para migrarse a Stripe/PayU (mismos contratos de `metodo_pago`/

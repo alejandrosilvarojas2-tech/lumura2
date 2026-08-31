@@ -321,7 +321,7 @@
   </div>
   <!-- Categorías -->
   <div class="section-label">Categorías</div>
-  <div class="tag-filter">
+  <div class="tag-filter" id="tag-filter">
     <span class="tag active" data-cat="">Todo</span>
     <span class="tag" data-cat="Camisetas">Camisetas</span>
     <span class="tag" data-cat="Pantalones">Pantalones</span>
@@ -797,9 +797,11 @@
                 <label>Precio (COP) *</label>
                 <input id="aliado-art-precio" type="number" min="0" step="100" placeholder="Ej: 59900" required>
               </div>
-              <div class="form-group">
-                <label>Categoría</label>
-                <input id="aliado-art-categoria" placeholder="Ej: Camisetas">
+<div class="form-group">
+                <label>Categoría *</label>
+                <select id="aliado-art-categoria" required style="width:100%;padding:10px;border:1.5px solid var(--light);border-radius:8px;font-family:inherit;background:white;">
+                  <option value="" selected disabled>Selecciona la categoría del artículo</option>
+                </select>
               </div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
@@ -1069,7 +1071,7 @@
     <input type="hidden" id="modal-prod-id">
     <div class="form-group"><label>Nombre del artículo *</label><input id="modal-prod-articulo" placeholder="Ej: Camiseta Premium"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <div class="form-group"><label>Categoría</label><input id="modal-prod-categoria" placeholder="Ej: Camisetas"></div>
+      <div class="form-group"><label>Categoría</label><select id="modal-prod-categoria" style="width:100%;padding:10px;border:1.5px solid var(--light);border-radius:8px;background:white;"><option value="" selected disabled>Selecciona una categoría</option></select></div>
       <div class="form-group"><label>Precio</label><input id="modal-prod-precio" type="number" placeholder="0"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
@@ -1142,6 +1144,6 @@
   </div>
 </div>
 
-<script src="lumura.js?v=7"></script>
+<script src="lumura.js?v=8"></script>
 </body>
 </html>

@@ -448,6 +448,7 @@ async function guardarArticuloAliado(e) {
   const precio = document.getElementById('aliado-art-precio').value.trim();
   if (!nombre) return mostrarMensaje('El nombre del artículo es obligatorio', 'error');
   if (!precio || parseFloat(precio) < 0) return mostrarMensaje('Ingresa un precio válido', 'error');
+  if (!document.getElementById('aliado-art-categoria').value) return mostrarMensaje('Selecciona la categoría del artículo', 'error');
 
   const stock = parseInt(document.getElementById('aliado-art-stock').value) || 0;
   if (stock > 10000) return mostrarMensaje('El stock no puede superar 10,000 unidades', 'error');
@@ -669,7 +670,10 @@ function abrirEditarProductoAliado(id) {
     + '<div class="form-group" style="flex:1;"><label>Precio con descuento (opcional)</label><input type="number" id="edit-art-descuento" min="0" value="' + (p.precio_descuento != null ? Number(p.precio_descuento) : '') + '" placeholder="Sin descuento" style="width:100%;padding:10px;border:1.5px solid var(--light);border-radius:8px;"></div>'
     + '</div>'
     + '<div style="display:flex;gap:12px;">'
-    + '<div class="form-group" style="flex:1;"><label>Categoría</label><input id="edit-art-categoria" value="' + escHtml(p.categoria || '') + '" style="width:100%;padding:10px;border:1.5px solid var(--light);border-radius:8px;"></div>'
+    + '<div class="form-group" style="flex:1;"><label>Categoría</label><select id="edit-art-categoria" style="width:100%;padding:9px;border:1.5px solid var(--light);border-radius:8px;background:white;">'
+    + '<option value=""' + (!p.categoria ? ' selected' : '') + '>Sin categoría</option>'
+    + CATEGORIAS.map(c => '<option value="' + c + '"' + (normalizarCategoria(p.categoria) === c ? ' selected' : '') + '>' + c + '</option>').join('')
+    + '</select></div>'
     + '<div class="form-group" style="flex:1;"><label>Talla</label><input id="edit-art-talla" value="' + escHtml(p.talla || '') + '" style="width:100%;padding:10px;border:1.5px solid var(--light);border-radius:8px;"></div>'
     + '<div class="form-group" style="flex:1;"><label>Color</label><input id="edit-art-color" value="' + escHtml(p.color || '') + '" style="width:100%;padding:10px;border:1.5px solid var(--light);border-radius:8px;"></div>'
     + '</div>'
@@ -794,6 +798,7 @@ async function cargarProductos() {
   try {
     state.productos = await api.get('/api/productos');
     renderProductos();
+    renderCategoriasTags();
     renderAdminCatalogo();
     if (document.getElementById('admin-panel-inv')?.classList.contains('active')) cargarInventario();
   } catch (err) {
@@ -813,7 +818,7 @@ function renderProductos(filtroCat, filtroTexto) {
   const grid = document.getElementById('prod-grid');
   if (!grid) return;
   let items = state.productos;
-  if (filtroCat) items = items.filter(p => p.categoria === filtroCat);
+  if (filtroCat) items = items.filter(p => normalizarCategoria(p.categoria) === normalizarCategoria(filtroCat));
   if (filtroTexto) items = items.filter(p =>
     p.articulo.toLowerCase().includes(filtroTexto.toLowerCase()) ||
     (p.categoria || '').toLowerCase().includes(filtroTexto.toLowerCase())
@@ -836,6 +841,58 @@ function renderProductos(filtroCat, filtroTexto) {
       '<button class="add-btn" onclick="event.stopPropagation();agregarAlCarrito(' + p.id_catalogo + ')">+ Agregar al carrito</button>' +
       '</div>';
   }).join('');
+}
+
+const CATEGORIAS = ['Camisetas', 'Camisas', 'Blusas', 'Pantalones', 'Jeans', 'Faldas', 'Vestidos', 'Chaquetas', 'Abrigos', 'Sueter', 'Chalecos', 'Trajes', 'Ropa interior', 'Calcetines', 'Zapatos', 'Sandalias', 'Botas', 'Accesorios', 'Sombreros', 'Cinturones', 'Bufandas', 'Tennis', 'Ropa deportiva'];
+
+const SINONIMOS = {
+  'camiseta': 'Camisetas',
+  'camisas y blusas': 'Camisas',
+  'jeans y pantalones': 'Jeans',
+  'calzado': 'Zapatos',
+  'sweater': 'Sueter',
+  'sueteres': 'Sueter',
+  'tenis': 'Tennis',
+  'sneakers': 'Tennis',
+  'zapatillas': 'Tennis'
+};
+
+function normalizarCategoria(v) {
+  const s = String(v || '').trim().toLowerCase();
+  if (!s) return '';
+  if (SINONIMOS[s]) return SINONIMOS[s];
+  const exacta = CATEGORIAS.find(c => c.toLowerCase() === s);
+  if (exacta) return exacta;
+  return String(v).trim();
+}
+
+function renderCategoriasTags() {
+  const cont = document.getElementById('tag-filter');
+  if (!cont) return;
+  const activa = (cont.querySelector('.tag.active')?.dataset.cat) || '';
+  const cats = CATEGORIAS.slice();
+  (state.productos || []).forEach(p => {
+    const n = normalizarCategoria(p.categoria || '');
+    if (n && !cats.includes(n)) cats.push(n);
+  });
+  cont.innerHTML = '<span class="tag' + (activa === '' ? ' active' : '') + '" data-cat="">Todo</span>'
+    + cats.map(c => '<span class="tag' + (activa === c ? ' active' : '') + '" data-cat="' + escHtml(c) + '">' + escHtml(c) + '</span>').join('');
+}
+
+function cargarOpcionesCategorias() {
+  const especificos = {
+    'aliado-categoria': { placeholder: 'Selecciona una categoría', value: '' },
+    'aliado-art-categoria': { placeholder: 'Selecciona la categoría del artículo', value: '' },
+    'modal-prod-categoria': { placeholder: 'Selecciona una categoría', value: '' },
+    'admin-cat-filter': { placeholder: 'Todas las categorías', value: 'Todas las categorías' }
+  };
+  Object.keys(especificos).forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const spec = especificos[id];
+    sel.innerHTML = '<option value="' + spec.value + '" selected' + (spec.value === '' ? ' disabled' : '') + '>' + spec.placeholder + '</option>'
+      + CATEGORIAS.map(c => '<option value="' + c + '">' + c + '</option>').join('');
+  });
 }
 
 function mostrarDescripcion(id) {
@@ -1509,7 +1566,7 @@ function renderAdminCatalogo(filtroTexto, filtroCat) {
   if (!tbody) return;
   let items = state.productos;
   if (filtroTexto) items = items.filter(p => p.articulo.toLowerCase().includes(filtroTexto.toLowerCase()));
-  if (filtroCat && filtroCat !== 'Todas las categorías') items = items.filter(p => p.categoria === filtroCat);
+  if (filtroCat && filtroCat !== 'Todas las categorías') items = items.filter(p => normalizarCategoria(p.categoria) === normalizarCategoria(filtroCat));
   if (items.length === 0) {
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;">No hay productos</td></tr>';
     return;
@@ -1544,7 +1601,7 @@ function abrirModalProducto(idEditar) {
   document.getElementById('modal-prod-id').value = idEditar || '';
   const prod = idEditar ? state.productos.find(p => p.id_catalogo === idEditar) : null;
   document.getElementById('modal-prod-articulo').value = prod ? prod.articulo : '';
-  document.getElementById('modal-prod-categoria').value = prod ? (prod.categoria || '') : '';
+  document.getElementById('modal-prod-categoria').value = prod ? normalizarCategoria(prod.categoria) : '';
   document.getElementById('modal-prod-precio').value = prod ? prod.precio : '';
   document.getElementById('modal-prod-talla').value = prod ? (prod.talla || '') : '';
   document.getElementById('modal-prod-color').value = prod ? (prod.color || '') : '';
@@ -1747,10 +1804,12 @@ function cerrarUserMenu() {
 
 function filtrarCategoria(cat) {
   document.querySelectorAll('.tag').forEach(t => t.classList.remove('active'));
-  if (cat) {
-    document.querySelector('.tag[data-cat="' + cat + '"]').classList.add('active');
+  const objetivo = document.querySelector('.tag[data-cat="' + (cat || '') + '"]');
+  if (objetivo) {
+    objetivo.classList.add('active');
   } else {
-    document.querySelector('.tag[data-cat=""]').classList.add('active');
+    const todo = document.querySelector('.tag[data-cat=""]');
+    if (todo) todo.classList.add('active');
   }
   const term = document.getElementById('search-input')?.value || '';
   renderProductos(cat, term);
@@ -1900,11 +1959,12 @@ document.addEventListener('DOMContentLoaded', function () {
   const licenciaImg = document.getElementById('aliado-licencia-img');
   if (licenciaImg) licenciaImg.addEventListener('change', function() { handleLicenciaImgSelect(this); });
   document.querySelectorAll('.logout-btn').forEach(b => b.addEventListener('click', cerrarSesion));
-  document.querySelectorAll('.tag').forEach(t => {
-    t.addEventListener('click', function () {
-      filtrarCategoria(this.dataset.cat);
-    });
+  const tagFilter = document.getElementById('tag-filter');
+  if (tagFilter) tagFilter.addEventListener('click', function (ev) {
+    const tag = ev.target.closest('.tag');
+    if (tag) filtrarCategoria(tag.dataset.cat);
   });
+  cargarOpcionesCategorias();
   const adminAvatar = document.getElementById('admin-avatar');
   if (adminAvatar) adminAvatar.addEventListener('click', toggleUserMenu);
   const aliadoAvatar = document.getElementById('aliado-avatar');
