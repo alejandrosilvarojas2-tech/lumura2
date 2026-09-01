@@ -1110,6 +1110,23 @@ podría reenviarse por el mismo `EmailService` cuando se conecte SMTP. Los pedid
 ya tienen seguimiento de envío con historial de estados. Cabeceras de seguridad
 aplicadas vía `SecurityHeaderFilter` (CSP, X-Content-Type-Options, X-Frame-Options,
 Referrer-Policy, Permissions-Policy, X-XSS-Protection).
+- **Túnel público Cloudflare para demo (E2E, 31/08/2026)**: para exponer la
+  aplicación con una URL pública temporal **sin tocar código ni base de datos** se
+  usa un quick tunnel de `cloudflared` (instalado por winget, sin cuenta ni
+  authtoken). Comando de arranque (desde PowerShell, con el servidor ya en
+  `http://localhost:8080`):
+  ```powershell
+  & "C:\Program Files (x86)\cloudflared\cloudflared.exe" tunnel --url http://localhost:8080 --protocol http2 --no-autoupdate
+  ```
+  El flag **`--protocol http2` es imprescindible**: el firewall/red local bloquea el
+  puerto 7844 (QUIC) del servidor secundario `region2`, con lo que el `precheck`
+  interno reporta `hard_fail=true` al ejecutar por defecto. Forzando HTTP/2 por el
+  puerto 443 la conexión con `region1` funciona y el túnel se levanta igualmente (la
+  línea `INF | https://<aleatorio>.trycloudflare.com` aparece en stdout/stderr). La
+  URL pública **vive solo mientras `cloudflared` corra y el PC esté encendido**: si
+  se cierra el proceso o se apaga el equipo, se cae y cambia. Verificado de punta a
+  punta desde la URL: `/` (frontend) → 200 y `GET /api/productos` → 200. No se
+  desactiva el firewall; el túnel funciona sin esa medida.
 
 ---
 
