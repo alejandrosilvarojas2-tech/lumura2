@@ -31,6 +31,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             "/api/productos"
     );
 
+    // Permiten a un aliado con membresía vencida gestionar su cuenta, cerrar sesión
+    // o renovar/cancelar la membresía, aunque el resto del panel de aliado quede bloqueado.
+    private static final Set<String> EXENTOS_MEMBRESIA = Set.of(
+            "/api/auth/logout", "/api/auth/cuenta",
+            "/api/aliado/membresia"
+    );
+
     private final ObjectProvider<UsuarioRepository> usuariosProvider;
     private final JwtUtil jwtUtil;
 
@@ -79,12 +86,31 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
+        // Membresía de distribuidor vencida (solo aplica a aliados): se valida en CADA request
+        // (no solo en login) para que una sesión con token vivo no pueda seguir operando vencida.
+        Usuario u = usuario.get();
+        if ("ALIADO".equals(u.getRol())
+                && u.getMembresiaVence() != null
+                && !u.getMembresiaVence().isAfter(java.time.LocalDateTime.now())
+                && !EXENTOS_MEMBRESIA.stream().anyMatch(path::startsWith)) {
+            rechazar403(response, "Cuenta bloqueada por membresía vencida el " + u.getMembresiaVence() + ". Genera tu pago para continuar.");
+            return;
+        }
+
         chain.doFilter(request, response);
     }
 
     private void rechazar401(HttpServletResponse response, String mensaje) throws IOException {
         if (response.isCommitted()) return;
         response.setStatus(401);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.getWriter().write("{\"error\":\"" + mensaje + "\"}");
+    }
+
+    private void rechazar403(HttpServletResponse response, String mensaje) throws IOException {
+        if (response.isCommitted()) return;
+        response.setStatus(403);
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         response.getWriter().write("{\"error\":\"" + mensaje + "\"}");
