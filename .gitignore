@@ -8,3 +8,4 @@ replay_pid*.log
 
 # Imagenes subidas en tiempo de ejecucion
 uploads/
+uploads-licencias/

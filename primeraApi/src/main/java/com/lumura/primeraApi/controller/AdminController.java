@@ -338,7 +338,8 @@ public class AdminController {
 
     @PostMapping("/upload")
     public ResponseEntity<?> subirImagen(@RequestHeader(value = "Authorization", required = false) String auth,
-                                         @RequestParam("file") MultipartFile file) {
+                                         @RequestParam("file") MultipartFile file,
+                                         @RequestParam(value = "tipo", defaultValue = "producto") String tipo) {
         if (!validarAdmin(auth) && !validarAliado(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido o no eres aliado/admin"));
 
         if (file.isEmpty()) {
@@ -365,16 +366,22 @@ public class AdminController {
         }
 
         try {
-            String filename = "producto_" + System.currentTimeMillis() + extension;
-            Path uploadPath = Paths.get(uploadDir).toAbsolutePath();
+            boolean esLicencia = "licencia".equalsIgnoreCase(tipo);
+            // Las licencias (dato sensible) se guardan en una carpeta NO servida de forma pública,
+            // con nombre aleatorio UUID, y se sirven por endpoint autenticado.
+            String filename = esLicencia
+                    ? "lic_" + UUID.randomUUID() + extension
+                    : "producto_" + System.currentTimeMillis() + extension;
+            String dir = esLicencia ? "uploads-licencias" : uploadDir;
+            Path uploadPath = Paths.get(dir).toAbsolutePath();
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
             }
             Path filePath = uploadPath.resolve(filename);
             file.transferTo(filePath.toFile());
 
-            String imageUrl = "uploads/" + filename;
-            log.info("Imagen subida: {}", imageUrl);
+            String imageUrl = esLicencia ? "licencias/" + filename : "uploads/" + filename;
+            log.info("Imagen subida ({}): {}", esLicencia ? "licencia" : "producto", imageUrl);
             return ResponseEntity.ok(Map.of("url", imageUrl, "mensaje", "Imagen subida correctamente"));
         } catch (IOException e) {
             log.error("Error al subir imagen", e);

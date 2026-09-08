@@ -12,6 +12,20 @@ function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// Convierte la ruta guardada de una licencia a la URL que la sirve de forma
+// autenticada (endpoint GET /api/aliado/licencia/imagen con el token en query,
+// ya que <img>/<a> del navegador no pueden mandar el header Authorization).
+// Las rutas legacy del tipo "uploads/..." se devuelven tal cual (compatibilidad).
+function urlLicencia(lic) {
+  if (!lic) return '';
+  if (lic.indexOf('licencias/') === 0) {
+    const nombre = lic.substring('licencias/'.length);
+    const sep = state.token ? '&token=' + encodeURIComponent(state.token) : '';
+    return '/api/aliado/licencia/imagen?nombre=' + encodeURIComponent(nombre) + sep;
+  }
+  return lic;
+}
+
 async function parseRespuesta(res) {
   const texto = await res.text();
   if (!texto) return null;
@@ -342,7 +356,7 @@ async function cargarLicenciaAliado() {
     const res = await api.get('/api/aliado/licencia');
     const licencia = res?.licencia || '';
     if (licencia) {
-      document.getElementById('aliado-licencia-img-actual').src = licencia;
+      document.getElementById('aliado-licencia-img-actual').src = urlLicencia(licencia);
       actual.style.display = 'block';
     } else {
       actual.style.display = 'none';
@@ -363,7 +377,8 @@ async function guardarLicenciaAliado() {
     mostrarMensaje('Subiendo imagen...', 'info');
     const formData = new FormData();
     formData.append('file', input.files[0]);
-    const res = await fetch('/api/admin/upload', {
+    formData.append('tipo', 'licencia');
+    const res = await fetch('/api/admin/upload?tipo=licencia', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + state.token },
       body: formData,
@@ -378,7 +393,7 @@ async function guardarLicenciaAliado() {
     const res = await api.put('/api/aliado/licencia', { licencia: url });
     mostrarMensaje('Licencia de distribuidor guardada correctamente', 'éxito');
     document.getElementById('aliado-licencia-msg').textContent = 'Licencia guardada correctamente';
-    document.getElementById('aliado-licencia-img-actual').src = url;
+    document.getElementById('aliado-licencia-img-actual').src = urlLicencia(url);
     document.getElementById('aliado-licencia-actual').style.display = 'block';
     document.getElementById('aliado-licencia-preview').style.display = 'none';
   } catch (err) {
@@ -1353,7 +1368,7 @@ function verPerfilUsuario(id) {
     document.getElementById('perfil-categoria').value = u.categoria_productos || '-';
     const lic = u.licencia_distribuidor;
     document.getElementById('perfil-licencia').innerHTML = (lic && lic.trim())
-      ? '<a href="' + escHtml(lic) + '" target="_blank" rel="noopener">Ver licencia</a>'
+      ? '<a href="' + escHtml(urlLicencia(lic)) + '" target="_blank" rel="noopener">Ver licencia</a>'
       : '<span style="color:var(--gray);">Sin licencia</span>';
 
     const memRow = document.getElementById('perfil-memb-row');

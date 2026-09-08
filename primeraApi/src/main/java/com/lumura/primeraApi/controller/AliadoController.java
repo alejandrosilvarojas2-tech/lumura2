@@ -8,12 +8,22 @@ import com.lumura.primeraApi.repository.DetalleCompraRepository;
 import com.lumura.primeraApi.repository.UsuarioRepository;
 import com.lumura.primeraApi.service.EmailService;
 import com.lumura.primeraApi.util.JwtUtil;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.URLConnection;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -30,6 +40,9 @@ public class AliadoController {
     private final UsuarioRepository usuarioRepository;
     private final JwtUtil jwtUtil;
     private final EmailService emailService;
+
+    @Value("${upload.dir:uploads}")
+    private String uploadDir;
 
     public AliadoController(CatalogoRepository catalogoRepository,
                             DetalleCompraRepository detalleCompraRepository,
@@ -300,6 +313,45 @@ public class AliadoController {
                     return ResponseEntity.ok(Map.of("mensaje", "Licencia guardada correctamente", "licencia", licencia));
                 })
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    // Sirve la imagen de una licencia de distribuidor SIEMPRE autenticado (ALIADO/ADMIN).
+    // Las licencias NO se sirven de forma pública desde /uploads; viven en uploads-licencias/
+    // y solo se accede por aquí con token válido. La imagen se solicita con el header
+    // Authorization (para <img> del navegador se pasa el token también por query ?token=).
+    @GetMapping("/licencia/imagen")
+    public void servirLicencia(@RequestParam("nombre") String nombre,
+                               @RequestParam(value = "token", required = false) String tokenQuery,
+                               @RequestHeader(value = "Authorization", required = false) String auth,
+                               HttpServletResponse response) throws IOException {
+        String authHeader = (auth != null && auth.startsWith("Bearer ")) ? auth
+                : (tokenQuery != null ? "Bearer " + tokenQuery : null);
+        Integer userId = extraerAliadoId(authHeader);
+        if (userId == null) {
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            return;
+        }
+
+        // Previene path traversal: solo se admite un nombre de archivo simple (sin /, \ ni ..)
+        String base = Paths.get(nombre).getFileName().toString();
+        if (base.isEmpty() || !base.equals(nombre) || base.contains("..")) {
+            response.setStatus(HttpStatus.BAD_REQUEST.value());
+            return;
+        }
+
+        String dir = uploadDir.replace("uploads", "uploads-licencias");
+        Path filePath = Paths.get(dir).toAbsolutePath().resolve(base).normalize();
+        if (!Files.exists(filePath) || !Files.isRegularFile(filePath)) {
+            response.setStatus(HttpStatus.NOT_FOUND.value());
+            return;
+        }
+
+        String contentType = URLConnection.guessContentTypeFromName(base);
+        if (contentType == null) contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+        response.setContentType(contentType);
+        response.setContentLengthLong(Files.size(filePath));
+        response.setHeader(HttpHeaders.CACHE_CONTROL, "no-store");
+        Files.copy(filePath, response.getOutputStream());
     }
 
     // Devuelve la membresía de distribuidor del aliado autenticado, si la tiene
