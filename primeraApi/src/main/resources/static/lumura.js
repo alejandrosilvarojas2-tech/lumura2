@@ -26,6 +26,16 @@ function urlLicencia(lic) {
   return lic;
 }
 
+// Valida y escapa una URL de imagen antes de insertarla en templates HTML/CSS.
+// Evita XSS cuando imagen_url viene de la BD con un valor malicioso
+// (ej. 'javascript:alert(1)', '" onerror="...' o inyección CSS tipo ');url(..)').
+function urlImagenSegura(url, fallback) {
+  const u = String(url || '').trim();
+  const segura = /^https?:\/\//i.test(u) || /^(\/|images\/|uploads\/)/.test(u);
+  if (!segura || /[\s'"<>();\\`]/.test(u) || /^javascript:/i.test(u)) return fallback || 'images/tshirt.svg';
+  return escHtml(u);
+}
+
 async function parseRespuesta(res) {
   const texto = await res.text();
   if (!texto) return null;
@@ -921,7 +931,7 @@ function renderProductos(filtroCat, filtroTexto) {
     return;
   }
     grid.innerHTML = items.map((p, i) => {
-    const imgSrc = p.imagen_url || imagenesProducto[p.id_catalogo] || 'images/tshirt.svg';
+    const imgSrc = urlImagenSegura(p.imagen_url || imagenesProducto[p.id_catalogo], 'images/tshirt.svg');
     const precioF = '$' + Number(p.precio).toLocaleString('es-CO');
     return '<div class="product-card" onclick="verProducto(' + p.id_catalogo + ')">' +
       '<div class="img-placeholder" style="background-image:url(' + imgSrc + ');background-size:cover;background-position:center;background-repeat:no-repeat;background-color:#fce4ec;cursor:pointer;" onclick="event.stopPropagation();mostrarDescripcion(' + p.id_catalogo + ')" title="Click para ver descripción"></div>' +
@@ -1023,7 +1033,7 @@ async function verProducto(id) {
       productoCache[id] = prod;
     }
     state.productoActual = prod;
-    const imgSrc = prod.imagen_url || imagenesProducto[prod.id_catalogo] || 'images/tshirt.svg';
+    const imgSrc = urlImagenSegura(prod.imagen_url || imagenesProducto[prod.id_catalogo], 'images/tshirt.svg');
     const precioF = '$' + Number(prod.precio).toLocaleString('es-CO');
     document.getElementById('prod-detail-img').innerHTML = '<img src="' + imgSrc + '" alt="' + escHtml(prod.articulo) + '" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;">';
     document.getElementById('prod-detail-nombre').textContent = prod.articulo;
@@ -1154,7 +1164,7 @@ function renderCarrito() {
     const prod = state.productos && item.id_catalogo != null
       ? state.productos.find(p => p.id_catalogo === item.id_catalogo)
       : state.productos && state.productos.find(p => p.articulo === item.articulo);
-    const imgSrc = prod ? (prod.imagen_url || imagenesProducto[prod.id_catalogo] || 'images/tshirt.svg') : 'images/tshirt.svg';
+    const imgSrc = urlImagenSegura(prod ? (prod.imagen_url || imagenesProducto[prod.id_catalogo]) : '', 'images/tshirt.svg');
     const vendedorHtml = item.vendedor_nombre ? (
       '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #e5e7eb;display:flex;flex-direction:column;gap:3px;">' +
         '<div class="sub" style="font-weight:700;color:#c73652;">Vendedor: ' + escHtml(item.vendedor_nombre) + (item.vendedor_negocio && item.vendedor_negocio !== item.vendedor_nombre ? ' · ' + escHtml(item.vendedor_negocio) : '') + '</div>' +
@@ -1729,7 +1739,7 @@ function renderAdminCatalogo(filtroTexto, filtroCat) {
   }
   tbody.innerHTML = items.map((p, i) => {
     const stock = Number(p.stock);
-    const imgSrc = p.imagen_url || imagenesProducto[p.id_catalogo] || 'images/tshirt.svg';
+    const imgSrc = urlImagenSegura(p.imagen_url || imagenesProducto[p.id_catalogo], 'images/tshirt.svg');
     const badge = stock > 0 ? '<span class="badge badge-green">Activo</span>' : '<span class="badge badge-red">Sin stock</span>';
     return '<tr><td>#' + String(p.id_catalogo || i + 1).padStart(3, '0') + '</td>' +
       '<td><div style="display:flex;align-items:center;gap:10px;"><img src="' + imgSrc + '" alt="" style="width:32px;height:32px;object-fit:cover;border-radius:4px;">' +
@@ -1815,7 +1825,7 @@ function mostrarFavoritos() {
   const grid = document.getElementById('prod-grid');
   if (!grid) return;
   grid.innerHTML = favs.map(p => {
-    const imgSrc = p.imagen_url || imagenesProducto[p.id_catalogo] || 'images/tshirt.svg';
+    const imgSrc = urlImagenSegura(p.imagen_url || imagenesProducto[p.id_catalogo], 'images/tshirt.svg');
     const precioF = '$' + Number(p.precio).toLocaleString('es-CO');
     return '<div class="product-card" onclick="verProducto(' + p.id_catalogo + ')">' +
       '<div class="img-placeholder" style="background-image:url(' + imgSrc + ');background-size:cover;background-position:center;background-repeat:no-repeat;background-color:#fce4ec;cursor:pointer;" onclick="event.stopPropagation();mostrarDescripcion(' + p.id_catalogo + ')" title="Click para ver descripción"></div>' +
@@ -1852,7 +1862,7 @@ function cargarInventario() {
   }
   tbody.innerHTML = productos.map((p, i) => {
     const stock = Number(p.stock);
-    const imgSrc = p.imagen_url || imagenesProducto[p.id_catalogo] || 'images/tshirt.svg';
+    const imgSrc = urlImagenSegura(p.imagen_url || imagenesProducto[p.id_catalogo], 'images/tshirt.svg');
     const estado = stock === 0 ? '<span class="status-dot red"></span>Agotado'
       : stock < 10 ? '<span class="status-dot yellow"></span>Bajo'
       : '<span class="status-dot green"></span>Normal';
