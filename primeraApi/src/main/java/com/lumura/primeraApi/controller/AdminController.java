@@ -6,6 +6,7 @@ import com.lumura.primeraApi.entity.Usuario;
 import com.lumura.primeraApi.repository.CatalogoRepository;
 import com.lumura.primeraApi.repository.CompraRepository;
 import com.lumura.primeraApi.repository.UsuarioRepository;
+import com.lumura.primeraApi.service.CatalogoService;
 import com.lumura.primeraApi.service.EmailService;
 import com.lumura.primeraApi.util.JwtUtil;
 import org.slf4j.Logger;
@@ -36,17 +37,20 @@ public class AdminController {
     private final CatalogoRepository catalogoRepository;
     private final JwtUtil jwtUtil;
     private final EmailService emailService;
+    private final CatalogoService catalogoService;
 
     public AdminController(CompraRepository compraRepository,
                            UsuarioRepository usuarioRepository,
                            CatalogoRepository catalogoRepository,
                            JwtUtil jwtUtil,
-                           EmailService emailService) {
+                           EmailService emailService,
+                           CatalogoService catalogoService) {
         this.compraRepository = compraRepository;
         this.usuarioRepository = usuarioRepository;
         this.catalogoRepository = catalogoRepository;
         this.jwtUtil = jwtUtil;
         this.emailService = emailService;
+        this.catalogoService = catalogoService;
     }
 
     @GetMapping("/dashboard")
@@ -109,36 +113,21 @@ public class AdminController {
 
     @PostMapping("/productos")
     public ResponseEntity<?> crearProducto(@RequestHeader(value = "Authorization", required = false) String auth,
-                                           @RequestBody Map<String, String> body) {
+                                           @RequestBody(required = false) Map<String, String> body) {
         if (!validarAdmin(auth) && !validarAliado(auth)) return ResponseEntity.status(401).body(Map.of("error", "Token requerido"));
 
-        String articulo = body.get("articulo");
-        if (articulo == null || articulo.isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "El nombre del artículo es obligatorio"));
+        Integer idAliado = null;
+        if (validarAliado(auth) && !validarAdmin(auth)) {
+            idAliado = jwtUtil.getUserIdFromToken(auth.substring(7));
         }
 
-        Catalogo p = new Catalogo();
-        p.setArticulo(articulo);
-        p.setTalla(body.get("talla"));
-        p.setColor(body.get("color"));
-        p.setPrecio(new BigDecimal(body.getOrDefault("precio", "0")));
-        p.setPrecioDescuento(body.containsKey("precio_descuento") ? new BigDecimal(body.get("precio_descuento")) : null);
-        p.setDescripcion(body.get("descripcion"));
-        p.setCategoria(body.get("categoria"));
-        p.setStock(body.containsKey("stock") ? Integer.parseInt(body.get("stock")) : 0);
-        p.setImagenUrl(body.get("imagen_url"));
-        p.setEstado("activo");
-        p.setFechaCreacion(LocalDateTime.now());
-        if (validarAliado(auth) && !validarAdmin(auth)) {
-            p.setIdAliado(jwtUtil.getUserIdFromToken(auth.substring(7)));
+        try {
+            Catalogo p = catalogoService.crearProducto(body, idAliado);
+            log.info("Producto creado: {} (id={}, codigo={}, aliado={})", p.getArticulo(), p.getIdCatalogo(), p.getCodigo(), p.getIdAliado());
+            return ResponseEntity.ok(p);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
-        catalogoRepository.save(p);
-        if (p.getCodigo() == null && p.getIdCatalogo() != null) {
-            p.setCodigo("LUM-" + String.format("%06d", p.getIdCatalogo()));
-            catalogoRepository.save(p);
-        }
-        log.info("Producto creado: {} (id={}, codigo={}, aliado={})", p.getArticulo(), p.getIdCatalogo(), p.getCodigo(), p.getIdAliado());
-        return ResponseEntity.ok(p);
     }
 
     @PutMapping("/productos/{id}")

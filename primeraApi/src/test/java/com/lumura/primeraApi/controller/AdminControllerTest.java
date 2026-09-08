@@ -6,6 +6,8 @@ import com.lumura.primeraApi.entity.Usuario;
 import com.lumura.primeraApi.repository.CatalogoRepository;
 import com.lumura.primeraApi.repository.CompraRepository;
 import com.lumura.primeraApi.repository.UsuarioRepository;
+import com.lumura.primeraApi.service.CatalogoService;
+import com.lumura.primeraApi.service.EmailService;
 import com.lumura.primeraApi.util.JwtUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +27,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,7 +42,9 @@ class AdminControllerTest {
     @Mock
     private JwtUtil jwtUtil;
     @Mock
-    private com.lumura.primeraApi.service.EmailService emailService;
+    private EmailService emailService;
+    @Mock
+    private CatalogoService catalogoService;
 
     @InjectMocks
     private AdminController adminController;
@@ -89,20 +94,29 @@ class AdminControllerTest {
     @Test
     void crearProducto_conAliado_retorna200() {
         mockToken(TOKEN_ALIADO, "ALIADO");
-        when(catalogoRepository.save(any(Catalogo.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(jwtUtil.getUserIdFromToken(TOKEN_ALIADO.substring(7))).thenReturn(11);
+        Catalogo creado = new Catalogo();
+        creado.setArticulo("Camiseta Negra");
+        creado.setEstado("activo");
+        creado.setIdAliado(11);
+        when(catalogoService.crearProducto(any(), eq(11))).thenReturn(creado);
 
         ResponseEntity<?> res = adminController.crearProducto(TOKEN_ALIADO,
             Map.of("articulo", "Camiseta Negra", "precio", "49900", "stock", "10"));
 
         assertEquals(200, res.getStatusCode().value());
-        Catalogo creado = (Catalogo) res.getBody();
-        assertEquals("Camiseta Negra", creado.getArticulo());
-        assertEquals("activo", creado.getEstado());
+        Catalogo body = (Catalogo) res.getBody();
+        assertEquals("Camiseta Negra", body.getArticulo());
+        assertEquals("activo", body.getEstado());
+        assertEquals(11, body.getIdAliado());
+        verify(catalogoService).crearProducto(any(), eq(11));
     }
 
     @Test
     void crearProducto_sinArticulo_retorna400() {
         mockToken(TOKEN_ADMIN, "ADMIN");
+        when(catalogoService.crearProducto(any(), isNull()))
+                .thenThrow(new IllegalArgumentException("El nombre del artículo es obligatorio"));
 
         ResponseEntity<?> res = adminController.crearProducto(TOKEN_ADMIN, Map.of("precio", "49900"));
 
@@ -115,6 +129,7 @@ class AdminControllerTest {
         ResponseEntity<?> res = adminController.crearProducto(null, Map.of("articulo", "X"));
 
         assertEquals(401, res.getStatusCode().value());
+        verifyNoInteractions(catalogoService);
     }
 
     @Test

@@ -6,6 +6,7 @@ import com.lumura.primeraApi.entity.Usuario;
 import com.lumura.primeraApi.repository.CatalogoRepository;
 import com.lumura.primeraApi.repository.DetalleCompraRepository;
 import com.lumura.primeraApi.repository.UsuarioRepository;
+import com.lumura.primeraApi.service.CatalogoService;
 import com.lumura.primeraApi.service.EmailService;
 import com.lumura.primeraApi.util.JwtUtil;
 import jakarta.servlet.http.HttpServletResponse;
@@ -40,6 +41,7 @@ public class AliadoController {
     private final UsuarioRepository usuarioRepository;
     private final JwtUtil jwtUtil;
     private final EmailService emailService;
+    private final CatalogoService catalogoService;
 
     @Value("${upload.dir:uploads}")
     private String uploadDir;
@@ -48,12 +50,14 @@ public class AliadoController {
                             DetalleCompraRepository detalleCompraRepository,
                             UsuarioRepository usuarioRepository,
                             JwtUtil jwtUtil,
-                            EmailService emailService) {
+                            EmailService emailService,
+                            CatalogoService catalogoService) {
         this.catalogoRepository = catalogoRepository;
         this.detalleCompraRepository = detalleCompraRepository;
         this.usuarioRepository = usuarioRepository;
         this.jwtUtil = jwtUtil;
         this.emailService = emailService;
+        this.catalogoService = catalogoService;
     }
 
     @GetMapping("/productos")
@@ -73,48 +77,13 @@ public class AliadoController {
                                            @RequestBody(required = false) Map<String, String> body) {
         Integer userId = extraerAliadoId(auth);
         if (userId == null) return ResponseEntity.status(401).body(Map.of("error", "Token requerido o no eres aliado"));
-        if (body == null) return ResponseEntity.badRequest().body(Map.of("error", "Faltan datos del producto"));
 
-        String articulo = body.get("articulo");
-        if (articulo == null || articulo.isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "El nombre del artículo es obligatorio"));
-        }
-
-        BigDecimal precio;
+        Catalogo p;
         try {
-            precio = new BigDecimal(body.getOrDefault("precio", "0"));
-            if (precio.compareTo(BigDecimal.ZERO) < 0) return ResponseEntity.badRequest().body(Map.of("error", "El precio no puede ser negativo"));
-        } catch (NumberFormatException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Precio inválido"));
+            p = catalogoService.crearProducto(body, userId);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
-
-        int stock;
-        try {
-            stock = Integer.parseInt(body.getOrDefault("stock", "0"));
-            if (stock < 0 || stock > 10000) return ResponseEntity.badRequest().body(Map.of("error", "El stock debe estar entre 0 y 10.000"));
-        } catch (NumberFormatException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Stock inválido"));
-        }
-
-        Catalogo p = new Catalogo();
-        p.setArticulo(articulo.trim());
-        p.setPrecio(precio);
-        p.setCategoria(body.get("categoria"));
-        p.setTalla(body.get("talla"));
-        p.setColor(body.get("color"));
-        p.setStock(stock);
-        p.setDescripcion(body.get("descripcion"));
-        p.setImagenUrl(body.get("imagen_url"));
-        p.setFechaCreacion(java.time.LocalDateTime.now());
-        p.setEstado(body.getOrDefault("estado", "activo"));
-        if (body.get("codigo") == null || body.get("codigo").isBlank()) {
-            p.setCodigo(codigoAleatorio());
-        } else {
-            p.setCodigo(body.get("codigo"));
-        }
-        p.setIdAliado(userId);
-
-        catalogoRepository.save(p);
         log.info("Producto {} creado por aliado {}", p.getArticulo(), userId);
 
         usuarioRepository.findById(userId).ifPresent(aliado ->
@@ -128,14 +97,6 @@ public class AliadoController {
                                 + "<p>Ya está visible para los clientes en la tienda.</p>")));
 
         return ResponseEntity.ok(p);
-    }
-
-    private String codigoAleatorio() {
-        String chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-        StringBuilder sb = new StringBuilder();
-        java.util.Random rnd = new java.util.Random();
-        for (int i = 0; i < 6; i++) sb.append(chars.charAt(rnd.nextInt(chars.length())));
-        return sb.toString();
     }
 
     @GetMapping("/dashboard")

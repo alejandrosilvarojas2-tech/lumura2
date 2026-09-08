@@ -6,6 +6,8 @@ import com.lumura.primeraApi.entity.Usuario;
 import com.lumura.primeraApi.repository.CatalogoRepository;
 import com.lumura.primeraApi.repository.DetalleCompraRepository;
 import com.lumura.primeraApi.repository.UsuarioRepository;
+import com.lumura.primeraApi.service.CatalogoService;
+import com.lumura.primeraApi.service.EmailService;
 import com.lumura.primeraApi.util.JwtUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,7 +38,9 @@ class AliadoControllerTest {
     @Mock
     private JwtUtil jwtUtil;
     @Mock
-    private com.lumura.primeraApi.service.EmailService emailService;
+    private EmailService emailService;
+    @Mock
+    private CatalogoService catalogoService;
 
     @InjectMocks
     private AliadoController aliadoController;
@@ -163,27 +167,30 @@ class AliadoControllerTest {
     @Test
     void crearProducto_nuevo_seAsignaAlAliadoConCodigo() {
         mockToken(TOKEN_ALIADO, 7, "ALIADO");
-        when(catalogoRepository.save(any(Catalogo.class))).thenAnswer(inv -> {
-            Catalogo c = inv.getArgument(0);
-            c.setIdCatalogo(50);
-            return c;
-        });
+        Catalogo creado = new Catalogo();
+        creado.setArticulo("Tenis Urbanos");
+        creado.setIdAliado(7);
+        creado.setCodigo("ABC123");
+        when(catalogoService.crearProducto(any(), eq(7))).thenReturn(creado);
 
         ResponseEntity<?> res = aliadoController.crearProducto(TOKEN_ALIADO,
                 body("articulo", "Tenis Urbanos", "precio", "159900", "stock", "20",
                         "categoria", "Zapatos", "descripcion", "Unos tenis muy cómodos"));
 
         assertEquals(200, res.getStatusCode().value());
-        ArgumentCaptor<Catalogo> captor = ArgumentCaptor.forClass(Catalogo.class);
-        verify(catalogoRepository).save(captor.capture());
-        assertEquals("Tenis Urbanos", captor.getValue().getArticulo());
-        assertEquals(7, captor.getValue().getIdAliado());
-        assertNotNull(captor.getValue().getCodigo()); // código autogenerado
+        assertEquals("Tenis Urbanos", ((Catalogo) res.getBody()).getArticulo());
+        assertEquals(7, ((Catalogo) res.getBody()).getIdAliado());
+        assertNotNull(((Catalogo) res.getBody()).getCodigo());
+        ArgumentCaptor<Map<String, String>> captor = ArgumentCaptor.forClass(Map.class);
+        verify(catalogoService).crearProducto(captor.capture(), eq(7));
+        assertEquals("Tenis Urbanos", captor.getValue().get("articulo"));
     }
 
     @Test
     void crearProducto_sinArticulo_retorna400() {
         mockToken(TOKEN_ALIADO, 7, "ALIADO");
+        when(catalogoService.crearProducto(any(), eq(7)))
+                .thenThrow(new IllegalArgumentException("El nombre del artículo es obligatorio"));
 
         ResponseEntity<?> res = aliadoController.crearProducto(TOKEN_ALIADO, body("precio", "100"));
 
@@ -194,6 +201,8 @@ class AliadoControllerTest {
     @Test
     void crearProducto_precioOStockInvalidos_retorna400() {
         mockToken(TOKEN_ALIADO, 7, "ALIADO");
+        when(catalogoService.crearProducto(any(), eq(7)))
+                .thenThrow(new IllegalArgumentException("valor inválido"));
 
         assertEquals(400, aliadoController.crearProducto(TOKEN_ALIADO, body("articulo", "X", "precio", "abc")).getStatusCode().value());
         assertEquals(400, aliadoController.crearProducto(TOKEN_ALIADO, body("articulo", "X", "precio", "100", "stock", "-5")).getStatusCode().value());
@@ -564,11 +573,12 @@ class AliadoControllerTest {
     @Test
     void crearProducto_enviaCorreoDeConfirmacionAlAliado() {
         mockToken(TOKEN_ALIADO, 7, "ALIADO");
-        when(catalogoRepository.save(any(Catalogo.class))).thenAnswer(inv -> {
-            Catalogo c = inv.getArgument(0);
-            c.setIdCatalogo(50);
-            return c;
-        });
+        Catalogo creado = new Catalogo();
+        creado.setArticulo("Tenis Urbanos");
+        creado.setPrecio(new BigDecimal("159900"));
+        creado.setStock(20);
+        creado.setCodigo("TNS001");
+        when(catalogoService.crearProducto(any(), eq(7))).thenReturn(creado);
         Usuario aliado = usuarioAliado(7);
         aliado.setNombreUsuario("Ana");
         aliado.setCorreoUsuario("ana@lumura.com");
