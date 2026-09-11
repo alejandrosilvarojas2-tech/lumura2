@@ -14,6 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.util.Map;
@@ -47,6 +48,7 @@ class AuthControllerTest {
 
     @BeforeEach
     void setUp() {
+        ReflectionTestUtils.setField(authController, "baseUrl", "http://localhost:8080");
         bodyValido = Map.of(
             "nombre_usuario", "Ana",
             "correo_usuario", "ana@correo.com",
@@ -442,6 +444,24 @@ class AuthControllerTest {
     }
 
     @Test
+    void recuperar_usuarioExistente_enviaCorreoConEnlaceDeBaseUrl() {
+        Usuario usuario = new Usuario();
+        usuario.setIdUsuario(1);
+        usuario.setCorreoUsuario("ana@correo.com");
+        when(usuarioRepository.findByCorreoUsuario("ana@correo.com")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
+        ReflectionTestUtils.setField(authController, "baseUrl", "https://demo.trycloudflare.com");
+
+        ResponseEntity<?> res = authController.recuperar(Map.of("correo_usuario", "ana@correo.com"));
+
+        Map<?, ?> body = (Map<?, ?>) res.getBody();
+        assertTrue(((String) body.get("enlace_demo")).startsWith("https://demo.trycloudflare.com/reset-password?token="));
+        verify(emailService).enviar(eq("ana@correo.com"),
+                contains("Restablece tu contraseña"),
+                contains("https://demo.trycloudflare.com/reset-password?token="));
+    }
+
+    @Test
     void recuperar_correoNoRegistrado_noFallaNiRevela() {
         ResponseEntity<?> res = authController.recuperar(Map.of("correo_usuario", "nadie@correo.com"));
 
@@ -449,6 +469,7 @@ class AuthControllerTest {
         Map<?, ?> body = (Map<?, ?>) res.getBody();
         assertTrue(((String) body.get("mensaje")).contains("Si el correo está registrado"));
         verify(usuarioRepository, never()).save(any());
+        verify(emailService, never()).enviar(eq("nadie@correo.com"), anyString(), anyString());
     }
 
     @Test

@@ -9,6 +9,7 @@ import com.lumura.primeraApi.repository.UsuarioRepository;
 import com.lumura.primeraApi.service.CatalogoService;
 import com.lumura.primeraApi.service.EmailService;
 import com.lumura.primeraApi.util.JwtUtil;
+import com.lumura.primeraApi.util.UploadPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -362,7 +363,8 @@ public class AdminController {
                     ? "lic_" + UUID.randomUUID() + extension
                     : "producto_" + System.currentTimeMillis() + extension;
             String dir = esLicencia ? "uploads-licencias" : uploadDir;
-            Path uploadPath = Paths.get(dir).toAbsolutePath();
+            // Carpeta física anclada al proyecto (independiente del CWD del proceso)
+            Path uploadPath = UploadPaths.directorio(dir);
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
             }

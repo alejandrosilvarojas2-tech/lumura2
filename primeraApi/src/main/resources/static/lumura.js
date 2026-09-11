@@ -933,6 +933,18 @@ function renderProductos(filtroCat, filtroTexto) {
     grid.innerHTML = items.map((p, i) => {
     const imgSrc = urlImagenSegura(p.imagen_url || imagenesProducto[p.id_catalogo], 'images/tshirt.svg');
     const precioF = '$' + Number(p.precio).toLocaleString('es-CO');
+    const tallas = parsificarTallas(p);
+    let boton;
+    if (tallas.length > 1) {
+      boton = '<button class="add-btn" style="color:var(--primary);background:white;border-top:1px solid var(--light);" onclick="event.stopPropagation();toggleTallas(' + p.id_catalogo + ')">Seleccionar talla</button>'
+        + '<div id="tallas-' + p.id_catalogo + '" class="talla-chips" style="display:none;">'
+        + tallas.map((t, ti) => '<button class="talla-chip" onclick="event.stopPropagation();agregarAlCarritoPorTalla(' + p.id_catalogo + ',' + ti + ')">' + escHtml(t) + '</button>').join('')
+        + '</div>';
+    } else {
+      boton = '<button class="add-btn" onclick="event.stopPropagation();'
+        + (tallas.length === 1 ? 'agregarAlCarritoPorTalla(' + p.id_catalogo + ',0)' : 'agregarAlCarrito(' + p.id_catalogo + ')')
+        + '">+ Agregar al carrito</button>';
+    }
     return '<div class="product-card" onclick="verProducto(' + p.id_catalogo + ')">' +
       '<div class="img-placeholder" style="background-image:url(' + imgSrc + ');background-size:cover;background-position:center;background-repeat:no-repeat;background-color:#fce4ec;cursor:pointer;" onclick="event.stopPropagation();mostrarDescripcion(' + p.id_catalogo + ')" title="Click para ver descripción"></div>' +
       '<div class="info">' +
@@ -941,7 +953,7 @@ function renderProductos(filtroCat, filtroTexto) {
       (p.codigo ? '<div style="font-size:11px;color:var(--gray);margin-top:2px;">Código: ' + escHtml(p.codigo) + '</div>' : '') +
       (p.talla ? '<div style="font-size:11px;color:var(--gray);margin-top:2px;">Tallas: ' + escHtml(p.talla) + '</div>' : '') +
       '</div>' +
-      '<button class="add-btn" onclick="event.stopPropagation();agregarAlCarrito(' + p.id_catalogo + ')">+ Agregar al carrito</button>' +
+      boton +
       '</div>';
   }).join('');
 }
@@ -1113,14 +1125,14 @@ async function sincronizarFavoritos() {
   } catch (err) { /* sin conexión: se conservan los locales */ }
 }
 
-async function agregarAlCarrito(idProducto) {
+async function agregarAlCarrito(idProducto, tallaElegida) {
   if (!state.token) return mostrarMensaje('Debes iniciar sesión primero', 'error');
   const prod = state.productos.find(p => p.id_catalogo === idProducto) || await api.get('/api/productos/' + idProducto);
   try {
     await api.post('/api/carrito', {
       id_catalogo: prod.id_catalogo,
       articulo: prod.articulo,
-      talla: prod.talla || 'Única',
+      talla: tallaElegida || prod.talla || 'Única',
       color: prod.color || 'Único',
       cantidad: 1,
     });
@@ -1129,6 +1141,24 @@ async function agregarAlCarrito(idProducto) {
   } catch (err) {
     mostrarMensaje(err.message, 'error');
   }
+}
+
+function parsificarTallas(p) {
+  return String(p.talla || '').split(',').map(t => t.trim()).filter(Boolean);
+}
+
+async function agregarAlCarritoPorTalla(idProducto, indiceTalla) {
+  const prod = state.productos.find(p => p.id_catalogo === idProducto);
+  const tallas = parsificarTallas(prod || {});
+  await agregarAlCarrito(idProducto, tallas[indiceTalla]);
+}
+
+function toggleTallas(id) {
+  const cont = document.getElementById('tallas-' + id);
+  if (!cont) return;
+  const abrir = cont.style.display === 'none';
+  document.querySelectorAll('.talla-chips').forEach(c => { c.style.display = 'none'; });
+  cont.style.display = abrir ? 'flex' : 'none';
 }
 
 async function cargarCarrito() {
@@ -2126,5 +2156,14 @@ document.addEventListener('DOMContentLoaded', function () {
     cargarProductos();
     sincronizarFavoritos();
     irInicioPorRol();
+  }
+  const tokenUrl = new URLSearchParams(window.location.search).get('token');
+  if (tokenUrl) {
+    window._resetToken = tokenUrl;
+    const rp = document.getElementById('reset-pass');
+    const rp2 = document.getElementById('reset-pass2');
+    if (rp) rp.value = '';
+    if (rp2) rp2.value = '';
+    showScreen('reset-password');
   }
 });

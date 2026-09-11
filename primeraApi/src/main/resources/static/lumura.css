@@ -183,6 +183,25 @@
     font-size: 12px;
     cursor: pointer;
   }
+  .product-card .talla-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 10px;
+    background: #f8f8fc;
+    border-top: 1px solid var(--light);
+  }
+  .talla-chip {
+    padding: 5px 12px;
+    border: 1px solid var(--light);
+    border-radius: 20px;
+    background: white;
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .talla-chip:hover { background: var(--accent); color: white; border-color: var(--accent); }
 
   /* BANNER */
   .hero-banner {

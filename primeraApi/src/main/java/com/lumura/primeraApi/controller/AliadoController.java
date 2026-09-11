@@ -9,6 +9,7 @@ import com.lumura.primeraApi.repository.UsuarioRepository;
 import com.lumura.primeraApi.service.CatalogoService;
 import com.lumura.primeraApi.service.EmailService;
 import com.lumura.primeraApi.util.JwtUtil;
+import com.lumura.primeraApi.util.UploadPaths;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -301,7 +302,7 @@ public class AliadoController {
         }
 
         String dir = uploadDir.replace("uploads", "uploads-licencias");
-        Path filePath = Paths.get(dir).toAbsolutePath().resolve(base).normalize();
+        Path filePath = UploadPaths.directorio(dir).resolve(base).normalize();
         if (!Files.exists(filePath) || !Files.isRegularFile(filePath)) {
             response.setStatus(HttpStatus.NOT_FOUND.value());
             return;

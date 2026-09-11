@@ -30,6 +30,14 @@ class RateLimitFilterTest {
         return r;
     }
 
+    private HttpServletRequest reqXff(String uri, String peer, String xff) {
+        HttpServletRequest r = mock(HttpServletRequest.class);
+        when(r.getRequestURI()).thenReturn(uri);
+        when(r.getRemoteAddr()).thenReturn(peer);
+        when(r.getHeader("X-Forwarded-For")).thenReturn(xff);
+        return r;
+    }
+
     private HttpServletResponse res() throws Exception {
         HttpServletResponse r = mock(HttpServletResponse.class);
         when(r.getWriter()).thenReturn(new PrintWriter(new StringWriter()));
@@ -127,5 +135,55 @@ class RateLimitFilterTest {
         filtro.doFilter(req("/api/admin/usuarios", "10.0.0.6"), response, chain);
 
         verify(response).setStatus(429);
+    }
+
+    @Test
+    void clientIp_usaLoopsBack_detrasDeProxyConfiable() throws Exception {
+        HttpServletResponse response = res();
+        FilterChain chain = mock(FilterChain.class);
+
+        // El túnel local (Cloudflare) llega como 127.0.0.1 pero la IP real del cliente
+        // está en X-Forwarded-For: el bucket debe llavearse por esa IP.
+        for (int i = 0; i < 10; i++) {
+            filtro.doFilter(reqXff("/api/auth/login", "127.0.0.1", "198.51.100.7"), response, chain);
+        }
+        filtro.doFilter(reqXff("/api/auth/login", "127.0.0.1", "198.51.100.7"), response, chain);
+        verify(response).setStatus(429);
+
+        // Otra IP real distinta tras el mismo proxy arranca su propia ventana.
+        filtro.doFilter(reqXff("/api/auth/login", "127.0.0.1", "198.51.100.8"), response, chain);
+        verify(chain, times(11)).doFilter(any(), any());
+    }
+
+    @Test
+    void clientIp_ignoraXForwardedFor_cuandoElPeerNoEsProxyConfiable() throws Exception {
+        HttpServletResponse response = res();
+        FilterChain chain = mock(FilterChain.class);
+
+        // Un cliente directo (peer público) NO es un proxy confiable: el rate limit se
+        // llavea por su IP real aunque envíe X-Forwarded-For, evitando que falsee el 429.
+        for (int i = 0; i < 10; i++) {
+            filtro.doFilter(reqXff("/api/auth/login", "203.0.113.9", "198.51.100.9"), response, chain);
+        }
+        filtro.doFilter(reqXff("/api/auth/login", "203.0.113.9", "198.51.100.10"), response, chain);
+
+        verify(response).setStatus(429);
+    }
+
+    @Test
+    void limpiezaPeriodica_purgaEntradasViejas() throws Exception {
+        HttpServletResponse response = res();
+        FilterChain chain = mock(FilterChain.class);
+
+        for (String ip : new String[]{"10.0.0.11", "10.0.0.12", "10.0.0.13"}) {
+            filtro.doFilter(req("/api/auth/login", ip), response, chain);
+        }
+        org.junit.jupiter.api.Assertions.assertEquals(3, filtro.totalEntradas());
+
+        // Pasa más de una ventana: la siguiente petición dispara la purga periódica de
+        // las entradas obsoletas y solo queda la del bucket recién usado.
+        reloj.set(RateLimitFilter.WINDOW_MS + 1);
+        filtro.doFilter(req("/api/productos", "10.0.0.14"), response, chain);
+        org.junit.jupiter.api.Assertions.assertEquals(1, filtro.totalEntradas());
     }
 }

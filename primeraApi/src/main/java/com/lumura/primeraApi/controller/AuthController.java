@@ -11,6 +11,7 @@ import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,6 +33,9 @@ public class AuthController {
     private final CompraRepository compraRepository;
     private final JwtUtil jwtUtil;
     private final EmailService emailService;
+
+    @Value("${app.base-url:http://localhost:8080}")
+    private String baseUrl;
 
     public AuthController(UsuarioRepository usuarioRepository,
                           CarritoRepository carritoRepository,
@@ -350,13 +354,24 @@ public class AuthController {
             usuario.setResetToken(token);
             usuario.setResetTokenExpira(LocalDateTime.now().plusMinutes(30));
             usuarioRepository.save(usuario);
+            String enlace = baseUrl.replaceAll("/+$", "") + "/reset-password?token=" + token;
+            emailService.enviar(correo,
+                    "Restablece tu contraseña — LUMURA",
+                    EmailService.plantilla("Restablece tu contraseña",
+                            "<p>Recibimos una solicitud para restablecer la contraseña de tu cuenta en LUMURA.</p>"
+                            + "<p>Si no la hiciste tú, ignora este correo.</p>"
+                            + "<p>Para continuar, pulsa el siguiente botón (el enlace es válido por 30 minutos):</p>"
+                            + "<p><a href=\"" + enlace + "\" style=\"display:inline-block;background:#5b2a86;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none\">Restablecer mi contraseña</a></p>"
+                            + "<p>O copia y pega esta URL en tu navegador:<br>" + enlace + "</p>"));
+            log.info("Correo de recuperación enviado a {} (token: {}).", correo, token);
+        } else {
+            log.info("Recuperación solicitada para {} (correo no registrado).", correo);
         }
 
-        log.info("Recuperación solicitada para {} (token: {}).", correo, token);
-        String enlace = "http://localhost:8080/reset-password?token=" + token;
+        String enlaceDemo = baseUrl.replaceAll("/+$", "") + "/reset-password?token=" + token;
         return ResponseEntity.ok(Map.of(
             "mensaje", "Si el correo está registrado, recibirás un enlace para restablecer la contraseña",
-            "enlace_demo", enlace
+            "enlace_demo", enlaceDemo
         ));
     }
 
