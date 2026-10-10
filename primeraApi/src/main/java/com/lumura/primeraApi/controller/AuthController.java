@@ -95,7 +95,7 @@ public class AuthController {
         log.info("Nuevo usuario registrado: {} ({})", nombre, enmascarar(correo));
         emailService.enviar(correo,
                 "Bienvenido a LUMURA",
-                EmailService.plantilla("¡Bienvenido, " + nombre + "!",
+                EmailService.plantillaConImagen("¡Bienvenido, " + nombre + "!",
                         "<p>Tu cuenta fue creada correctamente. Ya puedes explorar el catálogo y realizar compras.</p>"
                         + "<p><b>Nombre:</b> " + nombre + "<br>"
                         + "<b>Correo:</b> " + correo + "<br>"
@@ -156,7 +156,7 @@ public class AuthController {
         log.info("Nuevo aliado registrado: {} ({}, categoría: {})", nombreNegocio, enmascarar(correo), categoriaProductos);
         emailService.enviar(correo,
                 "Bienvenido a LUMURA — " + nombreNegocio,
-                EmailService.plantilla("¡Bienvenido, " + contacto + "!",
+                EmailService.plantillaConImagen("¡Bienvenido, " + contacto + "!",
                         "<p>Tu negocio <b>" + nombreNegocio + "</b> fue registrado exitosamente como aliado distribuidor.</p>"
                         + "<p><b>NIT:</b> " + nit + "<br>"
                         + "<b>Contacto:</b> " + contacto + "<br>"

@@ -4,6 +4,8 @@ import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -31,6 +33,10 @@ public class EmailService {
     private final JavaMailSender mailSender;
     private final boolean enabled;
     private final String from;
+
+    // Imagen de bienvenida incrustada inline (CID) en el correo de registro.
+    private static final String CID_BIENVENIDA = "lumuraBienvenida";
+    private static final Resource IMG_BIENVENIDA = new ClassPathResource("email/lumura-bienvenida.jpg");
 
     public EmailService(JavaMailSender mailSender,
                         @Value("${app.mail.enabled:false}") boolean enabled,
@@ -67,6 +73,15 @@ public class EmailService {
             helper.setTo(destinatario);
             helper.setSubject(asunto);
             helper.setText(textoPlano, cuerpoHtml);
+            // Imagen de bienvenida inline: solo se adjunta si la plantilla la referencia y el
+            // recurso existe. Si falta, el correo se envía igual (sin romper el flujo).
+            if (cuerpoHtml != null && cuerpoHtml.contains("cid:" + CID_BIENVENIDA)) {
+                if (IMG_BIENVENIDA.exists()) {
+                    helper.addInline(CID_BIENVENIDA, IMG_BIENVENIDA);
+                } else {
+                    log.warn("[MAIL] Imagen de bienvenida no encontrada en el classpath; se enviará sin ella");
+                }
+            }
             mailSender.send(mime);
             log.info("[MAIL] Enviado a {} | Asunto: {}", destinatario, asunto);
         } catch (Exception e) {
@@ -79,6 +94,23 @@ public class EmailService {
     public static String plantilla(String titulo, String cuerpoHtml) {
         return "<div style=\"font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:auto;border:1px solid #e5e5e5;border-radius:8px;overflow:hidden\">"
                 + "<div style=\"background:#5b2a86;color:#fff;padding:16px 24px;font-size:22px;font-weight:bold\">LUMURA</div>"
+                + "<div style=\"padding:24px\">"
+                + "<h2 style=\"color:#5b2a86;margin-top:0\">" + titulo + "</h2>"
+                + cuerpoHtml
+                + "</div>"
+                + "<div style=\"background:#f5f5f5;padding:12px 24px;color:#888;font-size:12px\">"
+                + "Este es un mensaje automático de LUMURA. Por favor no respondas a este correo."
+                + "</div>"
+                + "</div>";
+    }
+
+    // Plantilla con la imagen de bienvenida incrustada (CID) en la cabecera; se usa en el
+    // correo de registro. La imagen debe adjuntarse con addInline() al enviar.
+    public static String plantillaConImagen(String titulo, String cuerpoHtml) {
+        return "<div style=\"font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:auto;border:1px solid #e5e5e5;border-radius:8px;overflow:hidden\">"
+                + "<div style=\"background:#5b2a86;text-align:center;padding:20px\">"
+                + "<img src=\"cid:" + CID_BIENVENIDA + "\" alt=\"LUMURA\" width=\"320\" style=\"display:block;width:100%;max-width:320px;height:auto;margin:0 auto;border-radius:8px\">"
+                + "</div>"
                 + "<div style=\"padding:24px\">"
                 + "<h2 style=\"color:#5b2a86;margin-top:0\">" + titulo + "</h2>"
                 + cuerpoHtml
