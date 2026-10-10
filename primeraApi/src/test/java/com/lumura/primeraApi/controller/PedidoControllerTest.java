@@ -446,8 +446,45 @@ class PedidoControllerTest {
         ResponseEntity<?> res = pedidoController.crear(TOKEN_USER, bodyPago());
 
         assertEquals(200, res.getStatusCode().value());
-        verify(emailService).enviar(eq("cliente@lumura.com"), contains("#55"), anyString());
+        verify(emailService).enviar(eq("cliente@lumura.com"), contains("#55"), anyString(), any(Map.class));
         verify(emailService).enviar(eq("ana@lumura.com"), contains("Vendiste"), contains("Jeans Slim Fit"));
+    }
+
+    @Test
+    void crear_confirmacionAlComprador_incluyeImagenDeConfirmacionYDelProducto() {
+        mockToken(TOKEN_USER, 1);
+        when(carritoRepository.findByIdUsuario(1)).thenReturn(List.of(itemCarrito(2, "Jeans Slim Fit", 2)));
+        when(catalogoRepository.findById(2)).thenReturn(Optional.of(producto(2, "Jeans Slim Fit", "89900", 10)));
+        when(compraRepository.save(any(Compra.class))).thenAnswer(inv -> {
+            Compra c = inv.getArgument(0);
+            c.setIdCompra(77);
+            return c;
+        });
+        when(catalogoRepository.descontarStock(2, 2)).thenReturn(1);
+
+        Usuario cliente = new Usuario();
+        cliente.setIdUsuario(1);
+        cliente.setNombreUsuario("Ana");
+        cliente.setCorreoUsuario("ana@correo.com");
+        cliente.setRol("USER");
+        when(usuarioRepository.findById(1)).thenReturn(Optional.of(cliente));
+
+        // Producto con foto real (archivo existente en /uploads del proyecto)
+        Catalogo jeans = producto(2, "Jeans Slim Fit", "89900");
+        jeans.setIdAliado(7);
+        jeans.setImagenUrl("uploads/producto_1787981914911.jfif");
+        when(catalogoRepository.findAllById(any(Collection.class))).thenReturn(List.of(jeans));
+
+        ResponseEntity<?> res = pedidoController.crear(TOKEN_USER, bodyPago());
+
+        assertEquals(200, res.getStatusCode().value());
+        ArgumentCaptor<String> cuerpo = ArgumentCaptor.forClass(String.class);
+        verify(emailService).enviar(eq("ana@correo.com"), contains("confirmado"),
+                cuerpo.capture(), any(Map.class));
+        assertTrue(cuerpo.getValue().contains("cid:confirmacionCompra"),
+                "el correo al comprador debe mostrar la imagen de confirmación de compra");
+        assertTrue(cuerpo.getValue().contains("cid:producto-2"),
+                "el correo al comprador debe mostrar la imagen del producto comprado");
     }
 
     @Test

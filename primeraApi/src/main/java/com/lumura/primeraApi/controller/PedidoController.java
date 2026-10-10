@@ -13,13 +13,18 @@ import com.lumura.primeraApi.repository.UsuarioRepository;
 import com.lumura.primeraApi.service.EmailService;
 import com.lumura.primeraApi.service.PagoSimuladoService;
 import com.lumura.primeraApi.util.JwtUtil;
+import com.lumura.primeraApi.util.UploadPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -190,34 +195,55 @@ public class PedidoController {
     private void notificarCompra(Compra compra, Integer idUsuario, BigDecimal total,
                                  String metodoPago, String referenciaPago, List<DetalleCompra> detalles) {
         String numero = "#" + compra.getIdCompra();
-        // Confirmación al cliente comprador
-        usuarioRepository.findById(idUsuario).ifPresent(cliente -> {
-            String metodo = metodoPago != null && !metodoPago.isBlank() ? metodoPago : "Contra entrega";
-            StringBuilder itemsHtml = new StringBuilder("<ul>");
-            Optional.ofNullable(detalles).orElse(List.of()).forEach(d -> itemsHtml
-                    .append("<li>").append(d.getCantidad()).append("x ").append(d.getArticulo())
-                    .append(" — $").append(d.getPrecioUnitario()).append("</li>"));
-            itemsHtml.append("</ul>");
-            String ref = referenciaPago != null ? "<p><b>Referencia de pago:</b> " + referenciaPago + "</p>" : "";
-            emailService.enviar(cliente.getCorreoUsuario(),
-                    "Pedido " + numero + " confirmado — LUMURA",
-                    EmailService.plantilla("¡Compra confirmada, " + cliente.getNombreUsuario() + "!",
-                            "<p>Tu pedido <b>" + numero + "</b> fue confirmado correctamente por un total de <b>$" + total + "</b>.</p>"
-                            + itemsHtml.toString()
-                            + "<p><b>Método de pago:</b> " + metodo + "<br>"
-                            + "<b>Estado:</b> pendiente</p>"
-                            + ref
-                            + "<p>Recibirás una actualización cuando tu pedido sea enviado.</p>"));
-        });
-
-        // Aviso a cada aliado vendedor (puede repetirse entre productos)
         Set<Integer> idsProductos = detalles.stream()
                 .map(DetalleCompra::getIdCatalogo)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
+        Map<Integer, Catalogo> productos = idsProductos.isEmpty() ? Map.of()
+                : catalogoRepository.findAllById(idsProductos).stream()
+                        .collect(Collectors.toMap(Catalogo::getIdCatalogo, p -> p));
+
+        // Confirmación al cliente comprador (con imagen de confirmación y fotos de los productos)
+        usuarioRepository.findById(idUsuario).ifPresent(cliente -> {
+            String metodo = metodoPago != null && !metodoPago.isBlank() ? metodoPago : "Contra entrega";
+            Map<String, Resource> inline = new HashMap<>();
+            inline.put(EmailService.CID_CONFIRMACION, EmailService.IMG_CONFIRMACION);
+            StringBuilder itemsHtml = new StringBuilder();
+            Optional.ofNullable(detalles).orElse(List.of()).forEach(d -> {
+                Catalogo producto = d.getIdCatalogo() == null ? null : productos.get(d.getIdCatalogo());
+                String nombre = producto != null && producto.getArticulo() != null
+                        ? producto.getArticulo() : d.getArticulo();
+                Resource foto = producto == null ? null : recursoImagenProducto(producto.getImagenUrl());
+                if (foto != null) {
+                    String cid = "producto-" + d.getIdCatalogo();
+                    inline.put(cid, foto);
+                    itemsHtml.append("<div style=\"display:flex;align-items:center;gap:12px;padding:8px;border:1px solid #eee;border-radius:8px;margin:8px 0\">")
+                            .append("<img src=\"cid:").append(cid).append("\" alt=\"").append(nombre)
+                            .append("\" style=\"width:70px;height:70px;object-fit:cover;border-radius:6px;flex-shrink:0\">")
+                            .append("<div style=\"font-size:14px\"><b>").append(d.getCantidad()).append("x ").append(nombre)
+                            .append("</b><br>$").append(d.getPrecioUnitario()).append("</div></div>");
+                    return;
+                }
+                itemsHtml.append("<p style=\"margin:4px 0\">").append(d.getCantidad()).append("x ")
+                        .append(nombre).append(" — $").append(d.getPrecioUnitario()).append("</p>");
+            });
+            String ref = referenciaPago != null ? "<p><b>Referencia de pago:</b> " + referenciaPago + "</p>" : "";
+            emailService.enviar(cliente.getCorreoUsuario(),
+                    "Pedido " + numero + " confirmado — LUMURA",
+                    EmailService.plantillaEncabezadoImagen(EmailService.CID_CONFIRMACION, 560,
+                            "¡Compra confirmada, " + cliente.getNombreUsuario() + "!",
+                            "<p>Tu pedido <b>" + numero + "</b> fue confirmado correctamente por un total de <b>$" + total + "</b>.</p>"
+                            + "<p style=\"color:#666;font-size:13px\">Productos:</p>"
+                            + itemsHtml
+                            + "<p><b>Método de pago:</b> " + metodo + "<br>"
+                            + "<b>Estado:</b> pendiente</p>"
+                            + ref
+                            + "<p>Recibirás una actualización cuando tu pedido sea enviado.</p>"),
+                    inline);
+        });
+
+        // Aviso a cada aliado vendedor (puede repetirse entre productos)
         if (idsProductos.isEmpty()) return;
-        Map<Integer, Catalogo> productos = catalogoRepository.findAllById(idsProductos).stream()
-                .collect(Collectors.toMap(Catalogo::getIdCatalogo, p -> p));
         Map<Integer, String> avisosPorAliado = new LinkedHashMap<>();
         for (DetalleCompra d : detalles) {
             if (d.getIdCatalogo() == null) continue;
@@ -236,6 +262,19 @@ public class PedidoController {
                                         "<p>Se vendieron tus productos en el pedido <b>" + numero + "</b>:</p>"
                                         + "<p>" + detalle + "</p>"
                                         + "<p>Total del pedido: <b>$" + total + "</b>. Sigue publicando para vender más.</p>"))));
+    }
+
+    // Resuelve el archivo físico de la foto de un producto (campo imagen_url, ej. "uploads/x.jpg")
+    // para adjuntarla como imagen inline (CID). Devuelve null si no existe o no es local.
+    private Resource recursoImagenProducto(String imagenUrl) {
+        if (imagenUrl == null || imagenUrl.isBlank()) return null;
+        String archivo = imagenUrl;
+        int corte = Math.max(archivo.lastIndexOf('/'), archivo.lastIndexOf('\\'));
+        if (corte >= 0) archivo = archivo.substring(corte + 1);
+        if (archivo.isBlank()) return null;
+        Path ruta = UploadPaths.directorio("uploads").resolve(archivo);
+        if (!Files.exists(ruta)) return null;
+        return new FileSystemResource(ruta);
     }
 
     private String descLargo(DetalleCompra d, Catalogo producto) {

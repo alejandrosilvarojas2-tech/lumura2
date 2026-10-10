@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Envío de correos transaccionales de LUMURA.
@@ -38,6 +40,10 @@ public class EmailService {
     private static final String CID_BIENVENIDA = "lumuraBienvenida";
     private static final Resource IMG_BIENVENIDA = new ClassPathResource("email/lumura-bienvenida.jpg");
 
+    // Imagen de confirmación de compra incrustada inline (CID) en el correo al comprador.
+    public static final String CID_CONFIRMACION = "confirmacionCompra";
+    public static final Resource IMG_CONFIRMACION = new ClassPathResource("email/lumura-confirmacion.jpg");
+
     public EmailService(JavaMailSender mailSender,
                         @Value("${app.mail.enabled:false}") boolean enabled,
                         @Value("${app.mail.from:no-reply@lumura.com}") String from) {
@@ -53,6 +59,21 @@ public class EmailService {
     /** Envía (o registra en modo log) un correo a un único destinatario. */
     @Async
     public void enviar(String destinatario, String asunto, String cuerpoHtml) {
+        Map<String, Resource> inline = new HashMap<>();
+        // Compatibilidad: si el HTML referencia la imagen de bienvenida, se adjunta automáticamente.
+        if (cuerpoHtml != null && cuerpoHtml.contains("cid:" + CID_BIENVENIDA)) {
+            inline.put(CID_BIENVENIDA, IMG_BIENVENIDA);
+        }
+        enviar(destinatario, asunto, cuerpoHtml, inline);
+    }
+
+    /**
+     * Envía (o registra en modo log) un correo con imágenes inline (CID). Cada recurso del mapa
+     * se adjunta con addInline solo si su cid aparece referenciado en el HTML y el recurso existe;
+     * si falta, se omite con una advertencia sin romper el envío.
+     */
+    @Async
+    public void enviar(String destinatario, String asunto, String cuerpoHtml, Map<String, Resource> inline) {
         if (destinatario == null || destinatario.isBlank()) {
             log.warn("[MAIL] Destinatario vacío, correo omitido (asunto: {})", asunto);
             return;
@@ -73,14 +94,21 @@ public class EmailService {
             helper.setTo(destinatario);
             helper.setSubject(asunto);
             helper.setText(textoPlano, cuerpoHtml);
-            // Imagen de bienvenida inline: solo se adjunta si la plantilla la referencia y el
-            // recurso existe. Si falta, el correo se envía igual (sin romper el flujo).
-            if (cuerpoHtml != null && cuerpoHtml.contains("cid:" + CID_BIENVENIDA)) {
-                if (IMG_BIENVENIDA.exists()) {
-                    helper.addInline(CID_BIENVENIDA, IMG_BIENVENIDA);
-                } else {
-                    log.warn("[MAIL] Imagen de bienvenida no encontrada en el classpath; se enviará sin ella");
-                }
+            // Imágenes inline: solo se adjuntan si la plantilla las referencia y el recurso
+            // existe. Si falta alguna, el correo se envía igual (sin romper el flujo).
+            if (inline != null) {
+                inline.forEach((cid, recurso) -> {
+                    if (cuerpoHtml == null || !cuerpoHtml.contains("cid:" + cid)) return;
+                    try {
+                        if (recurso.exists()) {
+                            helper.addInline(cid, recurso);
+                        } else {
+                            log.warn("[MAIL] Imagen inline no encontrada para cid:{}; se enviará sin ella", cid);
+                        }
+                    } catch (Exception ex) {
+                        log.warn("[MAIL] No fue posible adjuntar la imagen cid:{} :: {}", cid, ex.getMessage());
+                    }
+                });
             }
             mailSender.send(mime);
             log.info("[MAIL] Enviado a {} | Asunto: {}", destinatario, asunto);
@@ -104,12 +132,13 @@ public class EmailService {
                 + "</div>";
     }
 
-    // Plantilla con la imagen de bienvenida incrustada (CID) en la cabecera; se usa en el
-    // correo de registro. La imagen debe adjuntarse con addInline() al enviar.
-    public static String plantillaConImagen(String titulo, String cuerpoHtml) {
+    // Plantilla con una imagen incrustada (CID) en la cabecera morada; se usa en los
+    // correos de registro y de confirmación de compra. La imagen debe adjuntarse con
+    // addInline() al enviar.
+    public static String plantillaEncabezadoImagen(String cidImg, int anchoMax, String titulo, String cuerpoHtml) {
         return "<div style=\"font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:auto;border:1px solid #e5e5e5;border-radius:8px;overflow:hidden\">"
                 + "<div style=\"background:#5b2a86;text-align:center;padding:20px\">"
-                + "<img src=\"cid:" + CID_BIENVENIDA + "\" alt=\"LUMURA\" width=\"320\" style=\"display:block;width:100%;max-width:320px;height:auto;margin:0 auto;border-radius:8px\">"
+                + "<img src=\"cid:" + cidImg + "\" alt=\"LUMURA\" width=\"" + anchoMax + "\" style=\"display:block;width:100%;max-width:" + anchoMax + "px;height:auto;margin:0 auto;border-radius:8px\">"
                 + "</div>"
                 + "<div style=\"padding:24px\">"
                 + "<h2 style=\"color:#5b2a86;margin-top:0\">" + titulo + "</h2>"
@@ -119,6 +148,10 @@ public class EmailService {
                 + "Este es un mensaje automático de LUMURA. Por favor no respondas a este correo."
                 + "</div>"
                 + "</div>";
+    }
+
+    public static String plantillaConImagen(String titulo, String cuerpoHtml) {
+        return plantillaEncabezadoImagen(CID_BIENVENIDA, 320, titulo, cuerpoHtml);
     }
 
     public static String enlace(String url, String texto) {
