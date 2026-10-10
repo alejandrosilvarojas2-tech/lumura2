@@ -9,6 +9,9 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Random;
 
+import static com.lumura.primeraApi.util.Sanitizacion.limpiarTexto;
+import static com.lumura.primeraApi.util.Sanitizacion.urlImagenPermitida;
+
 @Service
 public class CatalogoService {
 
@@ -58,14 +61,18 @@ public class CatalogoService {
         }
 
         Catalogo p = new Catalogo();
-        p.setArticulo(articulo.trim());
+        p.setArticulo(limpiarTexto(articulo, 200));
         p.setPrecio(precio);
-        p.setCategoria(body.get("categoria"));
-        p.setTalla(body.get("talla"));
-        p.setColor(body.get("color"));
+        p.setCategoria(limpiarTexto(body.get("categoria"), 200));
+        p.setTalla(limpiarTexto(body.get("talla"), 200));
+        p.setColor(limpiarTexto(body.get("color"), 200));
         p.setStock(stock);
-        p.setDescripcion(body.get("descripcion"));
-        p.setImagenUrl(body.get("imagen_url"));
+        p.setDescripcion(limpiarTexto(body.get("descripcion"), 2000));
+        String imagenUrl = body.get("imagen_url");
+        if (!urlImagenPermitida(imagenUrl)) {
+            throw new IllegalArgumentException("La URL de la imagen no está permitida");
+        }
+        p.setImagenUrl(limpiarTexto(imagenUrl, 500));
         p.setFechaCreacion(LocalDateTime.now());
         p.setEstado(body.getOrDefault("estado", "activo"));
         p.setIdAliado(idAliado);

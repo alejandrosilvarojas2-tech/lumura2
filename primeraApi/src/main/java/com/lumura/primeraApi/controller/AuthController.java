@@ -28,6 +28,11 @@ public class AuthController {
     private static final Logger log = LoggerFactory.getLogger(AuthController.class);
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
 
+    // Límite de intentos fallidos de login POR CUENTA (complementa el rate-limit por IP del filtro).
+    private static final int MAX_FALLOS_LOGIN = 5;
+    private static final long VENTANA_FALLOS_MS = 15 * 60_000L;
+    private final java.util.concurrent.ConcurrentHashMap<String, long[]> fallosLogin = new java.util.concurrent.ConcurrentHashMap<>();
+
     private final UsuarioRepository usuarioRepository;
     private final CarritoRepository carritoRepository;
     private final CompraRepository compraRepository;
@@ -87,7 +92,7 @@ public class AuthController {
         usuario.setRol("USER");
         usuarioRepository.save(usuario);
 
-        log.info("Nuevo usuario registrado: {} ({})", nombre, correo);
+        log.info("Nuevo usuario registrado: {} ({})", nombre, enmascarar(correo));
         emailService.enviar(correo,
                 "Bienvenido a LUMURA",
                 EmailService.plantilla("¡Bienvenido, " + nombre + "!",
@@ -148,7 +153,7 @@ public class AuthController {
         usuario.setCategoriaProductos(categoriaProductos);
         usuarioRepository.save(usuario);
 
-        log.info("Nuevo aliado registrado: {} ({}, NIT: {}, categoría: {})", nombreNegocio, correo, nit, categoriaProductos);
+        log.info("Nuevo aliado registrado: {} ({}, categoría: {})", nombreNegocio, enmascarar(correo), categoriaProductos);
         emailService.enviar(correo,
                 "Bienvenido a LUMURA — " + nombreNegocio,
                 EmailService.plantilla("¡Bienvenido, " + contacto + "!",
@@ -173,9 +178,17 @@ public class AuthController {
             return ResponseEntity.badRequest().body(Map.of("error", "El correo no tiene un formato válido"));
         }
 
+        String claveFallos = correo.toLowerCase(java.util.Locale.ROOT);
+        if (bloqueadoPorIntentos(claveFallos)) {
+            log.warn("Login bloqueado por demasiados intentos fallidos: {}", enmascarar(correo));
+            return ResponseEntity.status(403).body(Map.of(
+                    "error", "Demasiados intentos fallidos. Espera 15 minutos e inténtalo de nuevo."));
+        }
+
         Optional<Usuario> opt = usuarioRepository.findByCorreoUsuario(correo);
         if (opt.isEmpty()) {
-            log.warn("Login fallido - correo no encontrado: {}", correo);
+            registrarFalloLogin(claveFallos);
+            log.warn("Login fallido - correo no encontrado: {}", enmascarar(correo));
             return ResponseEntity.status(401).body(Map.of("error", "Correo o contraseña incorrectos"));
         }
 
@@ -183,14 +196,16 @@ public class AuthController {
         String storedHash = usuario.getPasswordHash();
 
         if (!BCrypt.checkpw(password, storedHash)) {
-            log.warn("Login fallido - contraseña incorrecta: {}", correo);
+            registrarFalloLogin(claveFallos);
+            log.warn("Login fallido - contraseña incorrecta: {}", enmascarar(correo));
             return ResponseEntity.status(401).body(Map.of("error", "Correo o contraseña incorrectos"));
         }
+        limpiarFallosLogin(claveFallos);
 
         // Validación de bloqueo: si venció, se desbloquea automáticamente en el siguiente intento
         if (Boolean.TRUE.equals(usuario.getBloqueado())) {
             if (usuario.getBloqueoHasta() != null && usuario.getBloqueoHasta().isAfter(LocalDateTime.now())) {
-                log.warn("Login bloqueado - cuenta suspendida: {} (hasta {})", correo, usuario.getBloqueoHasta());
+                log.warn("Login bloqueado - cuenta suspendida: {} (hasta {})", enmascarar(correo), usuario.getBloqueoHasta());
                 return ResponseEntity.status(403).body(Map.of(
                         "error", "Cuenta bloqueada. Motivo: " + (usuario.getMotivoBloqueo() == null ? "No especificado" : usuario.getMotivoBloqueo())
                                 + ". Vuelve a intentarlo después del " + usuario.getBloqueoHasta()
@@ -201,21 +216,21 @@ public class AuthController {
             usuario.setMotivoBloqueo(null);
             usuario.setBloqueoHasta(null);
             usuarioRepository.save(usuario);
-            log.info("Bloqueo vencido, cuenta {} desbloqueada", correo);
+            log.info("Bloqueo vencido, cuenta {} desbloqueada", enmascarar(correo));
         }
 
         // Bloqueo automático por membresía de distribuidor vencida (aplica solo a aliados)
         if ("ALIADO".equals(usuario.getRol())
                 && usuario.getMembresiaVence() != null
                 && !usuario.getMembresiaVence().isAfter(LocalDateTime.now())) {
-            log.warn("Login bloqueado - membresía vencida: {} (vencía el {})", correo, usuario.getMembresiaVence());
+            log.warn("Login bloqueado - membresía vencida: {} (vencía el {})", enmascarar(correo), usuario.getMembresiaVence());
             return ResponseEntity.status(403).body(Map.of(
                     "error", "Cuenta bloqueada por membresía vencida el " + usuario.getMembresiaVence()
                             + ". Genera tu pago para continuar."
             ));
         }
 
-        log.info("Login exitoso: {} ({})", usuario.getNombreUsuario(), correo);
+        log.info("Login exitoso: {} ({})", usuario.getNombreUsuario(), enmascarar(correo));
         int version = usuario.getTokenVersion() == null ? 0 : usuario.getTokenVersion();
         String token = jwtUtil.generateToken(usuario.getIdUsuario(), usuario.getCorreoUsuario(), usuario.getRol(), version);
 
@@ -363,16 +378,22 @@ public class AuthController {
                             + "<p>Para continuar, pulsa el siguiente botón (el enlace es válido por 30 minutos):</p>"
                             + "<p><a href=\"" + enlace + "\" style=\"display:inline-block;background:#5b2a86;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none\">Restablecer mi contraseña</a></p>"
                             + "<p>O copia y pega esta URL en tu navegador:<br>" + enlace + "</p>"));
-            log.info("Correo de recuperación enviado a {} (token: {}).", correo, token);
+            log.info("Correo de recuperación enviado a {}", enmascarar(correo));
         } else {
-            log.info("Recuperación solicitada para {} (correo no registrado).", correo);
+            log.info("Recuperación solicitada para {} (correo no registrado).", enmascarar(correo));
         }
 
-        String enlaceDemo = baseUrl.replaceAll("/+$", "") + "/reset-password?token=" + token;
-        return ResponseEntity.ok(Map.of(
-            "mensaje", "Si el correo está registrado, recibirás un enlace para restablecer la contraseña",
-            "enlace_demo", enlaceDemo
-        ));
+        Map<String, Object> respuesta = new java.util.LinkedHashMap<>();
+        respuesta.put("mensaje", "Si el correo está registrado, recibirás un enlace para restablecer la contraseña");
+
+        // El enlace con el token solo se devuelve en la respuesta en modo demo (SMTP deshabilitado,
+        // valor por defecto). Con SMTP activo el enlace viaja SOLO por correo: exponerlo en la
+        // respuesta permitiría a un tercero capturar el token de reset de cualquier usuario.
+        if (!emailService.isEnabled()) {
+            String enlaceDemo = baseUrl.replaceAll("/+$", "") + "/reset-password?token=" + token;
+            respuesta.put("enlace_demo", enlaceDemo);
+        }
+        return ResponseEntity.ok(respuesta);
     }
 
     // Confirma el restablecimiento con el token recibido por correo.
@@ -412,6 +433,36 @@ public class AuthController {
 
         log.info("Contraseña restablecida: userId={}", usuario.getIdUsuario());
         return ResponseEntity.ok(Map.of("mensaje", "Contraseña actualizada correctamente"));
+    }
+
+    // Enmascara un correo para los logs (evita volcar PII en claro): "ana@correo.com" -> "an***@correo.com".
+    private static String enmascarar(String correo) {
+        if (correo == null) return "?";
+        int arroba = correo.indexOf('@');
+        if (arroba <= 1) return "***" + (arroba >= 0 ? correo.substring(arroba) : "");
+        return correo.charAt(0) + "***" + correo.substring(arroba);
+    }
+
+    private boolean bloqueadoPorIntentos(String clave) {
+        long[] estado = fallosLogin.get(clave);
+        if (estado == null) return false;
+        long ahora = System.currentTimeMillis();
+        if (ahora - estado[1] >= VENTANA_FALLOS_MS) {
+            fallosLogin.remove(clave);
+            return false;
+        }
+        return estado[0] >= MAX_FALLOS_LOGIN;
+    }
+
+    private void registrarFalloLogin(String clave) {
+        long ahora = System.currentTimeMillis();
+        fallosLogin.compute(clave, (k, val) ->
+                (val == null || ahora - val[1] >= VENTANA_FALLOS_MS) ? new long[]{1, ahora}
+                        : new long[]{val[0] + 1, val[1]});
+    }
+
+    private void limpiarFallosLogin(String clave) {
+        fallosLogin.remove(clave);
     }
 
 }

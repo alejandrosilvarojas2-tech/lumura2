@@ -53,8 +53,11 @@ public class EmailService {
         }
         String textoPlano = fromHtml(cuerpoHtml);
         if (!enabled) {
-            log.info("[MAIL][DEMO] (deshabilitado) Para: {} | Asunto: {} | Cuerpo: {}",
-                    destinatario, asunto, textoPlano);
+            // Modo demo: registrar el correo SIN volcar el cuerpo completo (evita PII y datos
+            // sensibles como tokens/códigos de membresía en los logs). Solo se anota a quién
+            // iba el correo y su asunto.
+            log.info("[MAIL][DEMO] (deshabilitado) Para: {} | Asunto: {}",
+                    destinatario, asunto);
             return;
         }
         try {

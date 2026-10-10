@@ -16,6 +16,7 @@
 7. [Aspectos Generales](#7-aspectos-generales)
 8. [Diagnóstico del Proyecto — 25/07/2026](#8-diagnóstico-del-proyecto--actualización-25072026)
 9. [Diagnóstico Actualizado y Plan de Refuerzo Ejecutado — 21/08/2026](#9-diagnóstico-actualizado-y-plan-de-refuerzo-ejecutado--21082026)
+10. [Diagnóstico de Seguridad y Refuerzo — 09/10/2026](#10-diagnóstico-de-seguridad-y-refuerzo--09102026)
 
 ---
 
@@ -1133,6 +1134,54 @@ Referrer-Policy, Permissions-Policy, X-XSS-Protection).
   punta desde la URL: `/` (frontend) → 200 y `GET /api/productos` → 200. No se
   desactiva el firewall; el túnel funciona sin esa medida.
 
+# 10. Diagnóstico de Seguridad y Refuerzo — 09/10/2026
+
+Auditoría y endurecimiento orientados a seguridad e integridad. Se corrigieron los
+siguientes hallazgos (todos verificados con la suite de **196 tests unitarios**,
+JUnit 5 + Mockito, 15 clases, `.\mvnw.cmd test` con `DB_USER`/`DB_PASSWORD`):
+
+- **Token de recuperación filtrado (crítica)**: `POST /api/auth/recuperar` devolvía
+  `enlace_demo` con el token en la respuesta. Ahora ese enlace solo se incluye cuando el
+  SMTP está deshabilitado (`app.mail.enabled=false`); en producción el enlace viaja solo
+  por correo.
+- **PII del vendedor en el catálogo público**: `GET /api/productos` y su detalle solo
+  exponen `nombre_negocio`. Nit, contacto, teléfono y dirección permanecen en carrito y
+  pedidos *propios* (necesarios para contactar al vendedor, protegidos por ownership).
+- **XSS persistente vía inputs de productos**: nuevo `util/Sanitizacion.java` con
+  `limpiarTexto()` (recorta y elimina `<`/`>`) y `urlImagenPermitida()` (allowlist de
+  URLs de imagen). Aplicado a creación/edición de productos (Aliado, Admin,
+  `CatalogoService`) y a la licencia de distribuidor. El frontend ya escapaba con
+  `escHtml` en todos los sinks (inventario, detalle, modal de edición), por lo que se
+  aplicó *strip* (no entidades HTML) para evitar doble escape.
+- **Fuerza bruta de login**: bloqueo por cuenta en `AuthController` (5 fallos en 15
+  minutos → 403 "Demasiados intentos"). En memoria (`ConcurrentHashMap`).
+- **Fuga de datos sensibles en logs**: correos enmascarados (`a***@correo.com`), tokens
+  y códigos de membresía/recuperación fuera de los logs; `EmailService` en modo demo ya
+  no registra el cuerpo completo del correo.
+- **Membresía vencida por defecto / sin pago**: `POST /api/aliado/membresia` exige un
+  pago con tarjeta aprobado por `PagoSimuladoService` cuando el correo real está
+  habilitado (`MAIL_ENABLED=true`); en demo (test-unit) conserva la activación directa.
+- **Carrera de condiciones en el stock**: nuevo `CatalogoRepository.descontarStock()`
+  con UPDATE atómico `stock >= cantidad`. `PedidoController.crear` es `@Transactional`:
+  si la confirmación no consigue stock, se revierte compra/detalles/carrito y se
+  responde **409 Conflict** (nuevo handler de `IllegalStateException` en
+  `GlobalExceptionHandler`; antes caía en 500 genérico).
+- **Totales manipulables desde el cliente**: `precioVigente()` recalcula el total desde
+  el catálogo aplicando el descuento cuando es coherente (pedidos y precio mostrado en
+  carrito). El total enviado por el cliente se ignora.
+- **Pedidos fantasma por $0 / productos descontinuados**: los items del carrito cuyo
+  producto ya no existe se omiten; si el carrito queda vacío el pedido se rechaza con 400.
+- **Métodos de pago arbitrarios**: allowlist (tarjeta, efectivo, contra entrega, pse,
+  nequi, daviplata, transferencia); el resto → 400.
+- **Licencias**: `Referrer-Policy: no-referrer` en la respuesta de la imagen y allowlist
+  de URL al guardarla (previo: anti path-traversal + token, ya existentes).
+- **Menor**: `sufijoAleatorio` usa `SecureRandom` (antes `Math.random`); asset del
+  frontend bumped a `lumura.js?v=17`.
+
+Resultado: de un diagnóstico previo de **71/100**, la re-evaluación tras este refuerzo
+queda en **84/100** (Arquitectura 17/20, Seguridad 21/25, Funcionalidad 19/20,
+Frontend 12/15, DevOps 8/10, Documentación 7/10).
+
 ---
 
-*Fin del documento — LUMURA Documentación Técnica v2.0 (Actualizado 08/09/2026)*
+*Fin del documento — LUMURA Documentación Técnica v2.0 (Actualizado 09/10/2026)*

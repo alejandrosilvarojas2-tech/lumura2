@@ -72,12 +72,10 @@ public class ProductoController {
             if (p.getIdAliado() == null) continue;
             Usuario u = aliados.get(p.getIdAliado());
             if (u == null) continue;
+            // Solo información comercial pública: NUNCA nit, contacto, teléfono o dirección
+            // (PII) en un endpoint de catálogo abierto a cualquiera.
             Map<String, Object> info = new LinkedHashMap<>();
             info.put("nombre_negocio", u.getNombreNegocio());
-            info.put("nit", u.getNit());
-            info.put("persona_contacto", u.getPersonaContacto());
-            info.put("telefono", u.getTelefono());
-            info.put("direccion", u.getDireccionUsuario());
             p.setAliado(info);
         }
     }

@@ -84,7 +84,7 @@ public class CarritoController {
             m.put("talla", item.getTalla());
             m.put("color", item.getColor());
             m.put("cantidad", item.getCantidad());
-            m.put("precio", producto != null ? producto.getPrecio() : BigDecimal.ZERO);
+            m.put("precio", producto != null ? precioVigente(producto) : BigDecimal.ZERO);
             Usuario vendedor = producto != null && producto.getIdAliado() != null
                     ? vendedores.get(producto.getIdAliado())
                     : null;
@@ -212,5 +212,17 @@ public class CarritoController {
         String token = auth.substring(7);
         if (!jwtUtil.validateToken(token)) return null;
         return jwtUtil.getUserIdFromToken(token);
+    }
+
+    // Precio vigente: el descuento si está activo y es coherente; si no, el precio normal.
+    private static BigDecimal precioVigente(Catalogo p) {
+        if (p.getPrecio() == null) return BigDecimal.ZERO;
+        BigDecimal descuento = p.getPrecioDescuento();
+        if (descuento != null
+                && descuento.compareTo(BigDecimal.ZERO) > 0
+                && descuento.compareTo(p.getPrecio()) < 0) {
+            return descuento;
+        }
+        return p.getPrecio();
     }
 }

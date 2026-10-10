@@ -401,7 +401,7 @@ async function guardarLicenciaAliado() {
   }
   try {
     const res = await api.put('/api/aliado/licencia', { licencia: url });
-    mostrarMensaje('Licencia de distribuidor guardada correctamente', 'éxito');
+    mostrarMensaje('Licencia de distribuidor guardada correctamente', 'success');
     document.getElementById('aliado-licencia-msg').textContent = 'Licencia guardada correctamente';
     document.getElementById('aliado-licencia-img-actual').src = urlLicencia(url);
     document.getElementById('aliado-licencia-actual').style.display = 'block';

@@ -8,6 +8,7 @@ import com.lumura.primeraApi.repository.DetalleCompraRepository;
 import com.lumura.primeraApi.repository.UsuarioRepository;
 import com.lumura.primeraApi.service.CatalogoService;
 import com.lumura.primeraApi.service.EmailService;
+import com.lumura.primeraApi.service.PagoSimuladoService;
 import com.lumura.primeraApi.util.JwtUtil;
 import com.lumura.primeraApi.util.UploadPaths;
 import jakarta.servlet.http.HttpServletResponse;
@@ -26,10 +27,14 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.lumura.primeraApi.util.Sanitizacion.limpiarTexto;
+import static com.lumura.primeraApi.util.Sanitizacion.urlImagenPermitida;
 
 @RestController
 @RequestMapping("/api/aliado")
@@ -143,7 +148,6 @@ public class AliadoController {
         }
 
         try {
-            if (body.containsKey("articulo") && !body.get("articulo").isBlank()) p.setArticulo(body.get("articulo").trim());
             if (body.containsKey("precio")) {
                 BigDecimal precio = new BigDecimal(body.get("precio"));
                 if (precio.compareTo(BigDecimal.ZERO) < 0) return ResponseEntity.badRequest().body(Map.of("error", "El precio no puede ser negativo"));
@@ -167,11 +171,24 @@ public class AliadoController {
         } catch (NumberFormatException e) {
             return ResponseEntity.badRequest().body(Map.of("error", "Valor numérico inválido"));
         }
-        if (body.containsKey("talla")) p.setTalla(body.get("talla"));
-        if (body.containsKey("color")) p.setColor(body.get("color"));
-        if (body.containsKey("categoria")) p.setCategoria(body.get("categoria"));
-        if (body.containsKey("descripcion")) p.setDescripcion(body.get("descripcion"));
-        if (body.containsKey("imagen_url")) p.setImagenUrl(body.get("imagen_url"));
+        if (body.containsKey("articulo")) {
+            String articulo = limpiarTexto(body.get("articulo"), 200);
+            if (articulo == null || articulo.isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "El nombre del artículo no puede quedar vacío"));
+            }
+            p.setArticulo(articulo);
+        }
+        if (body.containsKey("talla")) p.setTalla(limpiarTexto(body.get("talla"), 200));
+        if (body.containsKey("color")) p.setColor(limpiarTexto(body.get("color"), 200));
+        if (body.containsKey("categoria")) p.setCategoria(limpiarTexto(body.get("categoria"), 200));
+        if (body.containsKey("descripcion")) p.setDescripcion(limpiarTexto(body.get("descripcion"), 2000));
+        if (body.containsKey("imagen_url")) {
+            String imagen = body.get("imagen_url");
+            if (!urlImagenPermitida(imagen)) {
+                return ResponseEntity.badRequest().body(Map.of("error", "La URL de la imagen no está permitida"));
+            }
+            p.setImagenUrl(limpiarTexto(imagen, 500));
+        }
 
         catalogoRepository.save(p);
         log.info("Producto {} actualizado por usuario {}", id, userId);
@@ -267,9 +284,13 @@ public class AliadoController {
         if (licencia == null || licencia.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Debes indicar la URL de la licencia"));
         }
+        if (!urlImagenPermitida(licencia)) {
+            return ResponseEntity.badRequest().body(Map.of("error", "La URL de la licencia no está permitida"));
+        }
+        String licenciaLimpia = limpiarTexto(licencia, 500);
         return usuarioRepository.findById(userId)
                 .map(u -> {
-                    u.setLicenciaDistribuidor(licencia);
+                    u.setLicenciaDistribuidor(licenciaLimpia);
                     usuarioRepository.save(u);
                     log.info("Licencia de distribuidor guardada para userId={}", userId);
                     return ResponseEntity.ok(Map.of("mensaje", "Licencia guardada correctamente", "licencia", licencia));
@@ -313,6 +334,9 @@ public class AliadoController {
         response.setContentType(contentType);
         response.setContentLengthLong(Files.size(filePath));
         response.setHeader(HttpHeaders.CACHE_CONTROL, "no-store");
+        // El token viaja por query para <img>: se prohíbe el Referer para que no se filtre
+        // a páginas de terceros (etiquetas, extensiones, analytics).
+        response.setHeader("Referrer-Policy", "no-referrer");
         Files.copy(filePath, response.getOutputStream());
     }
 
@@ -342,6 +366,21 @@ public class AliadoController {
             return ResponseEntity.badRequest().body(Map.of("error", "Plan inválido. Usa: basico, medio o premium"));
         }
 
+        // Con SMTP activo (entorno real) la membresía SOLO se activa tras un pago aprobado.
+        // En modo demo (sin SMTP) el flujo sigue sin datos de tarjeta para permitir la demo.
+        if (emailService.isEnabled()) {
+            String metodoPago = body.get("metodo_pago");
+            boolean esTarjeta = metodoPago != null
+                    && metodoPago.toLowerCase(java.util.Locale.ROOT).contains("tarjeta");
+            String estadoPago = esTarjeta
+                    ? PagoSimuladoService.realizarPago(body.get("numero_tarjeta"), body.get("mes_expiracion"),
+                            body.get("anio_expiracion"), body.get("cvv"))
+                    : "Método de pago no soportado";
+            if (!"APROBADO".equals(estadoPago)) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Pago de la membresía rechazado: " + estadoPago));
+            }
+        }
+
         LocalDateTime ahora = LocalDateTime.now();
         LocalDateTime vence = ahora.plusDays(dias).plusDays(1); // +1 día de gracia
         String codigo = "MEM-" + userId + "-" + plan.toUpperCase(java.util.Locale.ROOT)
@@ -353,7 +392,7 @@ public class AliadoController {
         u.setMembresiaActivadaEn(ahora);
         u.setMembresiaVence(vence);
         usuarioRepository.save(u);
-        log.info("Membresía {} confirmada para aliado {} — código {}", plan, userId, codigo);
+        log.info("Membresía {} confirmada para aliado {}", plan, userId);
 
         String planNombre = nombrePlan(plan);
         emailService.enviar(u.getCorreoUsuario(),
@@ -432,7 +471,7 @@ public class AliadoController {
     private String sufijoAleatorio() {
         String chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
         StringBuilder sb = new StringBuilder();
-        java.util.Random rnd = new java.util.Random();
+        SecureRandom rnd = new SecureRandom();
         for (int i = 0; i < 4; i++) sb.append(chars.charAt(rnd.nextInt(chars.length())));
         return sb.toString();
     }

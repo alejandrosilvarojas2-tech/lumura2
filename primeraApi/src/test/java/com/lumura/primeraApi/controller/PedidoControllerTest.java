@@ -106,6 +106,8 @@ class PedidoControllerTest {
             c.setIdCompra(99);
             return c;
         });
+        when(catalogoRepository.descontarStock(2, 2)).thenReturn(1);
+        when(catalogoRepository.descontarStock(3, 1)).thenReturn(1);
 
         ResponseEntity<?> res = pedidoController.crear(TOKEN_USER, bodyPago());
 
@@ -135,6 +137,30 @@ class PedidoControllerTest {
     }
 
     @Test
+    void crear_aplicaPrecioConDescuentoDelCatalogo() {
+        mockToken(TOKEN_USER, 1);
+        when(carritoRepository.findByIdUsuario(1)).thenReturn(List.of(itemCarrito(2, "Jeans Slim Fit", 2)));
+        Catalogo jeans = producto(2, "Jeans Slim Fit", "89900", 10);
+        jeans.setPrecioDescuento(new BigDecimal("59900"));
+        when(catalogoRepository.findById(2)).thenReturn(Optional.of(jeans));
+        when(compraRepository.save(any(Compra.class))).thenAnswer(inv -> {
+            Compra c = inv.getArgument(0);
+            c.setIdCompra(88);
+            return c;
+        });
+        when(catalogoRepository.descontarStock(2, 2)).thenReturn(1);
+
+        ResponseEntity<?> res = pedidoController.crear(TOKEN_USER, bodyPago());
+
+        assertEquals(200, res.getStatusCode().value());
+        Map<String, Object> bodyRta = (Map<String, Object>) res.getBody();
+        assertEquals(new BigDecimal("119800"), bodyRta.get("total")); // 59900 x 2
+        ArgumentCaptor<Compra> captor = ArgumentCaptor.forClass(Compra.class);
+        verify(compraRepository).save(captor.capture());
+        assertEquals(new BigDecimal("119800"), captor.getValue().getTotal());
+    }
+
+    @Test
     void crear_carritoVacio_retorna400() {
         mockToken(TOKEN_USER, 1);
         when(carritoRepository.findByIdUsuario(1)).thenReturn(List.of());
@@ -157,13 +183,12 @@ class PedidoControllerTest {
             c.setIdCompra(100);
             return c;
         });
+        when(catalogoRepository.descontarStock(2, 3)).thenReturn(1);
 
         ResponseEntity<?> res = pedidoController.crear(TOKEN_USER, bodyPago());
 
         assertEquals(200, res.getStatusCode().value());
-        ArgumentCaptor<Catalogo> captor = ArgumentCaptor.forClass(Catalogo.class);
-        verify(catalogoRepository).save(captor.capture());
-        assertEquals(2, captor.getValue().getStock()); // 5 - 3
+        verify(catalogoRepository).descontarStock(2, 3);
         verify(detalleCompraRepository).saveAll(any());
     }
 
@@ -177,6 +202,7 @@ class PedidoControllerTest {
             c.setIdCompra(101);
             return c;
         });
+        when(catalogoRepository.descontarStock(2, 1)).thenReturn(1);
 
         Map<String, Object> m = new java.util.HashMap<>();
         m.put("metodo_pago", "Tarjeta");
@@ -237,6 +263,25 @@ class PedidoControllerTest {
 
         assertEquals(401, res.getStatusCode().value());
         verify(carritoRepository, never()).findByIdUsuario(any());
+    }
+
+    @Test
+    void crear_stockAgotadoEnConfirmacion_rechazaPedido() {
+        mockToken(TOKEN_USER, 1);
+        when(carritoRepository.findByIdUsuario(1)).thenReturn(List.of(
+                itemCarrito(2, "Jeans Slim Fit", 3)));
+        Catalogo jeans = producto(2, "Jeans Slim Fit", "89900", 5);
+        when(catalogoRepository.findById(2)).thenReturn(Optional.of(jeans));
+        when(compraRepository.save(any(Compra.class))).thenAnswer(inv -> {
+            Compra c = inv.getArgument(0);
+            c.setIdCompra(100);
+            return c;
+        });
+        when(catalogoRepository.descontarStock(2, 3)).thenReturn(0); // otro pedido ya se llevó el stock
+
+        assertThrows(IllegalStateException.class, () -> pedidoController.crear(TOKEN_USER, bodyPago()));
+
+        verify(carritoRepository, never()).deleteByIdUsuario(1);
     }
 
     @Test
@@ -372,6 +417,7 @@ class PedidoControllerTest {
             c.setIdCompra(55);
             return c;
         });
+        when(catalogoRepository.descontarStock(2, 1)).thenReturn(1);
 
         // Cliente comprador
         Usuario cliente = new Usuario();

@@ -27,6 +27,9 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.lumura.primeraApi.util.Sanitizacion.limpiarTexto;
+import static com.lumura.primeraApi.util.Sanitizacion.urlImagenPermitida;
+
 @RestController
 @RequestMapping("/api/admin")
 public class AdminController {
@@ -145,15 +148,32 @@ public class AdminController {
                             return ResponseEntity.status(403).body(Map.of("error", "Solo puedes modificar tus propios productos"));
                         }
                     }
-                    if (body.containsKey("articulo")) p.setArticulo(body.get("articulo"));
+                    if (body.containsKey("articulo") && body.get("articulo") != null) {
+                        String articulo = limpiarTexto(body.get("articulo"), 200);
+                        if (articulo == null || articulo.isBlank()) {
+                            return ResponseEntity.badRequest().body(Map.of("error", "El nombre del artículo no puede quedar vacío"));
+                        }
+                        p.setArticulo(articulo);
+                    }
                     if (body.containsKey("precio")) p.setPrecio(new BigDecimal(body.get("precio")));
-                    if (body.containsKey("stock")) p.setStock(Integer.parseInt(body.get("stock")));
-                    if (body.containsKey("estado")) p.setEstado(body.get("estado"));
-                    if (body.containsKey("talla")) p.setTalla(body.get("talla"));
-                    if (body.containsKey("color")) p.setColor(body.get("color"));
-                    if (body.containsKey("categoria")) p.setCategoria(body.get("categoria"));
-                    if (body.containsKey("descripcion")) p.setDescripcion(body.get("descripcion"));
-                    if (body.containsKey("imagen_url")) p.setImagenUrl(body.get("imagen_url"));
+                    if (body.containsKey("stock")) {
+                        int stock = Integer.parseInt(body.get("stock"));
+                        if (stock < 0 || stock > 10000) {
+                            return ResponseEntity.badRequest().body(Map.of("error", "El stock debe estar entre 0 y 10.000"));
+                        }
+                        p.setStock(stock);
+                    }
+                    if (body.containsKey("estado")) p.setEstado(limpiarTexto(body.get("estado"), 50));
+                    if (body.containsKey("talla")) p.setTalla(limpiarTexto(body.get("talla"), 200));
+                    if (body.containsKey("color")) p.setColor(limpiarTexto(body.get("color"), 200));
+                    if (body.containsKey("categoria")) p.setCategoria(limpiarTexto(body.get("categoria"), 200));
+                    if (body.containsKey("descripcion")) p.setDescripcion(limpiarTexto(body.get("descripcion"), 2000));
+                    if (body.containsKey("imagen_url")) {
+                        if (!urlImagenPermitida(body.get("imagen_url"))) {
+                            return ResponseEntity.badRequest().body(Map.of("error", "La URL de la imagen no está permitida"));
+                        }
+                        p.setImagenUrl(limpiarTexto(body.get("imagen_url"), 500));
+                    }
                     if (body.containsKey("precio_descuento"))
                         p.setPrecioDescuento(new BigDecimal(body.get("precio_descuento")));
                     catalogoRepository.save(p);

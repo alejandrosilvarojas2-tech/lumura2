@@ -21,6 +21,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<?> handleIllegalState(IllegalStateException e) {
+        String mensaje = e.getMessage();
+        if (mensaje == null || mensaje.isBlank()) mensaje = "Conflicto con el estado del recurso";
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", mensaje));
+    }
+
     @ExceptionHandler(NumberFormatException.class)
     public ResponseEntity<?> handleNumberFormat(NumberFormatException e) {
         return ResponseEntity.badRequest().body(Map.of("error", "Formato de número inválido"));

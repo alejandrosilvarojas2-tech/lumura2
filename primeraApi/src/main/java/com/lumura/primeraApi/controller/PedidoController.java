@@ -76,22 +76,28 @@ public class PedidoController {
             Optional<Catalogo> producto = item.getIdCatalogo() != null
                     ? catalogoRepository.findById(item.getIdCatalogo())
                     : catalogoRepository.findByArticuloIgnoreCase(item.getArticulo());
-            BigDecimal precioUnitario = producto.map(Catalogo::getPrecio).orElse(BigDecimal.ZERO);
+            // Producto borrado del catálogo: el item se omite. Evita cobrar pedidos fantasma
+            // por $0 y nunca descuenta stock de productos inexistentes.
+            if (producto.isEmpty()) {
+                log.warn("Item del carrito con producto inexistente omitido (itemId={}, userId={})",
+                        item.getIdCarrito(), idUsuario);
+                continue;
+            }
+            Catalogo prod = producto.get();
+            BigDecimal precioUnitario = precioVigente(prod);
             int cantidad = item.getCantidad() != null ? item.getCantidad() : 0;
 
             // Validar stock ANTES de crear nada: si algo no alcanza, el pedido completo se rechaza
-            if (producto.isPresent()) {
-                Integer disponible = producto.get().getStock();
-                if (disponible == null || disponible < cantidad) {
-                    String nombre = producto.map(Catalogo::getArticulo).orElse("desconocido");
-                    return ResponseEntity.badRequest().body(Map.of("error",
-                            "Stock insuficiente de " + nombre + ". Disponible: " + (disponible == null ? 0 : disponible)));
-                }
-                if (item.getIdCatalogo() != null) aDescontar.add(producto.get());
+            Integer disponible = prod.getStock();
+            if (disponible == null || disponible < cantidad) {
+                String nombre = prod.getArticulo();
+                return ResponseEntity.badRequest().body(Map.of("error",
+                        "Stock insuficiente de " + nombre + ". Disponible: " + (disponible == null ? 0 : disponible)));
             }
+            if (item.getIdCatalogo() != null) aDescontar.add(prod);
 
             DetalleCompra detalle = new DetalleCompra();
-            detalle.setArticulo(producto.map(Catalogo::getArticulo).orElse(item.getArticulo()));
+            detalle.setArticulo(prod.getArticulo());
             detalle.setIdCatalogo(item.getIdCatalogo());
             detalle.setCantidad(cantidad);
             detalle.setPrecioUnitario(precioUnitario);
@@ -100,11 +106,24 @@ public class PedidoController {
             total = total.add(precioUnitario.multiply(BigDecimal.valueOf(cantidad)));
             cantidadObjetos += cantidad;
         }
+        if (detalles.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error",
+                    "El carrito solo contiene productos que ya no están disponibles"));
+        }
 
-        // Método de pago: si es tarjeta, se procesa la pasarela simulada ANTES de crear el pedido.
+        // Método de pago: solo se admiten métodos conocidos; si es tarjeta, se procesa la
+        // pasarela simulada ANTES de crear el pedido.
+        Set<String> METODOS_VALIDOS = Set.of(
+                "tarjeta", "efectivo", "contra entrega", "pse", "nequi", "daviplata", "transferencia");
         String metodoPago = datos.get("metodo_pago");
+        String metodoNormalizado = metodoPago != null
+                ? metodoPago.trim().toLowerCase(java.util.Locale.ROOT)
+                : "contra entrega";
+        if (!METODOS_VALIDOS.contains(metodoNormalizado)) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Método de pago no válido"));
+        }
         String referenciaPago = null;
-        if (metodoPago != null && metodoPago.toLowerCase().contains("tarjeta")) {
+        if (metodoNormalizado.contains("tarjeta")) {
             String estadoPago = PagoSimuladoService.realizarPago(
                     datos.get("numero_tarjeta"),
                     datos.get("mes_expiracion"),
@@ -134,15 +153,22 @@ public class PedidoController {
         detalles.forEach(d -> d.setIdCompra(compra.getIdCompra()));
         detalleCompraRepository.saveAll(detalles);
 
-        // Descuento de stock al confirmar el pedido
+        // Descuento de stock al confirmar el pedido, de forma ATÓMICA en BD
+        // (UPDATE ... WHERE stock >= cantidad, evita la carrera de condiciones: dos pedidos
+        // concurrentes no pueden agotar el stock de más).
         for (Catalogo producto : aDescontar) {
             int vendidos = detalles.stream()
                     .filter(d -> producto.getIdCatalogo().equals(d.getIdCatalogo()))
                     .mapToInt(DetalleCompra::getCantidad).sum();
             if (vendidos > 0) {
-                producto.setStock(producto.getStock() - vendidos);
-                catalogoRepository.save(producto);
-                log.info("Stock descontado: {} -{} (queda {})", producto.getArticulo(), vendidos, producto.getStock());
+                int descontados = catalogoRepository.descontarStock(producto.getIdCatalogo(), vendidos);
+                if (descontados < 1) {
+                    log.warn("Stock agotado en confirmación - pedido revertido: {} (pedidos {}u)",
+                            producto.getArticulo(), vendidos);
+                    throw new IllegalStateException("Stock insuficiente de " + producto.getArticulo()
+                            + ". El pedido no se pudo confirmar.");
+                }
+                log.info("Stock descontado atómicamente: {} -{}", producto.getArticulo(), vendidos);
             }
         }
 
@@ -312,5 +338,19 @@ public class PedidoController {
         String token = auth.substring(7);
         if (!jwtUtil.validateToken(token)) return null;
         return jwtUtil.getUserIdFromToken(token);
+    }
+
+    // El precio que se le cobra al cliente: el descuento si está activo y es coherente
+    // (positivo y menor al precio normal); si no, el precio normal. El cliente NUNCA decide
+    // el total; siempre se recalcula del catálogo.
+    private static BigDecimal precioVigente(Catalogo p) {
+        if (p.getPrecio() == null) return BigDecimal.ZERO;
+        BigDecimal descuento = p.getPrecioDescuento();
+        if (descuento != null
+                && descuento.compareTo(BigDecimal.ZERO) > 0
+                && descuento.compareTo(p.getPrecio()) < 0) {
+            return descuento;
+        }
+        return p.getPrecio();
     }
 }
